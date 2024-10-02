@@ -1,0 +1,9 @@
+[
+    {
+        "version": "1.0.0",
+        "change_log": [
+            "Penambahan modul pasien. Data pasien dan rekap.",
+            "Penambahan modul pendaftaran. Data pendaftaran dan rekap."
+        ]
+    }
+]

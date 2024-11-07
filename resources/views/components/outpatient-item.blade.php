@@ -1,7 +1,7 @@
 <div
     class=
     "relative p-6 pr-12 overflow-hidden bg-white border-l-4 lg:border-l-8 rounded-md drop-shadow-md {{ StatusHelper::getColor('status_pelayanan', $patient['pendaftaran']['status_pelayanan']) }}">
-    <div class="xl:[column-count:6] [column-count:2] gap-x-3">
+    <div class="xl:[column-count:5] sm:[column-count:3] [column-count:2] gap-x-3">
         {{-- Data Pendaftaran --}}
         <x-patient-item title="No Registrasi" :value="$patient['pendaftaran']['no_pendaftaran']" />
         <x-patient-item title="No Rawat" :value="$patient['pendaftaran']['no_rawat']" />
@@ -10,6 +10,7 @@
         <x-patient-item title="Status Poli" :value="$patient['pendaftaran']['status_poli']" />
         <x-patient-item title="Jenis Bayar" :value="$patient['pendaftaran']['jenis_bayar']" />
         <x-patient-item title="Status Bayar" :value="$patient['pendaftaran']['status_bayar']" />
+        <x-patient-item title="No. Peserta" :value="$patient['pasien']['data']['no_peserta']" />
         {{-- Data Pasien --}}
         <x-patient-item title="No Rekam Medis" :value="$patient['pasien']['no_rekam_medis']" />
         <x-patient-item title="Nama Pasien" :value="$patient['pasien']['nama']" />

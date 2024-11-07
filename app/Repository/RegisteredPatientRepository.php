@@ -6,11 +6,11 @@ use App\Models\Tni;
 use App\Models\Polri;
 use App\Models\Doctor;
 use App\Models\Patient;
-use App\Models\TniGroup;
-use App\Models\PolriGroup;
+use App\Models\MobileJkn;
 use App\Models\Polyclinic;
 use App\Helpers\DateHelper;
 use App\Models\RegisteredPatient;
+use App\Helpers\ConfigurationHelper;
 use App\Models\PersonResponsibility;
 use App\Repository\PolyclinicRepository;
 use Illuminate\Database\Eloquent\Builder;
@@ -141,9 +141,11 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
         string $startDate,
         string $endDate,
         int $limit = self::LIMIT_DEFAULT,
+        ?string $mobileJkn = null,
         ?string $search = null,
         ?string $ageCategory = null,
         ?string $gender = null,
+        ?string $serviceStatus = null,
         ?string $status = null,
         ?string $advanceStatus = null,
         ?string $type = null,
@@ -151,7 +153,9 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
         ?string $polyclinic = null,
         ?string $doctor = null,
         ?string $tniGroup = null,
-        ?string $polriGroup = null
+        ?string $tniUnit = null,
+        ?string $polriGroup = null,
+        ?string $polriUnit = null,
     ): LengthAwarePaginator | array {
         $result = RegisteredPatient::with(
             [
@@ -176,93 +180,96 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
                     ->toArray(),
             ]
         )
-            ->whereHas('pasien', function ($q) use ($search, $type, $gender) {
-                if (in_array($gender, collect(Patient::KELOMPOK_JENIS_KELAMIN)->keys()->toArray()))
-                    $q->where(Patient::JENIS_KELAMIN, $gender);
-
-                if (in_array($type, collect(Patient::KELOMPOK_PASIEN)->keys()->toArray())) {
+            ->whereHas('pasien', function ($q) use ($search, $type, $gender, $tniGroup, $tniUnit, $polriGroup, $polriUnit) {
+                $q->when(
+                    (in_array($gender, collect(Patient::KELOMPOK_JENIS_KELAMIN)->keys()->toArray())),
+                    fn($r) => $r->where(Patient::JENIS_KELAMIN, $gender)
+                )->when(
+                    in_array($type, collect(Patient::KELOMPOK_PASIEN)->keys()->toArray()),
+                    fn($r) =>
                     // Sesuaikan dengan KELOMPOK PASIEN
-                    if ($type == 'umum')
-                        $q->doesntHave('polri')
-                            ->doesntHave('tni');
-                    if ($type == 'polri')
-                        $q->has('polri');
-                    if ($type == 'tni')
-                        $q->has('tni');
-                }
-                $q->whereAny([RegisteredPatient::NO_REKAM_MEDIS, Patient::NAMA_PASIEN, Patient::NIK, Patient::NOKA], 'like', $search . "%");
-            });
+                    $r->when(
+                        $type == 'umum',
+                        fn($s) => $s->doesntHave('polri')
+                            ->doesntHave('tni')
+                    )->when(
+                        $type == 'tni',
+                        fn($r) => $r->whereHas('tni')
+                            ->when(
+                                !is_null($tniGroup) && $tniGroup != 'semua',
+                                fn($s) => $s->whereHas('tni', fn($s) => $s->where(Tni::GOLONGAN, $tniGroup))
+                            )
+                            ->when(
+                                !is_null($tniUnit) && $tniUnit != 'semua',
+                                fn($s) => $s->whereHas('tni', fn($s) => $s->where(Tni::SATUAN, $tniUnit))
+                            )
+                    )->when(
+                        $type == 'polri',
+                        fn($r) => $r->whereHas('polri')
+                            ->when(
+                                !is_null($polriGroup) && $polriGroup != 'semua',
+                                fn($s) => $s->whereHas('polri', fn($s) => $s->where(Polri::GOLONGAN, $polriGroup))
+                            )
+                            ->when(
+                                !is_null($polriUnit) && $polriUnit != 'semua',
+                                fn($s) => $s->whereHas('polri', fn($s) => $s->where(Polri::SATUAN, $polriUnit))
+                            )
+                    )
+                )
+                    ->whereAny([RegisteredPatient::NO_REKAM_MEDIS, Patient::NAMA_PASIEN, Patient::NIK, Patient::NOKA], 'like', $search . "%");
+            })
+            ->when(
+                $ageCategory,
+                fn($q) => $q->whereHas(
+                    'pasien',
+                    fn($r) =>
+                    $r
+                        ->when($ageCategory == 'balita', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) < 5'))
+                        ->when($ageCategory == 'anak', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 5 and 11'))
+                        ->when($ageCategory == 'remaja', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 12 and 25'))
+                        ->when($ageCategory == 'dewasa', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 26 and 45'))
+                        ->when($ageCategory == 'lansia', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 46 and 65'))
+                        ->when($ageCategory == 'lainnya', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) > 65'))
+                )
 
-        switch ($ageCategory) {
-            case 'balita':
-                $result = $result->whereRaw('((' . RegisteredPatient::UMUR_MENDAFTAR . ' < 5 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\') or ' . RegisteredPatient::STATUS_UMUR . ' = \'Bl\')');
-                break;
-            case 'anak':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 5 and 11 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            case 'remaja':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 12 and 25 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            case 'dewasa':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 26 and 45 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            case 'lansia':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 46 and 65 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            case 'lainnya':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' > 65 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            default:
-                break;
-        }
-
-        if (!is_null($doctor) && $doctor != 'semua') {
-            $result = $result->where(RegisteredPatient::KODE_DOKTER, $doctor);
-        }
-
-        if (in_array($status, RegisteredPatient::KELOMPOK_STATUS_PELAYANAN)) {
-            $result = $result->where(RegisteredPatient::STATUS_PELAYANAN, $status);
-        }
-
-        if (in_array($advanceStatus, RegisteredPatient::KELOMPOK_STATUS_LANJUT)) {
-            $result = $result->where(RegisteredPatient::STATUS_LANJUT, $advanceStatus);
-        }
-
-        if (!is_null($payType) && $payType != 'semua') {
-            $result = $result->where(RegisteredPatient::KODE_PENANGGUNGJAWAB, $payType);
-        }
-
-        if (!is_null($polyclinic) && $polyclinic != 'semua') {
-            $result = $result->where(RegisteredPatient::KODE_POLIKLINIK, $polyclinic);
-        }
-
-        if (!is_null($tniGroup) && $tniGroup != 'semua') {
-            $result = $result->whereHas('tni', fn($q) => $q->where(Tni::GOLONGAN, $tniGroup));
-        };
-
-        if (!is_null($polriGroup) && $polriGroup != 'semua') {
-            $result = $result->whereHas('polri', fn($q) => $q->where(Polri::GOLONGAN, $polriGroup));
-        };
-
-        $result = $result->when($startDate, function (Builder $query, string $startDate) {
-            $query->where(RegisteredPatient::TGL_REGISTRASI, '>=', $startDate);
-        });
-
-        $result = $result->when($endDate, function (Builder $query, string $endDate) {
-            $query->where(RegisteredPatient::TGL_REGISTRASI, '<=', $endDate);
-        });
-
-        $result = $result
+                //    ->when($ageCategory == 'balita', fn($r) => $r->whereRaw('((' . RegisteredPatient::UMUR_MENDAFTAR . ' < 5 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\') or ' . RegisteredPatient::STATUS_UMUR . ' = \'Bl\')'))
+                //         ->when($ageCategory == 'anak', fn($r) => $r->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 5 and 11 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\''))
+                //         ->when($ageCategory == 'remaja', fn($r) => $r->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 12 and 25 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\''))
+                //         ->when($ageCategory == 'dewasa', fn($r) => $r->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 26 and 45 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\''))
+                //         ->when($ageCategory == 'lansia', fn($r) => $r->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 46 and 65 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\''))
+                //         ->when($ageCategory == 'lainnya', fn($r) => $r->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' > 65 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\''))
+            )
+            ->when(!is_null($doctor) && $doctor != 'semua', fn($q) => $q->where(RegisteredPatient::KODE_DOKTER, $doctor))
+            ->when(in_array($serviceStatus, RegisteredPatient::KELOMPOK_STATUS_PELAYANAN), fn($q) => $q->where(RegisteredPatient::STATUS_PELAYANAN, $serviceStatus))
+            ->when(in_array($status, RegisteredPatient::KELOMPOK_STATUS), fn($q) => $q->where(RegisteredPatient::STATUS_DAFTAR, $status))
+            ->when(in_array($advanceStatus, RegisteredPatient::KELOMPOK_STATUS_LANJUT), fn($q) => $q->where(RegisteredPatient::STATUS_LANJUT, $advanceStatus))
+            ->when(!is_null($payType) && $payType != 'semua', fn($q) => $q->where(RegisteredPatient::KODE_PENANGGUNGJAWAB, $payType))
+            ->when(!is_null($polyclinic) && $polyclinic != 'semua', fn($q) => $q->where(RegisteredPatient::KODE_POLIKLINIK, $polyclinic))
+            ->when($startDate, function (Builder $query, string $startDate) {
+                $query->where(RegisteredPatient::TGL_REGISTRASI, '>=', $startDate);
+            })
+            ->when($endDate, function (Builder $query, string $endDate) {
+                $query->where(RegisteredPatient::TGL_REGISTRASI, '<=', $endDate);
+            })
+            ->when(
+                $mobileJkn != 'semua',
+                fn($q) => $q->when(
+                    $mobileJkn == 'mobileJkn',
+                    fn($r) => $r->whereHas('mobileJkn'),
+                    fn($r) => $r->whereDoesntHave('mobileJkn')
+                ),
+            )
             ->orderBy(RegisteredPatient::TGL_REGISTRASI, 'desc')
             ->orderBy(RegisteredPatient::JAM_REGISTRASI, 'desc')
             ->paginate($limit);
 
-        return tap($result, function ($paginatedInstance) {
-            return $paginatedInstance->getCollection()->transform(function ($value) {
-                return (new self)
-                    ->mapping((new self)->reconstruction($value));
-            });
-        });
+        return tap(
+            $result,
+            fn($paginatedInstance) => $paginatedInstance->getCollection()->transform(
+                fn($value) => (new self)
+                    ->mapping((new self)->reconstruction($value))
+            )
+        );
     }
 
     /**
@@ -276,41 +283,41 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
         ?string $endDate = null,
         ?string $type = null,
     ) {
-        $result = new RegisteredPatient;
-
-        $result = $result->when($startDate, function (Builder $query, string $startDate) {
+        return RegisteredPatient::when($startDate, function (Builder $query, string $startDate) {
             $query->where(RegisteredPatient::TGL_REGISTRASI, '>=', $startDate);
-        });
-
-        $result = $result->when($endDate, function (Builder $query, string $endDate) {
+        })->when($endDate, function (Builder $query, string $endDate) {
             $query->where(RegisteredPatient::TGL_REGISTRASI, '<=', $endDate);
-        });
-
-        if (!static::$personResponsibilityData)
-            static::$personResponsibilityData = collect(PersonResponsibilityRepository::getAll(limit: 0))->pluck('kode_penanggungjawab')->toArray();
-
-        $result = $result->whereIn(RegisteredPatient::getTableName() . '.' . RegisteredPatient::KODE_PENANGGUNGJAWAB, static::$personResponsibilityData);
-
-        if (!static::$polyclinicData)
-            static::$polyclinicData = collect(PolyclinicRepository::getAll(limit: 0))->pluck('kode_poliklinik')->toArray();
-
-        $result = $result->whereIn(RegisteredPatient::getTableName() . '.' . RegisteredPatient::KODE_POLIKLINIK, static::$polyclinicData);
-
-        switch ($type) {
-            case 'ageGroup':
-                $result = $result
-                    ->selectRaw(
-                        'IFNULL(SUM(CASE WHEN ((' . RegisteredPatient::UMUR_MENDAFTAR . ' < 5 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\') or ' . RegisteredPatient::STATUS_UMUR . ' = \'Bl\') THEN 1 ELSE 0 END),0) AS \'balita\','
-                            . 'IFNULL(SUM(CASE WHEN ' . RegisteredPatient::UMUR_MENDAFTAR . ' between 5 and 11 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\' THEN 1 ELSE 0 END),0) AS \'anak\','
-                            . 'IFNULL(SUM(CASE WHEN ' . RegisteredPatient::UMUR_MENDAFTAR . ' between 12 and 25 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\' THEN 1 ELSE 0 END),0) AS \'remaja\','
-                            . 'IFNULL(SUM(CASE WHEN ' . RegisteredPatient::UMUR_MENDAFTAR . ' between 26 and 45 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\' THEN 1 ELSE 0 END),0) AS \'dewasa\','
-                            . 'IFNULL(SUM(CASE WHEN ' . RegisteredPatient::UMUR_MENDAFTAR . ' between 46 and 65 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\' THEN 1 ELSE 0 END),0) AS \'lansia\','
-                            . 'IFNULL(SUM(CASE WHEN ' . RegisteredPatient::UMUR_MENDAFTAR . ' > 65 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\' THEN 1 ELSE 0 END),0) AS \'lainnya\''
-                    )
-                    ->first()
-                    ->toArray();
-                break;
-            case 'genderGroup':
+        })->when(
+            !static::$personResponsibilityData,
+            fn($q) => $q->whereIn(
+                RegisteredPatient::getTableName() . '.' . RegisteredPatient::KODE_PENANGGUNGJAWAB,
+                collect(PersonResponsibilityRepository::getAll(limit: 0))->pluck('kode_penanggungjawab')->toArray()
+            )
+        )->when(
+            !static::$polyclinicData,
+            fn($q) => $q->whereIn(RegisteredPatient::getTableName() . '.' . RegisteredPatient::KODE_POLIKLINIK, collect(PolyclinicRepository::getAll(limit: 0))->pluck('kode_poliklinik')->toArray())
+        )->when(
+            $type,
+            fn($q) => $q->when($type == 'ageGroup', function ($r) {
+                $r->selectRaw(
+                    'IFNULL(SUM(CASE WHEN (SELECT COUNT(' .  Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ') FROM ' . Patient::getTableName() . ' WHERE TIMESTAMPDIFF(year, ' . Patient::getTableName() . '.' . Patient::TANGGAL_LAHIR . ', now()) < 5 AND ' . Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ' = ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS . ')  THEN 1 ELSE 0 END),0) AS \'balita\','
+                        . 'IFNULL(SUM(CASE WHEN (SELECT COUNT(' .  Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ') FROM ' . Patient::getTableName() . ' WHERE TIMESTAMPDIFF(year, ' . Patient::getTableName() . '.' . Patient::TANGGAL_LAHIR . ', now()) between 5 and 11 AND ' . Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ' = ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS . ') THEN 1 ELSE 0 END),0) AS \'anak\','
+                        . 'IFNULL(SUM(CASE WHEN (SELECT COUNT(' .  Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ') FROM ' . Patient::getTableName() . ' WHERE TIMESTAMPDIFF(year, ' . Patient::getTableName() . '.' . Patient::TANGGAL_LAHIR . ', now()) between 12 and 25 AND ' . Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ' = ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS . ') THEN 1 ELSE 0 END),0) AS \'remaja\','
+                        . 'IFNULL(SUM(CASE WHEN (SELECT COUNT(' .  Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ') FROM ' . Patient::getTableName() . ' WHERE TIMESTAMPDIFF(year, ' . Patient::getTableName() . '.' . Patient::TANGGAL_LAHIR . ', now()) between 26 and 45 AND ' . Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ' = ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS . ') THEN 1 ELSE 0 END),0) AS \'dewasa\','
+                        . 'IFNULL(SUM(CASE WHEN (SELECT COUNT(' .  Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ') FROM ' . Patient::getTableName() . ' WHERE TIMESTAMPDIFF(year, ' . Patient::getTableName() . '.' . Patient::TANGGAL_LAHIR . ', now()) between 46 and 65 AND ' . Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ' = ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS . ') THEN 1 ELSE 0 END),0) AS \'lansia\','
+                        . 'IFNULL(SUM(CASE WHEN (SELECT COUNT(' .  Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ') FROM ' . Patient::getTableName() . ' WHERE TIMESTAMPDIFF(year, ' . Patient::getTableName() . '.' . Patient::TANGGAL_LAHIR . ', now()) > 65 AND ' . Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ' = ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS . ')  THEN 1 ELSE 0 END),0) AS \'lainnya\''
+                );
+            })->when($type == 'mobileJknGroup', function ($r) {
+                $r->selectRaw(
+                    'IFNULL(SUM(CASE WHEN (select count(' . RegisteredPatient::NO_RAWAT . ') from ' . MobileJkn::getTableName() . ' where ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_RAWAT . ' = ' . MobileJkn::getTableName() . '.' . MobileJkn::NO_RAWAT . ') > 0 THEN 1 ELSE 0 END),0) AS \'Mobile JKN\','
+                        . 'IFNULL(SUM(CASE WHEN (select count(' . RegisteredPatient::NO_RAWAT . ') from ' . MobileJkn::getTableName() . ' where ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_RAWAT . ' = ' . MobileJkn::getTableName() . '.' . MobileJkn::NO_RAWAT . ') = 0 THEN 1 ELSE 0 END),0) AS \'Non Mobile JKN\''
+                );
+            })->when($type == 'status', function ($r) {
+                $r->selectRaw(
+                    'IFNULL(SUM(CASE WHEN ' . RegisteredPatient::STATUS_DAFTAR . ' = \'Lama\' THEN 1 ELSE 0 END),0) AS \'Lama\','
+                        . 'IFNULL(SUM(CASE WHEN ' . RegisteredPatient::STATUS_DAFTAR . ' = \'Baru\' THEN 1 ELSE 0 END),0) AS \'Baru\''
+                );
+            })->when($type == 'genderGroup', function ($r) {
                 $condition = '';
 
                 foreach (Patient::KELOMPOK_JENIS_KELAMIN as $key => $jenisKelamin) {
@@ -320,25 +327,17 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
                         $condition .= ',';
                 }
 
-                $result = $result
-                    ->join(Patient::getTableName(), Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS, '=', RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS)
-                    ->selectRaw($condition)
-                    ->first()
-                    ->toArray();
-                break;
-            case 'typeGroup':
-                $result = $result
-                    ->selectRaw(
-                        'IFNULL(SUM(CASE WHEN ' . Polri::PANGKAT . ' IS NOT NULL THEN 1 ELSE 0 END), 0) as \'polri\','
-                            . 'IFNULL(SUM(CASE WHEN ' . Tni::PANGKAT . ' IS NOT NULL THEN 1 ELSE 0 END), 0) as \'tni\','
-                            . 'IFNULL(SUM(CASE WHEN ' . Tni::PANGKAT . ' IS NULL AND ' . Polri::PANGKAT . ' IS NULL THEN 1 ELSE 0 END), 0) as \'umum\''
-                    )
+                $r->join(Patient::getTableName(), Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS, '=', RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS)
+                    ->selectRaw($condition);
+            })->when($type == 'typeGroup', function ($r) {
+                $r->selectRaw(
+                    'IFNULL(SUM(CASE WHEN ' . Polri::PANGKAT . ' IS NOT NULL THEN 1 ELSE 0 END), 0) as \'polri\','
+                        . 'IFNULL(SUM(CASE WHEN ' . Tni::PANGKAT . ' IS NOT NULL THEN 1 ELSE 0 END), 0) as \'tni\','
+                        . 'IFNULL(SUM(CASE WHEN ' . Tni::PANGKAT . ' IS NULL AND ' . Polri::PANGKAT . ' IS NULL THEN 1 ELSE 0 END), 0) as \'umum\''
+                )
                     ->join(Tni::getTableName(), RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS, '=', Tni::getTableName() . '.' . Tni::NO_REKAM_MEDIS, 'left')
-                    ->join(Polri::getTableName(), RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS, '=', Polri::getTableName() . '.' . Polri::NO_REKAM_MEDIS, 'left')
-                    ->first()
-                    ->toArray();
-                break;
-            case 'statusGroup':
+                    ->join(Polri::getTableName(), RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS, '=', Polri::getTableName() . '.' . Polri::NO_REKAM_MEDIS, 'left');
+            })->when($type == 'serviceStatus', function ($r) {
                 $condition = '';
                 foreach (RegisteredPatient::KELOMPOK_STATUS_PELAYANAN as $idx => $status) {
                     $condition .= 'IFNULL(SUM(CASE WHEN ' . RegisteredPatient::STATUS_PELAYANAN . ' = \'' . $status . '\' THEN 1 ELSE 0 END),0) AS \'' . $status . '\'';
@@ -347,12 +346,8 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
                         $condition .= ',';
                 }
 
-                $result = $result
-                    ->selectRaw($condition)
-                    ->first()
-                    ->toArray();
-                break;
-            case 'advanceStatusGroup':
+                $r->selectRaw($condition);
+            })->when($type == 'advanceStatusGroup', function ($r) {
                 $condition = '';
                 foreach (RegisteredPatient::KELOMPOK_STATUS_LANJUT as $idx => $status) {
                     $condition .= 'IFNULL(SUM(CASE WHEN ' . RegisteredPatient::STATUS_LANJUT . ' = \'' . $status . '\' THEN 1 ELSE 0 END),0) AS \'' . $status . '\'';
@@ -361,12 +356,8 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
                         $condition .= ',';
                 }
 
-                $result = $result
-                    ->selectRaw($condition)
-                    ->first()
-                    ->toArray();
-                break;
-            case 'payTypes':
+                $r->selectRaw($condition);
+            })->when($type == 'payTypes', function ($r) {
                 $condition = '';
                 $personResponsibilityData = PersonResponsibilityRepository::getAll(limit: 0);
                 foreach ($personResponsibilityData as $idx => $item) {
@@ -376,12 +367,8 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
                         $condition .= ',';
                 }
 
-                $result = $result
-                    ->selectRaw($condition)
-                    ->first()
-                    ->toArray();
-                break;
-            case 'polyclinicGroup':
+                $r->selectRaw($condition);
+            })->when($type == 'polyclinicGroup', function ($r) {
                 $condition = '';
                 $polyclinicData = PolyclinicRepository::getAll(limit: 0);
                 foreach ($polyclinicData as $idx => $item) {
@@ -391,12 +378,8 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
                         $condition .= ',';
                 }
 
-                $result = $result
-                    ->selectRaw($condition)
-                    ->first()
-                    ->toArray();
-                break;
-            case 'doctorGroup':
+                $r->selectRaw($condition);
+            })->when($type == 'doctorGroup', function ($r) {
                 $condition = '';
                 $doctorData = DoctorRepository::getAll(limit: 0);
                 foreach ($doctorData as $idx => $item) {
@@ -406,12 +389,8 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
                         $condition .= ',';
                 }
 
-                $result = $result
-                    ->selectRaw($condition)
-                    ->first()
-                    ->toArray();
-                break;
-            case 'tniGroup':
+                $r->selectRaw($condition);
+            })->when($type == 'tniGroup', function ($r) {
                 $condition = '';
                 $tniData = TniGroupRepository::getAll(limit: 0);
                 foreach ($tniData as $idx => $item) {
@@ -421,13 +400,21 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
                         $condition .= ',';
                 }
 
-                $result = $result
-                    ->join(Tni::getTableName(), RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS, '=', Tni::getTableName() . '.' . Tni::NO_REKAM_MEDIS)
-                    ->selectRaw($condition)
-                    ->first()
-                    ->toArray();
-                break;
-            case 'polriGroup':
+                $r->join(Tni::getTableName(), RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS, '=', Tni::getTableName() . '.' . Tni::NO_REKAM_MEDIS)
+                    ->selectRaw($condition);
+            })->when($type == 'tniUnit', function ($r) {
+                $condition = '';
+                $tniData = TniUnitRepository::getAll(limit: 0);
+                foreach ($tniData as $idx => $item) {
+                    $condition .= 'IFNULL(SUM(CASE WHEN ' . Tni::getTableName() . '.' . Tni::SATUAN . ' = \'' . $item['kode_satuan'] . '\' THEN 1 ELSE 0 END),0) AS \'' . $item['nama_satuan'] . '\'';
+
+                    if ($idx < count($tniData) - 1)
+                        $condition .= ',';
+                }
+
+                $r->join(Tni::getTableName(), RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS, '=', Tni::getTableName() . '.' . Tni::NO_REKAM_MEDIS)
+                    ->selectRaw($condition);
+            })->when($type == 'polriGroup', function ($r) {
                 $condition = '';
                 $polriData = PolriGroupRepository::getAll(limit: 0);
                 foreach ($polriData as $idx => $item) {
@@ -437,18 +424,24 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
                         $condition .= ',';
                 }
 
-                $result = $result
-                    ->join(Polri::getTableName(), RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS, '=', Polri::getTableName() . '.' . Polri::NO_REKAM_MEDIS)
-                    ->selectRaw($condition)
-                    ->first()
-                    ->toArray();
-                break;
-            default:
-                $result = $result->selectRaw('IFNULL(count(' . RegisteredPatient::NO_RAWAT . '),0) as count')
-                    ->first()['count'];
-                break;
-        }
+                $r->join(Polri::getTableName(), RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS, '=', Polri::getTableName() . '.' . Polri::NO_REKAM_MEDIS)
+                    ->selectRaw($condition);
+            })->when($type == 'polriUnit', function ($r) {
+                $condition = '';
+                $polriData = PolriUnitRepository::getAll(limit: 0);
+                foreach ($polriData as $idx => $item) {
+                    $condition .= 'IFNULL(SUM(CASE WHEN ' . Polri::getTableName() . '.' . Polri::SATUAN . ' = \'' . $item['kode_satuan'] . '\' THEN 1 ELSE 0 END),0) AS \'' . $item['nama_satuan'] . '\'';
 
-        return $result;
+                    if ($idx < count($polriData) - 1)
+                        $condition .= ',';
+                }
+
+                $r->join(Polri::getTableName(), RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS, '=', Polri::getTableName() . '.' . Polri::NO_REKAM_MEDIS)
+                    ->selectRaw($condition);
+            })->first()
+                ->toArray(),
+            fn($q) => $q->selectRaw('IFNULL(count(' . RegisteredPatient::NO_RAWAT . '),0) as count')
+                ->first()['count']
+        );
     }
 }

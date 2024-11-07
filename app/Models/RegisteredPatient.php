@@ -83,4 +83,9 @@ class RegisteredPatient extends Model
     {
         return $this->hasOne(Polri::class, Polri::NO_REKAM_MEDIS, self::NO_REKAM_MEDIS);
     }
+
+    public function mobileJkn(): HasOne
+    {
+        return $this->hasOne(MobileJkn::class, MobileJkn::NO_RAWAT, self::NO_RAWAT);
+    }
 }

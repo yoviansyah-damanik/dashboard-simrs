@@ -1,5 +1,5 @@
 <div class="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
-    <h2 class="font-bold text-primarydark font-title text-title-md2 dark:text-white">
+    <h2 class="font-bold text-primarydark font-title text-title-md2 dark:text-white tracking-[.25em]">
         {{ $title }}
     </h2>
 
@@ -13,7 +13,7 @@
                     </li>
                 @else
                     <li
-                        class="font-medium text-primary after:content-['/'] after:mx-1 after:text-bodydark2 after:pointer-events-none after:last:content-none">
+                        class="font-medium text-primary-500 after:content-['/'] after:mx-1 after:text-bodydark2 after:pointer-events-none after:last:content-none">
                         {{ $item['title'] }}</li>
                 @endif
             @endforeach

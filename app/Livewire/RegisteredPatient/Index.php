@@ -18,7 +18,8 @@ class Index extends Component
 
     public array $ageCategories;
     public array $genders;
-    public array $statusGroup;
+    public array $serviceStatuses;
+    public array $statuses;
     public array $advanceStatusGroup;
     public array $polyclinics;
     public array $types;
@@ -26,45 +27,29 @@ class Index extends Component
     public array $limits;
     public array $doctors;
     public array $tniGroups;
+    public array $tniUnits;
+    public array $polriGroups;
+    public array $polriUnits;
+    public array $mobileJknStatuses;
 
-    #[Url]
     public string $ageCategory;
-
-    #[Url]
     public string $gender;
-
-    #[Url]
     public string $startDate;
-
-    #[Url]
     public string $endDate;
-
-    #[Url]
+    public string $serviceStatus;
     public string $status;
-
-    #[Url]
     public string $advanceStatus;
-
-    #[Url]
     public string $polyclinic;
-
-    #[Url]
     public string $type;
-
-    #[Url]
     public string $payType;
-
-    #[Url]
     public string $education;
-
-    #[Url]
     public string $limit;
-
-    #[Url]
     public string $doctor;
-
-    #[Url]
     public string $tniGroup;
+    public string $tniUnit;
+    public string $polriGroup;
+    public string $polriUnit;
+    public string $mobileJknStatus;
 
     public function mount()
     {
@@ -74,11 +59,11 @@ class Index extends Component
         $this->genders = FilterHelper::getGenders();
         $this->gender = $this->genders[0]['value'];
 
-        $this->startDate = Carbon::now()->addDays(-90)->format('Y-m-d');
+        $this->startDate = Carbon::now()->addDays(-30)->format('Y-m-d');
         $this->endDate = Carbon::now()->format('Y-m-d');
 
-        $this->statusGroup = FilterHelper::getStatus();
-        $this->status = $this->statusGroup[0]['value'];
+        $this->serviceStatuses = FilterHelper::getServiceStatuses();
+        $this->serviceStatus = $this->serviceStatuses[0]['value'];
 
         $this->advanceStatusGroup = FilterHelper::getAdvanceStatus();
         $this->advanceStatus = $this->advanceStatusGroup[0]['value'];
@@ -98,8 +83,23 @@ class Index extends Component
         $this->tniGroups = FilterHelper::getTniGroups();
         $this->tniGroup = $this->tniGroups[0]['value'];
 
-        $this->limits = [25, 50, 100, 200];
-        $this->limit = 25;
+        $this->tniUnits = FilterHelper::getTniUnits();
+        $this->tniUnit = $this->tniUnits[0]['value'];
+
+        $this->polriGroups = FilterHelper::getPolriGroups();
+        $this->polriGroup = $this->polriGroups[0]['value'];
+
+        $this->polriUnits = FilterHelper::getPolriUnits();
+        $this->polriUnit = $this->polriUnits[0]['value'];
+
+        $this->mobileJknStatuses = FilterHelper::getMobileJknStatuses();
+        $this->mobileJknStatus = $this->mobileJknStatuses[0]['value'];
+
+        $this->statuses = FilterHelper::getStatuses();
+        $this->status = $this->statuses[0]['value'];
+
+        $this->limits =  FilterHelper::getPerPageList();
+        $this->limit = $this->limits[0];
     }
 
     public function render()
@@ -110,6 +110,7 @@ class Index extends Component
             ageCategory: $this->ageCategory,
             gender: $this->gender,
             search: $this->search,
+            serviceStatus: $this->serviceStatus,
             status: $this->status,
             advanceStatus: $this->advanceStatus,
             type: $this->type,
@@ -117,7 +118,9 @@ class Index extends Component
             polyclinic: $this->polyclinic,
             limit: $this->limit,
             doctor: $this->doctor,
-            tniGroup: $this->tniGroup
+            tniGroup: $this->tniGroup,
+            tniUnit: $this->tniUnit,
+            mobileJkn: $this->mobileJknStatus
         );
 
         return view('pages.registered-patient.index', compact('patients'));

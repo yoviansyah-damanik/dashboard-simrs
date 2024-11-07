@@ -1,5 +1,5 @@
 <footer
-    class="relative z-10 px-4 py-2 text-sm text-center text-secondary bg-primary drop-shadow-1 dark:bg-boxdark dark:drop-shadow-none dark:text-white">
+    class="relative z-10 px-4 py-2 text-sm text-center text-secondary-500 bg-primary-500 drop-shadow-1 dark:bg-boxdark dark:drop-shadow-none dark:text-white">
     <div class="flex flex-col items-center justify-between sm:flex-row sm:gap-3">
         <div class="leading-none">
             {{ config('app.name') }} | {{ config('app.hospital_name') }}

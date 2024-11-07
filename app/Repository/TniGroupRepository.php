@@ -143,11 +143,13 @@ class TniGroupRepository implements TniGroupInterface
                 ->toArray();
         }
 
-        return tap($result->paginate($limit), function ($paginatedInstance) {
-            return $paginatedInstance->getCollection()->transform(function ($value) {
-                return (new self)
-                    ->mapping((new self)->reconstruction($value));
-            });
-        });
+        return tap(
+            $result->paginate($limit),
+            fn($paginatedInstance)  =>
+            $paginatedInstance->getCollection()->transform(
+                fn($value) => (new self)
+                    ->mapping((new self)->reconstruction($value))
+            )
+        );
     }
 }

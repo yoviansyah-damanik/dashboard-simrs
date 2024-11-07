@@ -23,4 +23,9 @@ class Tni extends Model
     {
         return $this->hasOne(TniGroup::class, TniGroup::KODE_GOLONGAN, self::GOLONGAN);
     }
+
+    public function satuan(): HasOne
+    {
+        return $this->hasOne(TniUnit::class, TniUnit::KODE_SATUAN, self::SATUAN);
+    }
 }

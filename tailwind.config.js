@@ -12,7 +12,7 @@ export default {
     ],
     theme: {
         fontFamily: {
-            title: ['Joti One', 'sans-serif'],
+            title: ['New Amsterdam', 'sans-serif'],
             body: ['Exo 2', 'sans-serif'],
         },
         screens: {
@@ -32,9 +32,31 @@ export default {
                 bodydark: '#aec0ae',
                 bodydark1: '#e0eede',
                 bodydark2: '#bdd1bc',
-                primary: '#00923f',
+                // primary: '#00923f',
+                primary: {
+                    100: "#cce9d9",
+                    200: "#99d3b2",
+                    300: "#66be8c",
+                    400: "#33a865",
+                    500: "#00923f",
+                    600: "#007532",
+                    700: "#005826",
+                    800: "#003a19",
+                    900: "#001d0d"
+                },
                 primarydark: '#0a6e3e',
-                secondary: '#fff700',
+                // secondary: '#fff700',
+                secondary: {
+                    100: "#fffdcc",
+                    200: "#fffc99",
+                    300: "#fffa66",
+                    400: "#fff933",
+                    500: "#fff700",
+                    600: "#ccc600",
+                    700: "#999400",
+                    800: "#666300",
+                    900: "#333100"
+                },
                 stroke: '#E2E8F0',
                 // gray: '#EFF4FB',
                 graydark: '#333A48',

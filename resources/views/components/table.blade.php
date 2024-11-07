@@ -1,4 +1,4 @@
-<div x-data='{ id: $id("table") }' class="w-full">
+<div x-data='{ id: $id("table") }' class="w-full overflow-auto">
     <div class="{{ $baseClass }}">
         <table :id="id" class="{{ $tableClass }}">
             @if ($slot->isEmpty())

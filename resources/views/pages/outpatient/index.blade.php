@@ -4,10 +4,12 @@
     <div class="flex flex-col gap-3 lg:flex-row">
         <x-form.input type="search" block class="flex-1" wire:model.live.debounce.750ms="search"
             placeholder="Cari berdasarkan Nomor RM, Nama Pasien, atau NIK" />
-        <x-form.input block type="date" wire:model.live='startDate' />
-        <x-form.input block type="date" wire:model.live='endDate' />
+        <div class="flex flex-1 gap-3">
+            <x-form.input block type="date" wire:model.live='startDate' :max="date('Y-m-d')" />
+            <x-form.input block type="date" wire:model.live='endDate' :max="date('Y-m-d')" />
+        </div>
     </div>
-    <div class="grid lg:grid-flow-col grid-flow-row gap-3 grid-rows-2">
+    <div class="grid grid-flow-col grid-rows-5 gap-3 sm:grid-rows-3 lg:grid-rows-2">
         <x-form.select label="Perpage" block :items="$limits" wire:model.live='limit' />
         <x-form.select label="Status Pelayanan" block :items="$statusGroup" wire:model.live='status' />
         <x-form.select label="Jenis Kelamin" block :items="$genders" wire:model.live='gender' />

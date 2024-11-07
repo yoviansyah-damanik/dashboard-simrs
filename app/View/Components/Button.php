@@ -56,13 +56,14 @@ class Button extends Component
     {
         $colorVariants = [
             'primary' => 'focus:outline-none text-white bg-primarydark hover:bg-primarydark/90 focus:ring-4 focus:ring-primarydark dark:focus:ring-primarydark',
-            'secondary' => 'focus:outline-none text-black bg-secondary hover:bg-secondary/90 focus:ring-4 focus:ring-secondary dark:focus:ring-secondary',
+            'secondary' => 'focus:outline-none text-black bg-secondary-500 hover:bg-secondary-500/90 focus:ring-4 focus:ring-secondary-500 dark:focus:ring-secondary-500',
             'green' => 'focus:outline-none text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:ring-green-300 dark:focus:ring-green-900',
             'red' => 'focus:outline-none text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:ring-red-300 dark:focus:ring-red-900',
             'cyan' => 'focus:outline-none text-white bg-cyan-500 hover:bg-cyan-600 focus:ring-4 focus:ring-cyan-300 dark:focus:ring-cyan-900',
             'yellow' => 'focus:outline-none text-white bg-yellow-500 hover:bg-yellow-600 focus:ring-4 focus:ring-yellow-300 dark:focus:ring-yellow-900',
-            'default' => 'text-gray-900 focus:outline-none bg-white border border-gray-200 hover:bg-gray-100 hover:text-primary focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-600',
-            'transparent' => 'bg-transparent dark:text-white dark:hover:text-primary outline-none border-none',
+            'default' => 'text-gray-900 focus:outline-none bg-white border border-gray-200 hover:bg-gray-100 hover:text-primary-500 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-600',
+            'transparent' => 'bg-transparent dark:text-white dark:hover:text-primary-500 outline-none border-none',
+            'primary-transparent' => 'bg-primary-500-50 hover:text-primary-500 hover:bg-primary-500-100 dark:text-gray-500 dark:hover:text-primary-500 outline-none border-none',
             'inactive' => 'bg-gray-100 border border-gray-200'
         ];
 

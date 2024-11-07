@@ -1,4 +1,4 @@
-<div class="relative flex items-center justify-between p-6 text-white bg-primary dark:bg-slate-900">
+<div class="relative flex items-center justify-between p-6 text-white bg-primary-500 dark:bg-slate-900">
     <div class="flex-1 font-semibold">
         {{ $title }}
     </div>

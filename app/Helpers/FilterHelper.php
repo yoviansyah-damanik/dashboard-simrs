@@ -6,13 +6,80 @@ use App\Models\Patient;
 use App\Models\RegisteredPatient;
 use App\Repository\RoomRepository;
 use App\Repository\WardRepository;
+use Spatie\Permission\Models\Role;
 use App\Repository\DoctorRepository;
+use App\Repository\TniUnitRepository;
 use App\Repository\TniGroupRepository;
+use App\Repository\PolriUnitRepository;
+use App\Repository\PolriGroupRepository;
 use App\Repository\PolyclinicRepository;
 use App\Repository\PersonResponsibilityRepository;
 
 class FilterHelper
 {
+    public static function getPerPageList()
+    {
+        return [25, 50, 100];
+    }
+
+    public static function getMobileJknStatuses()
+    {
+        return [
+            [
+                'title' => 'Semua',
+                'value' => 'semua'
+            ],
+            [
+                'title' => 'Mobile JKN',
+                'value' => 'mobileJkn'
+            ],
+            [
+                'title' => 'Non Mobile JKN',
+                'value' => 'nonMobileJkn'
+            ]
+        ];
+    }
+
+    public static function getInpatientStatuses()
+    {
+        return [
+            [
+                'title' => 'Semua',
+                'value' => 'semua'
+            ],
+            [
+                'title' => 'Masuk',
+                'value' => 'masuk'
+            ],
+            [
+                'title' => 'Pulang',
+                'value' => 'pulang'
+            ],
+            [
+                'title' => 'Masih Perawatan',
+                'value' => 'masih_perawatan'
+            ]
+        ];
+    }
+
+    public static function getStatuses()
+    {
+        return [
+            [
+                'title' => 'Semua',
+                'value' => 'semua'
+            ],
+            [
+                'title' => 'Lama',
+                'value' => 'Lama'
+            ],
+            [
+                'title' => 'Baru',
+                'value' => 'Baru'
+            ]
+        ];
+    }
+
     public static function getRooms()
     {
         return [
@@ -47,6 +114,57 @@ class FilterHelper
         ];
     }
 
+    public static function getTniUnits()
+    {
+        return [
+            [
+                'title' => 'Semua',
+                'value' => 'semua'
+            ],
+            ...collect(TniUnitRepository::getAll(limit: 0, withRelations: false))
+                ->map(function ($type) {
+                    return [
+                        'title' => $type['nama_satuan'],
+                        'value' => $type['kode_satuan'],
+                    ];
+                })->toArray()
+        ];
+    }
+
+    public static function getPolriGroups()
+    {
+        return [
+            [
+                'title' => 'Semua',
+                'value' => 'semua'
+            ],
+            ...collect(PolriGroupRepository::getAll(limit: 0, withRelations: false))
+                ->map(function ($type) {
+                    return [
+                        'title' => $type['nama_golongan'],
+                        'value' => $type['kode_golongan'],
+                    ];
+                })->toArray()
+        ];
+    }
+
+    public static function getPolriUnits()
+    {
+        return [
+            [
+                'title' => 'Semua',
+                'value' => 'semua'
+            ],
+            ...collect(PolriUnitRepository::getAll(limit: 0, withRelations: false))
+                ->map(function ($type) {
+                    return [
+                        'title' => $type['nama_satuan'],
+                        'value' => $type['kode_satuan'],
+                    ];
+                })->toArray()
+        ];
+    }
+
     public static function getWards()
     {
         return [
@@ -64,7 +182,7 @@ class FilterHelper
         ];
     }
 
-    public static function getStatus()
+    public static function getServiceStatuses()
     {
         return [
             [
@@ -197,6 +315,22 @@ class FilterHelper
                         'value' => $type['kode_dokter'],
                     ];
                 })->toArray()
+        ];
+    }
+
+    public static function getRoles()
+    {
+        return [
+            [
+                'title' => 'Semua',
+                'value' => 'semua'
+            ],
+            ...Role::get()
+                ->map(fn($item) => [
+                    'title' => $item->name,
+                    'value' => $item->name,
+                ])
+                ->toArray()
         ];
     }
 }

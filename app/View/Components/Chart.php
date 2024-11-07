@@ -16,8 +16,8 @@ class Chart extends Component
         public array $labels,
         public array $datasets,
         public string $chartType = 'bar',
-    ) {
-    }
+        public string $barType = 'x',
+    ) {}
 
     /**
      * Get the view / contents that represent the component.

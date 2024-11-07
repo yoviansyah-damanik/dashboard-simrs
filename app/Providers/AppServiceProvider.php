@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Helpers\ConfigurationHelper;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -20,6 +21,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Vite::macro('image', fn (string $asset) => $this->asset("resources/images/{$asset}"));
+        // \URL::forceScheme('https');
+        $helperInit = [
+            new ConfigurationHelper(),
+        ];
+
+        Vite::macro('image', fn(string $asset) => $this->asset("resources/images/{$asset}"));
     }
 }

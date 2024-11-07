@@ -3,24 +3,22 @@
 namespace App\Repository;
 
 use App\Models\Ward;
-use App\Helpers\GeneralHelper;
+use App\Helpers\ConfigurationHelper;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-interface WardInterface
-{
-}
+interface WardInterface {}
 
 class WardRepository implements WardInterface
 {
     const LIMIT_DEFAULT = 25;
 
-    private static $withRelations = true;
+    private $withRelations = true;
 
     private bool $withInactiveWard;
 
     public function __construct()
     {
-        $this->withInactiveWard = GeneralHelper::getWithInactiveWardStatus();
+        $this->withInactiveWard = ConfigurationHelper::get('WITH_INACTIVE_WARD');
     }
 
     /**
@@ -41,8 +39,7 @@ class WardRepository implements WardInterface
      */
     public static function getRelations(bool $withRelations = true): array
     {
-        if (is_bool($withRelations))
-            static::$withRelations = $withRelations;
+        if (is_bool($withRelations)) (new static)->setWithRelation($withRelations);
         return (new static)->relations();
     }
 
@@ -60,13 +57,13 @@ class WardRepository implements WardInterface
 
         $includesRelation = [];
 
-        if (static::$withRelations) {
+        if ($this->withRelations) {
             $result = collect([
                 'bangsal' => collect($ward)
                     ->except($exceptWardData)
                     ->toArray(),
                 ...collect((new static)->relations())
-                    ->filter(fn ($item, $key) => in_array($key, $includesRelation))
+                    ->filter(fn($item, $key) => in_array($key, $includesRelation))
                     ->map(
                         function ($item, $key) use ($ward) {
                             if (!empty($item['column_added']) && is_array($item['column_added']))
@@ -122,6 +119,11 @@ class WardRepository implements WardInterface
             ->mapping((new self)->reconstruction($ward));
     }
 
+    public function setWithRelation(bool $status)
+    {
+        $this->withRelations = $status;
+    }
+
     /**
      * Fungsi untuk memanggil seluruh data.
      * @param ?int $limit Batasan data yang ditampilkan
@@ -137,15 +139,14 @@ class WardRepository implements WardInterface
         ?string $status = null,
         ?bool $withPagination = false,
     ): array | LengthAwarePaginator {
-        if (is_bool($withRelations))
-            static::$withRelations = $withRelations;
+        if (is_bool($withRelations)) (new static)->setWithRelation($withRelations);
 
         $result = Ward::whereAny([Ward::NAMA_BANGSAL], 'like', $search . '%');
 
         if (!is_null($status) && in_array($status, Ward::KELOMPOK_STATUS)) {
             $result = $result->where(Ward::STATUS, $status);
         } else {
-            if ((new static)->withInactiveWard === false) {
+            if ((new static)->withInactiveWard == false) {
                 $result = $result->where(Ward::STATUS, 1);
             }
         }
@@ -155,7 +156,7 @@ class WardRepository implements WardInterface
                 $result = $result->limit($limit);
 
             return $result->get()
-                ->map(fn ($item) => (new self)->mapping((new self)->reconstruction($item)))
+                ->map(fn($item) => (new self)->mapping((new self)->reconstruction($item)))
                 ->toArray();
         }
 

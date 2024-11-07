@@ -24,21 +24,21 @@ $watch('sidebarToggle', value => localStorage.setItem('sidebarToggle', JSON.stri
     :class="{
         'dark text-bodydark bg-boxdark-2': darkMode ===
             true,
-        'after:overflow-hidden after:inset-0 after:z-[98] after:absolute after:bg-primary/10 after:backdrop-blur-sm': sidebarToggle ===
+        'after:overflow-hidden after:inset-0 after:z-[98] after:absolute after:bg-primary-500/10 after:backdrop-blur-sm': sidebarToggle ===
             true
     }">
-    <x-preloader />
+    {{-- <x-preloader /> --}}
 
-    <div class="flex h-screen mx-auto overflow-hidden">
-        <x-sidebar />
-        <div class="relative flex flex-col flex-1">
-            <x-header />
-            <main class="flex-1 w-full px-6 overflow-x-hidden overflow-y-auto py-9">
-                {{ $slot }}
-            </main>
-            <x-footer />
-        </div>
+    <x-sidebar />
+
+    <div class="relative flex flex-col flex-1 w-screen h-screen">
+        <x-header />
+        <main class="flex-1 px-6 overflow-y-auto py-9">
+            {{ $slot }}
+        </main>
+        <x-footer />
     </div>
+
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <x-livewire-alert::scripts />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

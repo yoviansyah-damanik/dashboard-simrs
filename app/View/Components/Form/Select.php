@@ -28,7 +28,7 @@ class Select extends Component
         public bool $loading = false,
     ) {
         $this->baseClass = join(' ', [
-            'relative appearance-none border outline-none dark:border-gray-700 disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none dark:bg-slate-800 dark:text-white',
+            'relative cursor-pointer appearance-none border outline-none dark:border-gray-700 disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none dark:bg-slate-800 dark:text-white',
             $block ? 'block w-full' : 'min-w-16',
             $error ? 'invalid:border-red-500 invalid:text-red-600 focus:invalid:border-red-500 focus:invalid:ring-red-500 border-red-500' : '',
             $this->colorVariant($color),
@@ -68,7 +68,7 @@ class Select extends Component
     {
         $colorVariants = [
             'primary' => 'bg-white focus:border-ocean-blue-700 dark:focus:border-ocean-blue-500',
-            'secondary' => 'bg-white focus:border-primary-700 dark:focus:border-primary-1000',
+            'secondary' => 'bg-white focus:border-primary-500-700 dark:focus:border-primary-500-1000',
             'red' => 'bg-white focus:border-red-700 dark:focus:border-red-500',
         ];
 

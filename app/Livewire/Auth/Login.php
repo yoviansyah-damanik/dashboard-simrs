@@ -2,7 +2,6 @@
 
 namespace App\Livewire\Auth;
 
-use Carbon\Carbon;
 use App\Models\User;
 use Livewire\Component;
 use Jenssegers\Agent\Agent;
@@ -56,6 +55,9 @@ class Login extends Component
                     }
 
                     Auth::login($user, $this->rememberMe === true);
+                    $user->last_login_at = now();
+                    $user->save();
+
                     $user->histories()->create();
                     return $this->redirectIntended(route('home'), false);
                 }

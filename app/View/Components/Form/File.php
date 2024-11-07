@@ -68,7 +68,7 @@ class File extends Component
     {
         $colorVariants = [
             'primary' => 'bg-white focus:border-ocean-blue-700 dark:focus:border-ocean-blue-500',
-            'secondary' => 'bg-white focus:border-primary-700 dark:focus:border-primary-1000',
+            'secondary' => 'bg-white focus:border-primary-500-700 dark:focus:border-primary-500-1000',
             'red' => 'bg-white focus:border-red-700 dark:focus:border-red-500',
         ];
 

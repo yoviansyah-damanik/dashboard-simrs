@@ -12,6 +12,8 @@ use App\Helpers\GeneralHelper;
 use App\Models\Inpatient;
 use App\Models\RegisteredPatient;
 use App\Models\PersonResponsibility;
+use App\Models\Room;
+use App\Models\Ward;
 use App\Repository\PolyclinicRepository;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -53,10 +55,19 @@ class InpatientsRepository implements InpatientsInterface
                 'table_name' => Inpatient::getTableName(),
                 'column_added' => null
             ],
+            'ranap.kamar' => [
+                'table_name' => Room::getTableName(),
+                'column_added' => null
+            ],
+            'ranap.kamar.bangsal' => [
+                'table_name' => Ward::getTableName(),
+                'column_added' => null
+            ],
             'jenis_bayar' => [
                 'table_name' => PersonResponsibility::getTableName(),
                 'column_added' => ['png_jawab', 'nama_perusahaan', 'alamat_asuransi']
             ],
+
         ];
     }
 
@@ -78,7 +89,6 @@ class InpatientsRepository implements InpatientsInterface
         $exceptInpatientData = [];
 
         $includesRelation = ['jenis_bayar'];
-
         $result = collect([
             'pendaftaran' => collect($patient->withoutRelations())->except($exceptRegistrationData)->toArray(),
             'pasien' => collect(PatientRepository::getMapping($patient->pasien))->except($exceptPatientData)->toArray(),
@@ -119,7 +129,7 @@ class InpatientsRepository implements InpatientsInterface
                 'no_rawat' => $data['pendaftaran'][RegisteredPatient::NO_RAWAT],
                 'tgl_pendaftaran' => DateHelper::dateFormat($data['pendaftaran'][RegisteredPatient::TGL_REGISTRASI]),
                 'jam_pendaftaran' => $data['pendaftaran'][RegisteredPatient::JAM_REGISTRASI],
-                'waktu_pendaftaran' => DateHelper::dateFormat($data['pendaftaran'][RegisteredPatient::TGL_REGISTRASI], isTranslated: true, translatedFormat: 'd F Y') . ' ' . $data['pendaftaran'][RegisteredPatient::JAM_REGISTRASI],
+                'waktu_pendaftaran' => DateHelper::dateFormat($data['pendaftaran'][RegisteredPatient::TGL_REGISTRASI], isTranslated: true, translatedFormat: 'd M Y') . ' ' . $data['pendaftaran'][RegisteredPatient::JAM_REGISTRASI],
                 'biaya_pendaftaran' => $data['pendaftaran'][RegisteredPatient::BIAYA_REGISTRASI],
                 'status_pelayanan' => $data['pendaftaran'][RegisteredPatient::STATUS_PELAYANAN], // Sudah | Belum | Batal | Dirujuk | Berkas Diterima | Dirawat | Meninggal | Pulang Paksa
                 'status_daftar' => $data['pendaftaran'][RegisteredPatient::STATUS_DAFTAR], // Lama | Baru
@@ -158,130 +168,87 @@ class InpatientsRepository implements InpatientsInterface
         ?string $ward = null,
         ?string $doctor = null,
         ?string $tniGroup = null,
-        ?string $polriGroup = null
+        ?string $polriGroup = null,
+        ?string $inpatientStatus = null
     ): LengthAwarePaginator | array {
-        $result = RegisteredPatient::with(
-            [
-                ...collect((new static)->relations())->keys()->toArray(),
-                ...collect(PatientRepository::getRelations())
-                    ->map(function ($item, $key) {
-                        return 'pasien.' . $key;
-                    })
-                    ->values()
-                    ->toArray(),
-                ...collect(DoctorRepository::getRelations())
-                    ->map(function ($item, $key) {
-                        return 'dokter.' . $key;
-                    })
-                    ->values()
-                    ->toArray(),
-                ...collect(PolyclinicRepository::getRelations())
-                    ->map(function ($item, $key) {
-                        return 'poliklinik.' . $key;
-                    })
-                    ->values()
-                    ->toArray(),
-                ...collect(InpatientRepository::getRelations())
-                    ->map(function ($item, $key) {
-                        return 'ranap.' . $key;
-                    })
-                    ->values()
-                    ->toArray(),
-                ...collect(RoomRepository::getRelations())
-                    ->map(function ($item, $key) {
-                        return 'ranap.kamar.' . $key;
-                    })
-                    ->values()
-                    ->toArray(),
-            ]
-        )
-            ->whereHas('pasien', function ($q) use ($search, $type, $gender) {
-                if (in_array($gender, collect(Patient::KELOMPOK_JENIS_KELAMIN)->keys()->toArray()))
-                    $q->where(Patient::JENIS_KELAMIN, $gender);
+        $withs =   [
+            ...collect((new static)->relations())->keys()->toArray(),
+            ...collect(PatientRepository::getRelations())
+                ->map(function ($item, $key) {
+                    return 'pasien.' . $key;
+                })
+                ->values()
+                ->toArray(),
+            ...collect(DoctorRepository::getRelations())
+                ->map(function ($item, $key) {
+                    return 'dokter.' . $key;
+                })
+                ->values()
+                ->toArray(),
+            ...collect(PolyclinicRepository::getRelations())
+                ->map(function ($item, $key) {
+                    return 'poliklinik.' . $key;
+                })
+                ->values()
+                ->toArray(),
+        ];
 
-                if (in_array($type, collect(Patient::KELOMPOK_PASIEN)->keys()->toArray())) {
-                    // Sesuaikan dengan KELOMPOK PASIEN
-                    if ($type == 'umum')
-                        $q->doesntHave('polri')
-                            ->doesntHave('tni');
-                    if ($type == 'polri')
-                        $q->has('polri');
-                    if ($type == 'tni')
-                        $q->has('tni');
-                }
-                $q->whereAny([RegisteredPatient::NO_REKAM_MEDIS, Patient::NAMA_PASIEN, Patient::NIK, Patient::NOKA], 'like', $search . "%");
-            });
+        $result = RegisteredPatient::with($withs)
+            ->whereHas('ranap', function ($q) use ($room, $startDate, $endDate, $inpatientStatus) {
+                $q->when(
+                    !is_null($room) && $room != 'semua',
+                    fn($r) => $r->where(Inpatient::KODE_KAMAR, $room)
+                )
+                    ->when(
+                        in_array($inpatientStatus, ['masuk', 'pulang', 'semua']),
+                        fn($q) => $q->where(Inpatient::TANGGAL_MASUK, '>=', $startDate)
+                            ->where(Inpatient::TANGGAL_MASUK, '<=', $endDate),
+                        fn($q) => $q->whereNull(Inpatient::TANGGAL_KELUAR)
+                            ->orWhere(Inpatient::TANGGAL_KELUAR, '')
+                    );
+            })
+            ->whereHas('pasien', function ($q) use ($search, $type, $gender, $ageCategory) {
+                $q->when(
+                    $ageCategory && $ageCategory != 'semua',
+                    fn($r) => $r
+                        ->when($ageCategory == 'balita', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) < 5'))
+                        ->when($ageCategory == 'anak', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 5 and 11'))
+                        ->when($ageCategory == 'remaja', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 12 and 25'))
+                        ->when($ageCategory == 'dewasa', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 26 and 45'))
+                        ->when($ageCategory == 'lansia', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 46 and 65'))
+                        ->when($ageCategory == 'lainnya', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) > 65'))
+                )
 
-        switch ($ageCategory) {
-            case 'balita':
-                $result = $result->whereRaw('((' . RegisteredPatient::UMUR_MENDAFTAR . ' < 5 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\') or ' . RegisteredPatient::STATUS_UMUR . ' = \'Bl\')');
-                break;
-            case 'anak':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 5 and 11 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            case 'remaja':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 12 and 25 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            case 'dewasa':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 26 and 45 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            case 'lansia':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 46 and 65 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            case 'lainnya':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' > 65 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            default:
-                break;
-        }
-
-        if (!is_null($doctor) && $doctor != 'semua') {
-            $result = $result->where(RegisteredPatient::KODE_DOKTER, $doctor);
-        }
-
-        if (in_array($status, RegisteredPatient::KELOMPOK_STATUS_PELAYANAN)) {
-            $result = $result->where(RegisteredPatient::STATUS_PELAYANAN, $status);
-        }
-
-        if (!is_null($payType) && $payType != 'semua') {
-            $result = $result->where(RegisteredPatient::KODE_PENANGGUNGJAWAB, $payType);
-        }
-
-        if (!is_null($polyclinic) && $polyclinic != 'semua') {
-            $result = $result->where(RegisteredPatient::KODE_POLIKLINIK, $polyclinic);
-        }
-
-        if (!is_null($room) && $room != 'semua') {
-            $result = $result->whereHas('ranap', fn($q) => $q->where(Inpatient::KODE_KAMAR, $room));
-        }
-
-        if (!is_null($tniGroup) && $tniGroup != 'semua') {
-            $result = $result->whereHas('tni', fn($q) => $q->where(Tni::GOLONGAN, $tniGroup));
-        };
-
-        if (!is_null($polriGroup) && $polriGroup != 'semua') {
-            $result = $result->whereHas('polri', fn($q) => $q->where(Polri::GOLONGAN, $polriGroup));
-        };
-
-        $result = $result->when($startDate, function (Builder $query, string $startDate) {
-            $query->where(RegisteredPatient::TGL_REGISTRASI, '>=', $startDate);
-        });
-
-        $result = $result->when($endDate, function (Builder $query, string $endDate) {
-            $query->where(RegisteredPatient::TGL_REGISTRASI, '<=', $endDate);
-        });
-
-        $result = $result
+                    ->when(in_array($gender, collect(Patient::KELOMPOK_JENIS_KELAMIN)->keys()->toArray()), fn($r) => $r->where(Patient::JENIS_KELAMIN, $gender))
+                    ->when(
+                        in_array($type, collect(Patient::KELOMPOK_PASIEN)->keys()->toArray()),
+                        fn($r) =>
+                        // Sesuaikan dengan KELOMPOK PASIEN
+                        $r->when($type == 'umum', fn($s) => $s->doesntHave('polri')
+                            ->doesntHave('tni'))
+                            ->when($type == 'polri', fn($s) => $s->has('polri'))
+                            ->when($type == 'tni', fn($s) => $s->has('tni'))
+                    )
+                    ->whereAny([RegisteredPatient::NO_REKAM_MEDIS, Patient::NAMA_PASIEN], 'like', $search . "%");
+            })
+            ->when($doctor && $doctor != 'semua', fn($q) => $q->where(RegisteredPatient::KODE_DOKTER, $doctor))
+            ->when(in_array($status, RegisteredPatient::KELOMPOK_STATUS_PELAYANAN), fn($q) => $q->where(RegisteredPatient::STATUS_PELAYANAN, $status))
+            ->when($payType && $payType != 'semua', fn($q) => $q->where(RegisteredPatient::KODE_PENANGGUNGJAWAB, $payType))
+            ->when($polyclinic && $polyclinic != 'semua', fn($q) => $q->where(RegisteredPatient::KODE_POLIKLINIK, $polyclinic))
+            ->when($tniGroup && $tniGroup != 'semua', fn($q) => $q->whereHas('tni', fn($q) => $q->where(Tni::GOLONGAN, $tniGroup)))
+            ->when($polriGroup && $polriGroup != 'semua', fn($q) => $q->whereHas('polri', fn($q) => $q->where(Polri::GOLONGAN, $polriGroup)))
             ->where(RegisteredPatient::STATUS_LANJUT, RegisteredPatient::STATUS_RANAP)
             ->orderBy(RegisteredPatient::TGL_REGISTRASI, 'desc')
             ->orderBy(RegisteredPatient::JAM_REGISTRASI, 'desc')
             ->paginate($limit);
 
-        return tap($result, function ($paginatedInstance) {
-            return $paginatedInstance->getCollection()->transform(function ($value) {
-                return (new self)
-                    ->mapping((new self)->reconstruction($value));
-            });
-        });
+        return tap(
+            $result,
+            fn($paginatedInstance)
+            => $paginatedInstance->getCollection()->transform(
+                fn($value) => (new self)
+                    ->mapping((new self)->reconstruction($value))
+            )
+        );
     }
 }

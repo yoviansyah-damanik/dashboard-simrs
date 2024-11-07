@@ -2,14 +2,16 @@
     id: $id('{{ $attributes->whereStartsWith('wire:model')->first() }}'),
     type: '{{ $type }}',
     @if ($type == 'password') changeType() { this.type = this.type == 'password' ? 'text' : 'password' } @endif
-}" {{ $attributes->merge(['class']) }}>
+}" {{ $attributes->merge(['class' => 'd-inline w-full']) }}>
     @if ($label)
         <label :for="id" class="{{ $labelClass }}">{{ $label }}</label>
     @endif
     <div class="relative inline">
         <input :id="id" class="{{ $baseClass }}" {{ $attributes->whereStartsWith('wire:model') }}
             {{ $attributes->merge(['type' => $type, 'placeholder' => $placeholder]) }} :type="type"
-            placeholder="" wire:loading.attr='disabled' @required($required) @disabled($loading) />
+            placeholder="" wire:loading.attr='disabled' @required($required) @disabled($loading)
+            @if ($min) min="{{ $min }}" @endif
+            @if ($max) max="{{ $max }}" @endif />
         @if ($type == 'password')
             <div class="absolute right-0 -translate-y-1/2 top-1/2">
                 <x-button color="transparent" type="button"

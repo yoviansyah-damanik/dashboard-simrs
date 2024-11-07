@@ -7,7 +7,6 @@ use Livewire\Component;
 use Livewire\Attributes\Url;
 use Livewire\WithPagination;
 use App\Helpers\FilterHelper;
-use App\Models\Doctor;
 use App\Repository\OutpatientsRepository;
 
 class Index extends Component
@@ -73,10 +72,10 @@ class Index extends Component
 
         $this->gender = $this->genders[0]['value'];
 
-        $this->startDate = Carbon::now()->addDays(-90)->format('Y-m-d');
+        $this->startDate = Carbon::now()->format('Y-m-d');
         $this->endDate = Carbon::now()->format('Y-m-d');
 
-        $this->statusGroup = FilterHelper::getStatus();
+        $this->statusGroup = FilterHelper::getStatuses();
 
         $this->status = $this->statusGroup[0]['value'];
 
@@ -98,8 +97,8 @@ class Index extends Component
         $this->tniGroups = FilterHelper::getTniGroups();
         $this->tniGroup = $this->tniGroups[0]['value'];
 
-        $this->limits = [25, 50, 100, 200];
-        $this->limit = 25;
+        $this->limits =  FilterHelper::getPerPageList();
+        $this->limit = $this->limits[0];
     }
 
     public function render()

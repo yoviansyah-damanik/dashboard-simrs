@@ -11,7 +11,8 @@ use App\Repository\RegisteredPatientRepository;
 
 class Recap extends Component
 {
-    public array $statusGroup;
+    public array $statuses;
+    public array $serviceStatuses;
     public array $advanceStatusGroup;
     public array $typeGroup;
     public array $ageGroup;
@@ -21,13 +22,20 @@ class Recap extends Component
     public array $filterGroup;
     public array $modeGroup;
     public array $doctors;
-    public array $tniGroups;
-    public array $polriGroups;
+    public array $tniGroup;
+    public array $tniUnit;
+    public array $polriUnit;
+    public array $polriGroup;
+    public array $mobileJknGroup;
 
     public int $todaysRecap;
     public int $recapOfTheMonth;
     public int $recapOfTheYear;
     public int $overallRecap;
+    public int $customRecap;
+
+    public string $startDate;
+    public string $endDate;
 
     #[Url]
     public string $filter;
@@ -41,6 +49,9 @@ class Recap extends Component
 
     public function mount()
     {
+        $this->startDate = now()->format('Y-m-d');
+        $this->endDate = now()->format('Y-m-d');
+
         $this->today = [
             'start' => Carbon::now()->startOfDay(),
             'end' => Carbon::now()->endOfDay(),
@@ -71,9 +82,11 @@ class Recap extends Component
             endDate: $this->thisYear['end']
         );
 
+        $this->updateCustom();
+
         $this->overallRecap = RegisteredPatientRepository::getRecap();
 
-        $this->filterGroup = ['hari_ini', 'bulan_ini', 'tahun_ini', 'keseluruhan'];
+        $this->filterGroup = ['hari_ini', 'bulan_ini', 'tahun_ini', 'keseluruhan', 'custom'];
         $this->filter = $this->filterGroup[0];
 
         $this->modeGroup = ['dalam_angka', 'grafik'];
@@ -108,16 +121,38 @@ class Recap extends Component
             $endDate = $this->thisYear['end'];
         }
 
-        $statusGroupData = RegisteredPatientRepository::getRecap(
+        if ($this->filter == 'custom') {
+            $startDate = $this->startDate;
+            $endDate = $this->endDate;
+
+            $this->updateCustom();
+        }
+
+        $serviceStatusData = RegisteredPatientRepository::getRecap(
             startDate: $startDate,
             endDate: $endDate,
-            type: 'statusGroup'
+            type: 'serviceStatus'
         );
-        $this->statusGroup = collect(RegisteredPatient::KELOMPOK_STATUS_PELAYANAN)
-            ->map(function ($status) use ($statusGroupData) {
+
+        $this->serviceStatuses = collect(RegisteredPatient::KELOMPOK_STATUS_PELAYANAN)
+            ->map(function ($serviceStatus) use ($serviceStatusData) {
+                return [
+                    'title' => $serviceStatus,
+                    'value' => $serviceStatusData[$serviceStatus],
+                ];
+            })->toArray();
+
+        $statusData = RegisteredPatientRepository::getRecap(
+            startDate: $startDate,
+            endDate: $endDate,
+            type: 'status'
+        );
+
+        $this->statuses = collect(RegisteredPatient::KELOMPOK_STATUS)
+            ->map(function ($status) use ($statusData) {
                 return [
                     'title' => $status,
-                    'value' => $statusGroupData[$status],
+                    'value' => $statusData[$status],
                 ];
             })->toArray();
 
@@ -193,7 +228,6 @@ class Recap extends Component
             endDate: $endDate,
             type: 'genderGroup'
         );
-
         $this->genders = collect(Patient::KELOMPOK_JENIS_KELAMIN)
             ->map(function ($gender, $key) use ($genderGroupData) {
                 return [
@@ -221,7 +255,7 @@ class Recap extends Component
             endDate: $endDate,
             type: 'tniGroup'
         );
-        $this->tniGroups =
+        $this->tniGroup =
             collect($tniGroupData)
             ->map(function ($group, $key) {
                 return [
@@ -230,13 +264,55 @@ class Recap extends Component
                 ];
             })->toArray();
 
+        $tniUnitData = RegisteredPatientRepository::getRecap(
+            startDate: $startDate,
+            endDate: $endDate,
+            type: 'tniUnit'
+        );
+        $this->tniUnit =
+            collect($tniUnitData)
+            ->map(function ($unit, $key) {
+                return [
+                    'title' => $key,
+                    'value' => $unit,
+                ];
+            })->toArray();
+
         $polriGroupData = RegisteredPatientRepository::getRecap(
             startDate: $startDate,
             endDate: $endDate,
             type: 'polriGroup'
         );
-        $this->polriGroups =
+        $this->polriGroup =
             collect($polriGroupData)
+            ->map(function ($group, $key) {
+                return [
+                    'title' => $key,
+                    'value' => $group,
+                ];
+            })->toArray();
+
+        $polriUnitData = RegisteredPatientRepository::getRecap(
+            startDate: $startDate,
+            endDate: $endDate,
+            type: 'polriUnit'
+        );
+        $this->polriUnit =
+            collect($polriUnitData)
+            ->map(function ($unit, $key) {
+                return [
+                    'title' => $key,
+                    'value' => $unit,
+                ];
+            })->toArray();
+
+        $mobileJknGroupData = RegisteredPatientRepository::getRecap(
+            startDate: $startDate,
+            endDate: $endDate,
+            type: 'mobileJknGroup'
+        );
+        $this->mobileJknGroup =
+            collect($mobileJknGroupData)
             ->map(function ($group, $key) {
                 return [
                     'title' => $key,
@@ -259,9 +335,24 @@ class Recap extends Component
             case 'tahun_ini':
                 $this->filter = 'tahun_ini';
                 break;
+            case 'custom':
+                $this->filter = 'custom';
+                break;
             default:
                 $this->filter = 'keseluruhan';
                 break;
         }
+    }
+
+    public function updateCustom()
+    {
+        if (\Carbon\Carbon::parse($this->endDate)->lessThan($this->startDate)) {
+            $this->endDate = $this->startDate;
+        }
+
+        $this->customRecap = RegisteredPatientRepository::getRecap(
+            startDate: $this->startDate,
+            endDate: $this->endDate
+        );
     }
 }

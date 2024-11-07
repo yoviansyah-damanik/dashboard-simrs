@@ -15,43 +15,86 @@ class RoleAndPermissionsSeeder extends Seeder
      */
     public function run(): void
     {
-        // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // create permissions
-        Permission::create(['name' => 'show patients']);
-        Permission::create(['name' => 'recap patients']);
-        Permission::create(['name' => 'show registration']);
-        Permission::create(['name' => 'recap registration']);
-        Permission::create(['name' => 'show outpatients']);
-        Permission::create(['name' => 'recap outpatients']);
-        Permission::create(['name' => 'show inpatients']);
-        Permission::create(['name' => 'recap inpatients']);
-        Permission::create(['name' => 'show emergency']);
-        Permission::create(['name' => 'recap emergency']);
-        Permission::create(['name' => 'show room']);
-        Permission::create(['name' => 'show polyclinic']);
-        Permission::create(['name' => 'show laboratory']);
-        Permission::create(['name' => 'show radiology']);
-        Permission::create(['name' => 'show pharmacy']);
-        Permission::create(['name' => 'show icd']);
-        Permission::create(['name' => 'show nutrition']);
-        Permission::create(['name' => 'show human_resource doctor']);
-        Permission::create(['name' => 'show human_resource nurse_midwife']);
-        Permission::create(['name' => 'show human_resource else']);
-        Permission::create(['name' => 'show birth']);
-        Permission::create(['name' => 'show death']);
+        Permission::create(['name' => 'patient show']);
+        Permission::create(['name' => 'patient recap']);
+        Permission::create(['name' => 'registered-patient show']);
+        Permission::create(['name' => 'registered-patient recap']);
+        Permission::create(['name' => 'medical-personnel show']);
+        Permission::create(['name' => 'medical-non-personnel show']);
+        Permission::create(['name' => 'outpatient show']);
+        Permission::create(['name' => 'outpatient recap']);
+        Permission::create(['name' => 'inpatient show']);
+        Permission::create(['name' => 'inpatient recap']);
+        Permission::create(['name' => 'emergency show']);
+        Permission::create(['name' => 'emergency recap']);
+        Permission::create(['name' => 'room show']);
+        Permission::create(['name' => 'room recap']);
+        Permission::create(['name' => 'polyclinic show']);
+        Permission::create(['name' => 'polyclinic recap']);
+        Permission::create(['name' => 'laboratory show']);
+        Permission::create(['name' => 'laboratory recap']);
+        Permission::create(['name' => 'radiology show']);
+        Permission::create(['name' => 'radiology recap']);
+        Permission::create(['name' => 'pharmacy show']);
+        Permission::create(['name' => 'pharmacy recap']);
+        Permission::create(['name' => 'icd icd10 show']);
+        Permission::create(['name' => 'icd icd9 show']);
+        Permission::create(['name' => 'icd recap']);
+        Permission::create(['name' => 'nutrition show']);
+        Permission::create(['name' => 'human_resource medical_personnel show']);
+        Permission::create(['name' => 'human_resource nonmedica_personnel show']);
+        Permission::create(['name' => 'birth show']);
+        Permission::create(['name' => 'birth recap']);
+        Permission::create(['name' => 'death show']);
+        Permission::create(['name' => 'death recap']);
+        Permission::create(['name' => 'users']);
+        Permission::create(['name' => 'role_and_permissions']);
+        Permission::create(['name' => 'api']);
+        Permission::create(['name' => 'configuration']);
 
-        // or may be done by chaining
         Role::create(['name' => 'Puskesad'])
-            ->givePermissionTo(Permission::all());
+            ->givePermissionTo(Permission::whereNotIn(
+                'name',
+                [
+                    'users',
+                    'configuration'
+                ]
+            )
+                ->get());
 
-        Role::create(['name' => 'Kepala Rumah Sakit'])
-            ->givePermissionTo(Permission::all());
+        Role::create(['name' => 'Staf'])
+            ->givePermissionTo(Permission::whereNotIn(
+                'name',
+                [
+                    'users',
+                    'configuration'
+                ]
+            )
+                ->get());
 
-        Role::create(['name' => 'Staf Rumah Sakit']);
+        Role::create(['name' => 'Manajemen'])
+            ->givePermissionTo(Permission::whereNotIn(
+                'name',
+                [
+                    'users',
+                    'configuration'
+                ]
+            )
+                ->get());
 
-        Role::create(['name' => 'IT'])
+        Role::create(['name' => 'Administrator'])
+            ->givePermissionTo(Permission::whereNotIn(
+                'name',
+                [
+                    'users',
+                    'configuration'
+                ]
+            )
+                ->get());
+
+        Role::create(['name' => 'Superadmin'])
             ->givePermissionTo(Permission::all());
     }
 }

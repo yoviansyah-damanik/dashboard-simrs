@@ -1,4 +1,4 @@
-<canvas class="w-full" id="{!! $chartId !!}"></canvas>
+<canvas class="w-full max-h-90" id="{!! $chartId !!}"></canvas>
 
 @script
     <script>
@@ -11,10 +11,14 @@
                 scales: {
                     y: {
                         beginAtZero: true
-                    }
+                    },
+                    x: {
+                        beginAtZero: true
+                    },
                 },
+                indexAxis: '{{ $barType }}',
                 responsive: true,
-                maintainAspectRatio: true
+                maintainAspectRatio: false
             }
         });
 

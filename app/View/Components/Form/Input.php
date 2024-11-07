@@ -27,6 +27,8 @@ class Input extends Component
         public string $size = 'md',
         public string $color = 'primary',
         public ?string $info = null,
+        public ?string $min = null,
+        public ?string $max = null,
     ) {
         $this->baseClass = join(' ', [
             'relative border border-stroke outline-none disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none',
@@ -61,6 +63,7 @@ class Input extends Component
     public function sizeVariant($size)
     {
         $sizeVariants = [
+            'sm' => 'rounded-md text-sm py-1 px-3',
             'md' => 'rounded-xl text-base py-2.5 px-5'
         ];
         return $sizeVariants[$size];
@@ -69,8 +72,8 @@ class Input extends Component
     public function colorVariant($color)
     {
         $colorVariants = [
-            'primary' => 'bg-white focus:border-primary dark:focus:border-primary',
-            'secondary' => 'bg-white focus:border-secondary dark:focus:border-secondary',
+            'primary' => 'bg-white focus:border-primary-500 dark:focus:border-primary-500',
+            'secondary' => 'bg-white focus:border-secondary-500 dark:focus:border-secondary-500',
             'red' => 'bg-white focus:border-red-700 dark:focus:border-red-500',
         ];
 

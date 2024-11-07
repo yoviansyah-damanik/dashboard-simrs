@@ -15,19 +15,31 @@ class UserSeeder extends Seeder
     {
         User::create(
             [
+                'username' => 'it_rumkit',
+                'name' => 'IT Rumkit Tk. IV Padangsidimpuan',
+                'email' => 'it_rumkittnipsp@gmail.com',
+                'password' => bcrypt('password'),
+                'as' => 'Superadmin'
+            ]
+        )->assignRole('Superadmin');
+
+        User::create(
+            [
                 'username' => 'yoviansyah25',
                 'name' => 'Yoviansyah Rizki Pratama, S.Kom',
                 'email' => 'yoviansyahrizkypratama@gmail.com',
-                'password' => bcrypt('dAmaniK2511'),
+                'password' => bcrypt('password'),
+                'as' => 'IT'
             ]
-        )->assignRole('IT');
+        )->assignRole('Administrator');
 
         User::create(
             [
                 'username' => 'puskesad2024',
                 'name' => 'IT Puskesad',
                 'email' => 'puskesad@gmail.com',
-                'password' => bcrypt('@Puskesad2024'),
+                'password' => bcrypt('password'),
+                'as' => 'IT Puskesad'
             ]
         )->assignRole('Puskesad');
 
@@ -36,17 +48,19 @@ class UserSeeder extends Seeder
                 'username' => 'stafrumkit2024',
                 'name' => 'Staf Rumkit',
                 'email' => 'rumkittnipsp@gmail.com',
-                'password' => bcrypt('@Staf2024'),
+                'password' => bcrypt('password'),
+                'as' => 'Staf Tuud'
             ]
-        )->assignRole('Staf Rumah Sakit');
+        )->assignRole('Staf');
 
         User::create(
             [
                 'username' => 'rumkittnipsp2024',
                 'name' => 'dr. Rio Heryanto Gunawan, Sp. THT-KL',
                 'email' => 'heryantoriogunawan@gmail.com',
-                'password' => bcrypt('@Rumkittnipsp2024'),
+                'password' => bcrypt('password'),
+                'as' => 'Kepala Rumah Sakit'
             ]
-        )->assignRole('Kepala Rumah Sakit');
+        )->assignRole('Manajemen');
     }
 }

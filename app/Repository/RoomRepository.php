@@ -4,7 +4,7 @@ namespace App\Repository;
 
 use App\Models\Room;
 use App\Models\Ward;
-use App\Helpers\GeneralHelper;
+use App\Helpers\ConfigurationHelper;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 interface RoomInterface {}
@@ -13,13 +13,13 @@ class RoomRepository implements RoomInterface
 {
     const LIMIT_DEFAULT = 25;
 
-    private static $withRelations = true;
+    private bool $withRelations = true;
 
     private bool $withInactiveRoom;
 
     public function __construct()
     {
-        $this->withInactiveRoom = GeneralHelper::getWithInactiveRoomStatus();
+        $this->withInactiveRoom = ConfigurationHelper::get('WITH_INACTIVE_ROOM');
     }
 
     /**
@@ -45,8 +45,7 @@ class RoomRepository implements RoomInterface
      */
     public static function getRelations(bool $withRelations = true): array
     {
-        if (is_bool($withRelations))
-            static::$withRelations = $withRelations;
+        if (is_bool($withRelations)) (new static)->setWithRelation($withRelations);
         return (new static)->relations();
     }
 
@@ -63,8 +62,7 @@ class RoomRepository implements RoomInterface
         $exceptData = []; // Tambahkan jika ada data yang tidak ingin dimapping ulang
 
         $includesRelation = [];
-
-        if (static::$withRelations) {
+        if ($this->withRelations) {
             $result = collect([
                 'kamar' => collect($room)
                     ->except($exceptRoomData)
@@ -131,6 +129,11 @@ class RoomRepository implements RoomInterface
             ->mapping((new self)->reconstruction($room));
     }
 
+    public function setWithRelation(bool $status)
+    {
+        $this->withRelations = $status;
+    }
+
     /**
      * Fungsi untuk memanggil seluruh data.
      * @param ?int $limit Batasan data yang ditampilkan
@@ -143,21 +146,22 @@ class RoomRepository implements RoomInterface
         int $limit = self::LIMIT_DEFAULT,
         ?bool $withRelations = null,
         ?string $search = null,
+        ?string $class = null,
         ?string $status = null,
-        ?bool $withPagination = false,
+        bool $withPagination = false,
     ): array | LengthAwarePaginator {
-        if (is_bool($withRelations))
-            static::$withRelations = $withRelations;
+        if (is_bool($withRelations)) (new static)->setWithRelation($withRelations);
 
-        $result = Room::whereAny([Room::KODE_KAMAR], 'like', $search . '%');
-
-        if (!is_null($status) && in_array($status, Room::KELOMPOK_STATUS)) {
-            $result = $result->where(Room::STATUS_KAMAR, $status);
-        } else {
-            if ((new static)->withInactiveRoom === false) {
-                $result = $result->where(Room::STATUS_KAMAR, 1);
-            }
-        }
+        $result = Room::whereAny([Room::KODE_KAMAR], 'like', $search . '%')
+            ->when(
+                !is_null($status) && in_array($status, Room::KELOMPOK_STATUS),
+                fn($q) => $q->where(Room::STATUS_KAMAR, $status),
+                fn($q) => $q->when(
+                    (new static)->withInactiveRoom == false,
+                    fn($r) => $r->where(Room::STATUS_KAMAR, 1)
+                ),
+            )
+            ->when($class, fn($q) => $q->where(Room::KELAS, $class));
 
         if (!$withPagination) {
             if ($limit > 0)

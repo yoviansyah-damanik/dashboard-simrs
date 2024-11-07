@@ -3,7 +3,7 @@
 namespace App\Repository;
 
 use App\Models\Polyclinic;
-use App\Helpers\GeneralHelper;
+use App\Helpers\ConfigurationHelper;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface PolyclinicInterface
@@ -22,7 +22,7 @@ class PolyclinicRepository implements PolyclinicInterface
 
     public function __construct()
     {
-        $this->withInactivePolyclinic = GeneralHelper::getWithInactivePolyclinicStatus();
+        $this->withInactivePolyclinic = ConfigurationHelper::get('WITH_INACTIVE_POLYCLINIC');
     }
 
     /**
@@ -57,7 +57,7 @@ class PolyclinicRepository implements PolyclinicInterface
                     ->except($exceptPolyclinicData)
                     ->toArray(),
                 ...collect((new static)->relations())
-                    ->filter(fn ($item, $key) => in_array($key, $includesRelation))
+                    ->filter(fn($item, $key) => in_array($key, $includesRelation))
                     ->map(
                         function ($item, $key) use ($polyclinic) {
                             if (!empty($item['column_added']) && is_array($item['column_added']))
@@ -159,7 +159,7 @@ class PolyclinicRepository implements PolyclinicInterface
                 $result = $result->limit($limit);
 
             return $result->get()
-                ->map(fn ($item) => (new self)->mapping((new self)->reconstruction($item)))
+                ->map(fn($item) => (new self)->mapping((new self)->reconstruction($item)))
                 ->toArray();
         }
 

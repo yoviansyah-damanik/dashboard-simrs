@@ -24,31 +24,16 @@ class GeneralHelper
         $lastVersion = $versions->sortByDesc('version')
             ->first();
 
-        return 'Versi ' . $lastVersion['version'];
+        return [
+            'version' => 'Versi ' . $lastVersion['version'],
+            'changeLog' => $lastVersion['changeLog'],
+        ];
     }
 
-    public static function getWithInactivePolyclinicStatus(): string
+    public static function numberFormat(float $numb, int $decimals = 0, string $decimal_separator = ',', string $thousand_separator = '.', bool $withCurrency = false, string $currency = 'Rp', string $currencyPosition = 'left'): string
     {
-        return env('WITH_INACTIVE_POLYCLINIC', false);
-    }
+        $format = number_format($numb, $decimals, $decimal_separator, $thousand_separator);
 
-    public static function getWithInactivePersonResponsibilityStatus(): string
-    {
-        return env('WITH_INACTIVE_PERSON_RESPONSIBILITY', false);
-    }
-
-    public static function getWithInactiveDoctorStatus(): string
-    {
-        return env('WITH_INACTIVE_DOCTOR', false);
-    }
-
-    public static function getWithInactiveRoomStatus(): string
-    {
-        return env('WITH_INACTIVE_ROOM', false);
-    }
-
-    public static function getWithInactiveWardStatus(): string
-    {
-        return env('WITH_INACTIVE_WARD', false);
+        return $withCurrency ? ($currencyPosition == 'left' ? $currency . ' ' .  $format : $format . ' ' . $currency) : $format;
     }
 }

@@ -15,7 +15,7 @@ class Tr extends Component
         public ?string $trClass = null
     ) {
         $this->trClass = join(' ', [
-            'even:bg-primary/10 bg-white hover:bg-primary/20',
+            'even:bg-primary-500/10 bg-white hover:bg-primary-500/20',
             $trClass
         ]);
     }

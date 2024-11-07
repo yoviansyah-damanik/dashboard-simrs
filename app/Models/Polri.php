@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Traits\BaseModelTrait;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Polri extends Model
 {
@@ -20,6 +21,11 @@ class Polri extends Model
 
     public function golongan(): HasOne
     {
-        return $this->hasOne(TniGroup::class, TniGroup::KODE_GOLONGAN, self::GOLONGAN);
+        return $this->hasOne(PolriGroup::class, PolriGroup::KODE_GOLONGAN, self::GOLONGAN);
+    }
+
+    public function satuan(): HasOne
+    {
+        return $this->hasOne(PolriUnit::class, PolriUnit::KODE_SATUAN, self::SATUAN);
     }
 }

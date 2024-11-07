@@ -2,13 +2,11 @@
 
 namespace App\Repository;
 
-use App\Helpers\GeneralHelper;
+use App\Helpers\ConfigurationHelper;
 use App\Models\PersonResponsibility;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-interface PersonResponsibilityInterface
-{
-}
+interface PersonResponsibilityInterface {}
 
 class PersonResponsibilityRepository implements PersonResponsibilityInterface
 {
@@ -20,7 +18,7 @@ class PersonResponsibilityRepository implements PersonResponsibilityInterface
 
     public function __construct()
     {
-        $this->withInactivePersonResponsibility = GeneralHelper::getWithInactivePersonResponsibilityStatus();
+        $this->withInactivePersonResponsibility = ConfigurationHelper::get('WITH_INACTIVE_PERSON_RESPONSIBILITY');
     }
 
     /**
@@ -55,7 +53,7 @@ class PersonResponsibilityRepository implements PersonResponsibilityInterface
                     ->except($exceptPersonResponsibilityData)
                     ->toArray(),
                 ...collect((new static)->relations())
-                    ->filter(fn ($item, $key) => in_array($key, $includesRelation))
+                    ->filter(fn($item, $key) => in_array($key, $includesRelation))
                     ->map(
                         function ($item, $key) use ($personResponsibility) {
                             if (!empty($item['column_added']) && is_array($item['column_added']))
@@ -111,30 +109,32 @@ class PersonResponsibilityRepository implements PersonResponsibilityInterface
         if (is_bool($withRelations))
             static::$withRelations = $withRelations;
 
-        $result = PersonResponsibility::whereAny([PersonResponsibility::PENANGGUNGJAWAB], 'like', $search . '%');
-
-        if (!is_null($status) && in_array($status, PersonResponsibility::KELOMPOK_STATUS)) {
-            $result = $result->where(PersonResponsibility::STATUS, $status);
-        } else {
-            if ((new static)->withInactivePersonResponsibility === false) {
-                $result = $result->where(PersonResponsibility::STATUS, 1);
-            }
-        }
+        $result = PersonResponsibility::whereAny([PersonResponsibility::PENANGGUNGJAWAB], 'like', $search . '%')
+            ->when(
+                !is_null($status) && in_array($status, PersonResponsibility::KELOMPOK_STATUS),
+                fn($q) => $q->where(PersonResponsibility::STATUS, $status),
+                fn($q) => $q->when(
+                    (new static)->withInactivePersonResponsibility == false,
+                    fn($r) => $r->where(PersonResponsibility::STATUS, 1)
+                )
+            );
 
         if (!$withPagination) {
             if ($limit > 0)
                 $result = $result->limit($limit);
 
             return $result->get()
-                ->map(fn ($item) => (new self)->mapping((new self)->reconstruction($item)))
+                ->map(fn($item) => (new self)->mapping((new self)->reconstruction($item)))
                 ->toArray();
         }
 
-        return tap($result->paginate($limit), function ($paginatedInstance) {
-            return $paginatedInstance->getCollection()->transform(function ($value) {
-                return (new self)
-                    ->mapping((new self)->reconstruction($value));
-            });
-        });
+        return tap(
+            $result->paginate($limit),
+            fn($paginatedInstance)  =>
+            $paginatedInstance->getCollection()->transform(
+                fn($value) => (new self)
+                    ->mapping((new self)->reconstruction($value))
+            )
+        );
     }
 }

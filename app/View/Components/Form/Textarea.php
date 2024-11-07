@@ -71,8 +71,8 @@ class Textarea extends Component
     public function colorVariant($color)
     {
         $colorVariants = [
-            'primary' => 'bg-white focus:border-primary dark:focus:border-primary',
-            'secondary' => 'bg-white focus:border-secondary dark:focus:border-secondary',
+            'primary' => 'bg-white focus:border-primary-500 dark:focus:border-primary-500',
+            'secondary' => 'bg-white focus:border-secondary-500 dark:focus:border-secondary-500',
             'red' => 'bg-white focus:border-red-700 dark:focus:border-red-500',
         ];
 

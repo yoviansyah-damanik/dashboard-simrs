@@ -8,6 +8,7 @@ use App\Models\Ethnic;
 use App\Models\Company;
 use App\Models\Patient;
 use App\Models\Regency;
+use App\Models\TniUnit;
 use App\Models\Village;
 use App\Models\District;
 use App\Models\Language;
@@ -17,6 +18,7 @@ use App\Models\Disability;
 use App\Models\PolriGroup;
 use App\Helpers\DateHelper;
 use App\Models\PersonResponsibility;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 interface PatientInterface
@@ -34,6 +36,8 @@ interface PatientInterface
 
 class PatientRepository implements PatientInterface
 {
+    private static $personResponsibilityData;
+
     const LIMIT_DEFAULT = 25; // JUMLAH DATA PER HALAMAN DITAMPILKAN DEFAULT
 
     /**
@@ -104,7 +108,15 @@ class PatientRepository implements PatientInterface
                 'table_name' => TniGroup::getTableName(),
                 'column_added' => []
             ],
+            'tni.satuan' => [
+                'table_name' => TniUnit::getTableName(),
+                'column_added' => []
+            ],
             'polri.golongan' => [
+                'table_name' => PolriGroup::getTableName(),
+                'column_added' => []
+            ],
+            'polri.satuan' => [
                 'table_name' => PolriGroup::getTableName(),
                 'column_added' => []
             ]
@@ -141,6 +153,7 @@ class PatientRepository implements PatientInterface
                 },
             )->collapse(),
             ...collect($patient->tni ? $patient->tni->golongan->toArray() : []),
+            ...collect($patient->tni ? $patient->tni->satuan->toArray() : []),
             ...collect($patient->polri ? $patient->polri->golongan->toArray() : []),
         ])->except($exceptData)
             ->toArray();
@@ -181,7 +194,7 @@ class PatientRepository implements PatientInterface
                 'cacat_fisik' => $data[Disability::NAMA_CACAT],
                 'no_peserta' => $data[Patient::NOKA],
                 'jenis_bayar' => $data[PersonResponsibility::PENANGGUNGJAWAB],
-                'jenis_pasien' => empty($data[Polri::PANGKAT]) && empty($data[Tni::PANGKAT]) ? 'Umum' : (!empty($data[Polri::PANGKAT]) ? 'Polri' : 'TNI (' . $data[TniGroup::NAMA_GOLONGAN] . ')'),
+                'jenis_pasien' => empty($data[Polri::PANGKAT]) && empty($data[Tni::PANGKAT]) ? 'Umum' : (!empty($data[Polri::PANGKAT]) ? 'Polri' : 'TNI - ' . $data[TniGroup::NAMA_GOLONGAN] . ' - ' . $data[TniUnit::NAMA_SATUAN]),
             ],
             'penanggungjawab' => [
                 'nama' => $data[Patient::NAMA_PJ],
@@ -247,72 +260,157 @@ class PatientRepository implements PatientInterface
         ?string $type = null,
         ?string $payType = null,
         ?string $tniGroup = null,
+        ?string $tniUnit = null,
         ?string $polriGroup = null
     ): LengthAwarePaginator | array {
         $result = Patient::with([
             ...collect((new static)->relations())->keys()->toArray()
-        ]);
+        ])
+            ->when(
+                $ageCategory,
+                fn($q) =>
+                $q
+                    ->when($ageCategory == 'balita', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) < 5'))
+                    ->when($ageCategory == 'anak', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 5 and 11'))
+                    ->when($ageCategory == 'remaja', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 12 and 25'))
+                    ->when($ageCategory == 'dewasa', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 26 and 45'))
+                    ->when($ageCategory == 'lansia', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 46 and 65'))
+                    ->when($ageCategory == 'lainnya', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) > 65'))
+            )
 
-        switch ($ageCategory) {
-            case 'balita':
-                $result = $result->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) < 5');
-                break;
-            case 'anak':
-                $result = $result->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 5 and 11');
-                break;
-            case 'remaja':
-                $result = $result->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 12 and 25');
-                break;
-            case 'dewasa':
-                $result = $result->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 26 and 45');
-                break;
-            case 'lansia':
-                $result = $result->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 46 and 65');
-                break;
-            case 'lainnya':
-                $result = $result->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) > 65');
-                break;
-            default:
-                break;
-        }
+            ->when(
+                in_array($gender, collect(Patient::KELOMPOK_JENIS_KELAMIN)->keys()->toArray()),
+                fn($q) => $q->where(Patient::JENIS_KELAMIN, $gender)
+            )
 
-        if (in_array($gender, collect(Patient::KELOMPOK_JENIS_KELAMIN)->keys()->toArray())) {
-            $result = $result->where(Patient::JENIS_KELAMIN, $gender);
-        }
-
-        if (in_array($type, collect(Patient::KELOMPOK_PASIEN)->keys()->toArray())) {
-            // Sesuaikan dengan KELOMPOK PASIEN
-            if ($type == 'umum')
-                $result = $result->doesntHave('polri')
-                    ->doesntHave('tni');
-            if ($type == 'polri')
-                $result = $result->has('polri');
-            if ($type == 'tni')
-                $result = $result->has('tni');
-        }
-
-        if (in_array($payType, collect(PersonResponsibilityRepository::getAll())->pluck('kode_penanggungjawab')->toArray())) {
-            $result = $result->where(Patient::PENANGGUNGJAWAB, $payType);
-        }
-
-        if (!is_null($tniGroup) && $tniGroup != 'semua') {
-            $result = $result->whereHas('tni', fn($q) => $q->where(Tni::GOLONGAN, $tniGroup));
-        };
-
-        if (!is_null($polriGroup) && $polriGroup != 'semua') {
-            $result = $result->whereHas('polri', fn($q) => $q->where(Polri::GOLONGAN, $polriGroup));
-        };
-
-        $result = $result->orderBy(Patient::NO_REKAM_MEDIS, 'ASC')
+            ->when(
+                in_array($type, collect(Patient::KELOMPOK_PASIEN)->keys()->toArray()),
+                fn($q) => $q
+                    // Sesuaikan dengan KELOMPOK PASIEN
+                    ->when($type == 'umum', fn($r) => $r->doesntHave('polri')
+                        ->doesntHave('tni'))
+                    ->when($type == 'polri', fn($r) => $r->has('polri'))
+                    ->when(
+                        $type == 'tni',
+                        fn($r) => $r->whereHas('tni')
+                            ->when(
+                                !is_null($tniGroup) && $tniGroup != 'semua',
+                                fn($s) => $s->whereHas('tni', fn($s) => $s->where(Tni::GOLONGAN, $tniGroup))
+                            )
+                            ->when(
+                                !is_null($tniUnit) && $tniUnit != 'semua',
+                                fn($s) => $s->whereHas('tni', fn($s) => $s->where(Tni::SATUAN, $tniUnit))
+                            )
+                            ->when(
+                                !is_null($polriGroup) && $polriGroup != 'semua',
+                                fn($s) => $s->whereHas('polri', fn($s) => $s->where(Polri::GOLONGAN, $polriGroup))
+                            )
+                    )
+            )
+            ->when(
+                in_array($payType, collect(PersonResponsibilityRepository::getAll())->pluck('kode_penanggungjawab')->toArray()),
+                fn($q) =>
+                $q->where(Patient::PENANGGUNGJAWAB, $payType)
+            )
+            ->when(
+                !is_null($tniGroup) && $tniGroup != 'semua',
+                fn($q) =>
+                $q->whereHas('tni', fn($q) => $q->where(Tni::GOLONGAN, $tniGroup))
+            )
+            ->when(
+                !is_null($polriGroup) && $polriGroup != 'semua',
+                fn($q) =>
+                $q->whereHas('polri', fn($q) => $q->where(Polri::GOLONGAN, $polriGroup))
+            )
+            ->orderBy(Patient::NO_REKAM_MEDIS, 'ASC')
             ->orderBy(Patient::NAMA_PASIEN, 'ASC')
             ->whereAny([Patient::NO_REKAM_MEDIS, Patient::NAMA_PASIEN, Patient::NIK, Patient::NOKA], 'like', $search . "%")
             ->paginate($limit);
 
-        return tap($result, function ($paginatedInstance) {
-            return $paginatedInstance->getCollection()->transform(function ($value) {
-                return (new self)
-                    ->mapping((new self)->reconstruction($value));
-            });
-        });
+        return tap(
+            $result,
+            fn($paginatedInstance) => $paginatedInstance->getCollection()->transform(
+                fn($value) => (new self)
+                    ->mapping((new self)->reconstruction($value))
+            )
+        );
+    }
+
+    /**
+     * Fungsi ini untuk memanggil data pasien terdaftar
+     * @param string $startDate Variabel untuk menentukan tanggal mulai
+     * @param string $endDate Variabel untuk menentukan tanggal akhir
+     * @return void
+     */
+    public static function getRecap(
+        ?string $type = null,
+    ) {
+        return Patient::when(
+            !static::$personResponsibilityData,
+            fn($q) => $q->whereIn(
+                Patient::getTableName() . '.' . Patient::KODE_PERUSAHAAN,
+                collect(PersonResponsibilityRepository::getAll(limit: 0))->pluck('kode_penanggungjawab')->toArray()
+            )
+                ->when(
+                    $type,
+                    fn($q) => $q->when($type == 'ageGroup', function ($r) {
+                        $r->selectRaw(
+                            'IFNULL(SUM(CASE WHEN TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) < 5 THEN 1 ELSE 0 END),0) AS \'balita\','
+                                . 'IFNULL(SUM(CASE WHEN TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 5 THEN 1 ELSE 0 END),0) AS \'anak\','
+                                . 'IFNULL(SUM(CASE WHEN TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 12 THEN 1 ELSE 0 END),0) AS \'remaja\','
+                                . 'IFNULL(SUM(CASE WHEN TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 26 THEN 1 ELSE 0 END),0) AS \'dewasa\','
+                                . 'IFNULL(SUM(CASE WHEN TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 46 THEN 1 ELSE 0 END),0) AS \'lansia\','
+                                . 'IFNULL(SUM(CASE WHEN TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) > 65 THEN 1 ELSE 0 END),0) AS \'lainnya\''
+                        );
+                    })->when($type == 'genderGroup', function ($r) {
+                        $condition = '';
+
+                        foreach (Patient::KELOMPOK_JENIS_KELAMIN as $key => $jenisKelamin) {
+                            $condition .= 'IFNULL(SUM(CASE WHEN ' . Patient::getTableName() . '.' . Patient::JENIS_KELAMIN . ' = \'' . $key . '\' THEN 1 ELSE 0 END),0) AS \'' . $key . '\'';
+
+                            if (array_search($key, array_values(array_keys(Patient::KELOMPOK_JENIS_KELAMIN))) < count(Patient::KELOMPOK_JENIS_KELAMIN) - 1)
+                                $condition .= ',';
+                        }
+
+                        $r->join(Patient::getTableName(), Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS, '=', Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS)
+                            ->selectRaw($condition);
+                    })->when($type == 'typeGroup', function ($r) {
+                        $r->selectRaw(
+                            'IFNULL(SUM(CASE WHEN ' . Polri::PANGKAT . ' IS NOT NULL THEN 1 ELSE 0 END), 0) as \'polri\','
+                                . 'IFNULL(SUM(CASE WHEN ' . Tni::PANGKAT . ' IS NOT NULL THEN 1 ELSE 0 END), 0) as \'tni\','
+                                . 'IFNULL(SUM(CASE WHEN ' . Tni::PANGKAT . ' IS NULL AND ' . Polri::PANGKAT . ' IS NULL THEN 1 ELSE 0 END), 0) as \'umum\''
+                        )
+                            ->join(Tni::getTableName(), Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS, '=', Tni::getTableName() . '.' . Tni::NO_REKAM_MEDIS, 'left')
+                            ->join(Polri::getTableName(), Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS, '=', Polri::getTableName() . '.' . Polri::NO_REKAM_MEDIS, 'left');
+                    })->when($type == 'tniGroup', function ($r) {
+                        $condition = '';
+                        $tniData = TniGroupRepository::getAll(limit: 0);
+                        foreach ($tniData as $idx => $item) {
+                            $condition .= 'IFNULL(SUM(CASE WHEN ' . Tni::getTableName() . '.' . Tni::GOLONGAN . ' = \'' . $item['kode_golongan'] . '\' THEN 1 ELSE 0 END),0) AS \'' . $item['nama_golongan'] . '\'';
+
+                            if ($idx < count($tniData) - 1)
+                                $condition .= ',';
+                        }
+
+                        $r->join(Tni::getTableName(), Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS, '=', Tni::getTableName() . '.' . Tni::NO_REKAM_MEDIS)
+                            ->selectRaw($condition);
+                    })->when($type == 'polriGroup', function ($r) {
+                        $condition = '';
+                        $polriData = PolriGroupRepository::getAll(limit: 0);
+                        foreach ($polriData as $idx => $item) {
+                            $condition .= 'IFNULL(SUM(CASE WHEN ' . Polri::getTableName() . '.' . Polri::GOLONGAN . ' = \'' . $item['kode_golongan'] . '\' THEN 1 ELSE 0 END),0) AS \'' . $item['nama_golongan'] . '\'';
+
+                            if ($idx < count($polriData) - 1)
+                                $condition .= ',';
+                        }
+
+                        $r->join(Polri::getTableName(), Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS, '=', Polri::getTableName() . '.' . Polri::NO_REKAM_MEDIS)
+                            ->selectRaw($condition);
+                    })->first()
+                        ->toArray(),
+                    fn($q) => $q->selectRaw('IFNULL(count(' . Patient::NO_REKAM_MEDIS . '),0) as count')
+                        ->first()['count']
+                )
+        );
     }
 }

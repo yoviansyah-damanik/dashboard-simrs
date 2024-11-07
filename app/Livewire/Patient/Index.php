@@ -18,6 +18,7 @@ class Index extends Component
     public array $types;
     public array $payTypes;
     public array $tniGroups;
+    public array $tniUnits;
     public array $limits;
 
     #[Url]
@@ -39,6 +40,9 @@ class Index extends Component
     public string $tniGroup;
 
     #[Url]
+    public string $tniUnit;
+
+    #[Url]
     public string $limit;
 
     public function mount()
@@ -58,8 +62,11 @@ class Index extends Component
         $this->tniGroups = FilterHelper::getTniGroups();
         $this->tniGroup = $this->tniGroups[0]['value'];
 
-        $this->limits = [25, 50, 100, 200];
-        $this->limit = 25;
+        $this->tniUnits = FilterHelper::getTniUnits();
+        $this->tniUnit = $this->tniUnits[0]['value'];
+
+        $this->limits =  FilterHelper::getPerPageList();
+        $this->limit = $this->limits[0];
     }
 
     public function render()
@@ -71,7 +78,8 @@ class Index extends Component
             search: $this->search,
             type: $this->type,
             payType: $this->payType,
-            tniGroup: $this->tniGroup
+            tniGroup: $this->tniGroup,
+            tniUnit: $this->tniUnit
         );
 
         return view('pages.patient.index', compact('patients'));

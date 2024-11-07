@@ -21,7 +21,7 @@ class Table extends Component
         public ?string $thClass = null,
     ) {
         $this->baseClass = join(' ', [
-            'max-w-full overflow-x-auto relative',
+            'w-full overflow-x-auto relative block',
             $baseClass
         ]);
 
@@ -30,7 +30,7 @@ class Table extends Component
             $tableClass
         ]);
         $this->thClass = join(' ', [
-            'font-semibold bg-primary text-white px-3 py-5',
+            'font-semibold bg-primary-500 text-white px-3 py-5',
             $headingCentered ? 'text-center' : '',
             $thClass
         ]);

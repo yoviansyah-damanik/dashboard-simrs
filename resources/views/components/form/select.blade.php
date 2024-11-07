@@ -1,4 +1,4 @@
-<div x-data='{ id: $id("{{ $attributes->whereStartsWith('wire:model')->first() }}")}'>
+<div x-data='{ id: $id("{{ $attributes->whereStartsWith('wire:model')->first() }}")}' class="w-full d-inline">
     @if ($label)
         <label :for="id" class="{{ $labelClass }}">{{ $label }}</label>
     @endif

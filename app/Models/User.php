@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Ramsey\Uuid\Exception\UnsatisfiedDependencyException;
 
 class User extends Authenticatable
 {
@@ -49,7 +48,7 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
+            'last_login_at' => 'datetime',
             'password' => 'hashed',
         ];
     }
@@ -70,6 +69,20 @@ class User extends Authenticatable
     public function uniqueIds(): array
     {
         return ['id'];
+    }
+
+    public function isInternalUser(): Attribute
+    {
+        return new Attribute(
+            get: fn() => in_array($this->roleName, ['Kepala Rumah Sakit', 'Staf Rumah Sakit', 'IT'])
+        );
+    }
+
+    public function isExternalUser(): Attribute
+    {
+        return new Attribute(
+            get: fn() => in_array($this->roleName, ['Puskesad'])
+        );
     }
 
     public function roleName(): Attribute

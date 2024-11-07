@@ -1,4 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Exo+2:wght@300&family=Joti+One&display=swap");
+/* @import url("https://fonts.googleapis.com/css2?family=Exo+2:wght@300&family=Joti+One&display=swap"); */
+@import url("https://fonts.googleapis.com/css2?family=New+Amsterdam&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -18,7 +19,7 @@
     }
 
     ::-webkit-scrollbar-thumb {
-        @apply bg-primary rounded-xl hover:bg-primary;
+        @apply bg-primary-500 rounded-xl hover:bg-primary-500;
     }
 
     ::-moz-scrollbar {
@@ -26,7 +27,7 @@
     }
 
     ::-moz-scrollbar-thumb {
-        @apply bg-primary rounded-xl hover:bg-primary;
+        @apply bg-primary-500 rounded-xl hover:bg-primary-500;
     }
 
     ::-ms-scrollbar {
@@ -34,7 +35,7 @@
     }
 
     ::-ms-scrollbar-thumb {
-        @apply bg-primary rounded-xl hover:bg-primary;
+        @apply bg-primary-500 rounded-xl hover:bg-primary-500;
     }
 
     ::scrollbar {
@@ -42,7 +43,7 @@
     }
 
     ::scrollbar-thumb {
-        @apply bg-primary rounded-xl hover:bg-primary;
+        @apply bg-primary-500 rounded-xl hover:bg-primary-500;
     }
 
     select {
@@ -73,7 +74,7 @@
     @apply opacity-100;
 }
 .tableCheckbox:checked ~ div {
-    @apply border-primary bg-primary;
+    @apply border-primary-500 bg-primary-500;
 }
 
 .apexcharts-legend-text {
@@ -122,7 +123,7 @@
 }
 .flatpickr-months .flatpickr-prev-month:hover svg,
 .flatpickr-months .flatpickr-next-month:hover svg {
-    @apply fill-primary;
+    @apply fill-primary-500;
 }
 .flatpickr-calendar.arrowTop:before {
     @apply dark:!border-b-boxdark;
@@ -195,7 +196,7 @@ span.flatpickr-weekday,
 .flatpickr-day.startRange.nextMonthDay,
 .flatpickr-day.endRange.nextMonthDay {
     background: #3c50e0;
-    @apply !border-primary !bg-primary hover:!border-primary hover:!bg-primary;
+    @apply !border-primary-500 !bg-primary-500 hover:!border-primary-500 hover:!bg-primary-500;
 }
 .flatpickr-day.selected.startRange + .endRange:not(:nth-child(7n + 1)),
 .flatpickr-day.startRange.startRange + .endRange:not(:nth-child(7n + 1)),
@@ -204,7 +205,7 @@ span.flatpickr-weekday,
 }
 
 .map-btn .jvm-zoom-btn {
-    @apply flex h-7.5 w-7.5 items-center justify-center rounded border border-stroke bg-white px-0 pt-0 pb-0.5 text-2xl leading-none text-body hover:border-primary hover:bg-primary hover:text-white dark:border-strokedark dark:text-bodydark dark:hover:border-primary dark:hover:text-white;
+    @apply flex h-7.5 w-7.5 items-center justify-center rounded border border-stroke bg-white px-0 pt-0 pb-0.5 text-2xl leading-none text-body hover:border-primary-500 hover:bg-primary-500 hover:text-white dark:border-strokedark dark:text-bodydark dark:hover:border-primary-500 dark:hover:text-white;
 }
 .mapOne .jvm-zoom-btn {
     @apply bottom-0 top-auto left-auto;
@@ -232,7 +233,7 @@ span.flatpickr-weekday,
     @apply line-through;
 }
 .taskCheckbox:checked ~ .box {
-    @apply border-primary bg-primary dark:border-primary;
+    @apply border-primary-500 bg-primary-500 dark:border-primary-500;
 }
 
 .custom-input-date::-webkit-calendar-picker-indicator {

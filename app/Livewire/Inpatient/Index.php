@@ -27,48 +27,23 @@ class Index extends Component
     public array $wards;
     public array $doctors;
     public array $tniGroups;
+    public array $inpatientStatuses;
 
-    #[Url]
     public string $ageCategory;
-
-    #[Url]
     public string $gender;
-
-    #[Url]
     public string $startDate;
-
-    #[Url]
     public string $endDate;
-
-    #[Url]
     public string $status;
-
-    #[Url]
     public string $polyclinic;
-
-    #[Url]
     public string $type;
-
-    #[Url]
     public string $room;
-
-    #[Url]
     public string $ward;
-
-    #[Url]
     public string $payType;
-
-    #[Url]
     public string $education;
-
-    #[Url]
     public string $limit;
-
-    #[Url]
     public string $doctor;
-
-    #[Url]
     public string $tniGroup;
+    public string $inpatientStatus;
 
     public function mount()
     {
@@ -78,10 +53,10 @@ class Index extends Component
         $this->genders = FilterHelper::getGenders();
         $this->gender = $this->genders[0]['value'];
 
-        $this->startDate = Carbon::now()->addDays(-90)->format('Y-m-d');
+        $this->startDate = Carbon::now()->format('Y-m-d');
         $this->endDate = Carbon::now()->format('Y-m-d');
 
-        $this->statusGroup = FilterHelper::getStatus();
+        $this->statusGroup = FilterHelper::getStatuses();
         $this->status = $this->statusGroup[0]['value'];
 
         $this->payTypes = FilterHelper::getPayTypes();
@@ -102,8 +77,11 @@ class Index extends Component
         $this->tniGroups = FilterHelper::getTniGroups();
         $this->tniGroup = $this->tniGroups[0]['value'];
 
-        $this->limits = [25, 50, 100, 200];
-        $this->limit = 25;
+        $this->limits =  FilterHelper::getPerPageList();
+        $this->limit = $this->limits[0];
+
+        $this->inpatientStatuses =  FilterHelper::getInpatientStatuses();
+        $this->inpatientStatus = 'masih_perawatan';
     }
 
     public function render()
@@ -120,7 +98,8 @@ class Index extends Component
             ward: $this->ward,
             room: $this->room,
             doctor: $this->doctor,
-            tniGroup: $this->tniGroup
+            tniGroup: $this->tniGroup,
+            inpatientStatus: $this->inpatientStatus
         );
 
         return view('pages.inpatient.index', compact('patients'));

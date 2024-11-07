@@ -1,3 +1,3 @@
 <div wire:ignore>
-    <x-chart :$labels :$datasets :$chartId :$chartType />
+    <x-chart :$labels :$datasets :$chartId :$chartType :$barType />
 </div>

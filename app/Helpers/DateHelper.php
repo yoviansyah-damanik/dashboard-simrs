@@ -26,4 +26,14 @@ class DateHelper
 
         return Carbon::parse($date)->diff(\Carbon\Carbon::now())->format($format);
     }
+
+    public static function getDiffInDays($date, $dateDiff = null)
+    {
+        // ddd($date, $dateDiff, Carbon::createFromFormat('Y-m-d', $date)->startOfDay());
+        if (!is_null($dateDiff)) {
+            return Carbon::parse($date)->diffInDays(Carbon::parse($dateDiff)->addDays(1));
+        }
+
+        return Carbon::createFromFormat('Y-m-d', $date)->startOfDay()->diffInDays(Carbon::now());
+    }
 }

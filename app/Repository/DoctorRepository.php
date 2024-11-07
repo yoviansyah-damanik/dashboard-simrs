@@ -4,7 +4,7 @@ namespace App\Repository;
 
 use App\Models\Doctor;
 use App\Models\Specialist;
-use App\Helpers\GeneralHelper;
+use App\Helpers\ConfigurationHelper;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 interface DoctorInterface
@@ -23,7 +23,7 @@ class DoctorRepository implements DoctorInterface
 
     public function __construct()
     {
-        $this->withInactiveDoctor = GeneralHelper::getWithInactiveDoctorStatus();
+        $this->withInactiveDoctor = ConfigurationHelper::get('WITH_INACTIVE_DOCTOR');
     }
 
     /**
@@ -62,7 +62,7 @@ class DoctorRepository implements DoctorInterface
                     ->except($exceptDoctorData)
                     ->toArray(),
                 ...collect((new static)->relations())
-                    ->filter(fn ($item, $key) => in_array($key, $includesRelation))
+                    ->filter(fn($item, $key) => in_array($key, $includesRelation))
                     ->map(
                         function ($item, $key) use ($doctor) {
                             if (!empty($item['column_added']) && is_array($item['column_added']))
@@ -163,26 +163,21 @@ class DoctorRepository implements DoctorInterface
         $result = Doctor::with([
             'spesialis'
         ])
-            ->whereAny([Doctor::NAMA_DOKTER, Doctor::KODE_DOKTER], 'like', $search . '%');
+            ->whereAny([Doctor::NAMA_DOKTER, Doctor::KODE_DOKTER], 'like', $search . '%')
 
-        if (!is_null($status) && in_array($status, Doctor::KELOMPOK_STATUS)) {
-            $result = $result->where(Doctor::STATUS, $status);
-        } else {
-            if ((new static)->withInactiveDoctor === false) {
-                $result = $result->where(Doctor::STATUS, 1);
-            }
-        }
-
-        if (!is_null($spesialisCode)) {
-            $result = $result->where(Doctor::KODE_SPESIALIS, $spesialisCode);
-        }
+            ->when(
+                !is_null($status) && in_array($status, Doctor::KELOMPOK_STATUS),
+                fn($q) => $q->where(Doctor::STATUS, $status),
+                fn($q) => $q->when((new static)->withInactiveDoctor == false, fn($r) => $r->where(Doctor::STATUS, 1))
+            )
+            ->when(!is_null($spesialisCode), fn($q) => $q->where(Doctor::KODE_SPESIALIS, $spesialisCode));
 
         if (!$withPagination) {
             if ($limit > 0)
                 $result = $result->limit($limit);
 
             return $result->get()
-                ->map(fn ($item) => (new self)->mapping((new self)->reconstruction($item)))
+                ->map(fn($item) => (new self)->mapping((new self)->reconstruction($item)))
                 ->toArray();
         }
 

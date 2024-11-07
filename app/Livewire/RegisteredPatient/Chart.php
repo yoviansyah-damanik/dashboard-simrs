@@ -14,15 +14,17 @@ class Chart extends Component
     public string $chartId;
     public string $label;
     public string $chartType;
+    public string $barType;
 
     public array $datasets;
     public array $labels;
 
-    public function mount(string $chartId, string $label, string $chartType = 'bar')
+    public function mount(string $chartId, string $label, string $chartType = 'bar', string $barType = 'x')
     {
         $this->chartId = $chartId;
         $this->label = $label;
         $this->chartType = $chartType;
+        $this->barType = $barType;
     }
 
     public function setData($data)
@@ -34,7 +36,7 @@ class Chart extends Component
             [
                 [
                     'label' => $this->label,
-                    'backgroundColor' => collect($colors)->map(fn ($border) => substr_replace($border, ',0.4', -1, 0))
+                    'backgroundColor' => collect($colors)->map(fn($border) => substr_replace($border, ',0.4', -1, 0))
                         ->toArray(),
                     'borderColor' => $colors,
                     'borderWidth' => 1,

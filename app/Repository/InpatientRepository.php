@@ -2,9 +2,12 @@
 
 namespace App\Repository;
 
+use Carbon\Carbon;
 use App\Models\Room;
 use App\Models\Inpatient;
-use Carbon\Carbon;
+use App\Helpers\DateHelper;
+use App\Models\Disease;
+use App\Models\Icd10;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface InpatientInterface
@@ -33,6 +36,14 @@ class InpatientRepository implements InpatientInterface
                 'table_name' => Room::getTableName(),
                 'column_added' => null
             ],
+            'icd10' => [
+                'table_name' => Disease::getTableName(),
+                'column_added' => null
+            ],
+            'icd9' => [
+                'table_name' => Disease::getTableName(),
+                'column_added' => null
+            ]
         ];
     }
 
@@ -49,13 +60,13 @@ class InpatientRepository implements InpatientInterface
         $exceptData = []; // Tambahkan jika ada data yang tidak ingin dimapping ulang
         $exceptRoomData = [];
 
-        $includesRelation = [];
+        $includesRelation = ['icd10', 'icd9'];
 
         $result = collect([
             'ranap' => collect($inpatient)
                 ->except($exceptInpatientData)
                 ->toArray(),
-            'kamar' => collect(RoomRepository::getMapping($inpatient->kd_kamar))->except($exceptRoomData)->toArray(),
+            'kamar' => collect(RoomRepository::getMapping($inpatient->kamar))->except($exceptRoomData)->toArray(),
             ...collect((new static)->relations())
                 ->filter(fn($item, $key) => in_array($key, $includesRelation))
                 ->map(
@@ -65,7 +76,7 @@ class InpatientRepository implements InpatientInterface
                                 ->only($item['column_added'])
                                 ->toArray();
 
-                        return $inpatient->{$key}->toArray();
+                        return $inpatient->{$key}?->toArray();
                     }
                 )
         ])->except($exceptData)
@@ -87,14 +98,16 @@ class InpatientRepository implements InpatientInterface
             'kode_kamar' => $data['ranap'][Inpatient::KODE_KAMAR],
             'tanggal_masuk' => Carbon::parse($data['ranap'][Inpatient::TANGGAL_MASUK])->format('d/m/Y'),
             'jam_masuk' => $data['ranap'][Inpatient::JAM_MASUK],
-            'waktu_masuk' => Carbon::parse($data['ranap'][Inpatient::TANGGAL_MASUK])->format('d/m/Y') . ' ' . $data['ranap'][Inpatient::JAM_MASUK],
-            'tanggal_keluar' => Carbon::parse($data['ranap'][Inpatient::TANGGAL_KELUAR])->format('d/m/Y'),
+            'waktu_masuk' => DateHelper::dateFormat($data['ranap'][Inpatient::TANGGAL_MASUK], isTranslated: true, translatedFormat: 'd M Y') . ' ' . $data['ranap'][Inpatient::JAM_MASUK],
+            'tanggal_keluar' => DateHelper::dateFormat($data['ranap'][Inpatient::TANGGAL_KELUAR], isTranslated: true, translatedFormat: 'd M Y'),
             'jam_keluar' => $data['ranap'][Inpatient::JAM_KELUAR],
-            'waktu_keluar' => $data['ranap'][Inpatient::TANGGAL_KELUAR] ? Carbon::parse($data['ranap'][Inpatient::TANGGAL_KELUAR])->format('d/m/Y') . ' ' . $data['ranap'][Inpatient::JAM_KELUAR] : '-',
+            'waktu_keluar' => $data['ranap'][Inpatient::TANGGAL_KELUAR] ? DateHelper::dateFormat($data['ranap'][Inpatient::TANGGAL_KELUAR], isTranslated: true, translatedFormat: 'd M Y') . ' ' . $data['ranap'][Inpatient::JAM_KELUAR] : '-',
             'lama' => $data['ranap'][Inpatient::LAMA],
+            'lama_sistem' => DateHelper::getDiffInDays($data['ranap'][Inpatient::TANGGAL_MASUK], $data['ranap'][Inpatient::TANGGAL_KELUAR]),
             'tarif_kamar' => $data['ranap'][Inpatient::TARIF_KAMAR],
             'total_biaya' => $data['ranap'][Inpatient::TOTAL_BIAYA],
             'status_pulang' => $data['ranap'][Inpatient::STATUS_PULANG],
+            'status_ranap' => $data['ranap'][Inpatient::STATUS_PULANG] == '-' ? 'Masa Perawatan' : 'Pulang',
             'diagnosa_awal' => $data['ranap'][Inpatient::DIAGNOSA_AWAL],
             'diagnosa_akhir' => $data['ranap'][Inpatient::DIAGNOSA_AKHIR],
             ...collect($data)->except('ranap')->toArray()
@@ -141,15 +154,16 @@ class InpatientRepository implements InpatientInterface
         ?string $search = null,
         ?bool $withPagination = false,
     ): array | LengthAwarePaginator {
-        $result = Inpatient::with([
+        $withs = [
             ...collect((new static)->relations())->keys()->toArray(),
             ...collect(RoomRepository::getRelations())
                 ->map(function ($item, $key) {
                     return 'kamar.' . $key;
                 })
                 ->values()
-                ->toArray(),
-        ]);
+                ->toArray()
+        ];
+        $result = Inpatient::with($withs);
 
         if (!$withPagination) {
             if ($limit > 0)

@@ -1,3 +1,5 @@
-<div>
-    {{-- If your happiness depends on money, you will never be happy with yourself. --}}
-</div>
+<x-content>
+    <x-breadcrumb title="Pengaturan" :items="[['title' => 'Pengaturan']]" />
+
+    <x-under-maintenance />
+</x-content>

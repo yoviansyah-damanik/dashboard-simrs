@@ -1,18 +1,16 @@
 <header class="sticky top-0 flex w-full bg-white z-[50] drop-shadow-1 dark:bg-boxdark dark:drop-shadow-none">
     <div class="flex items-center justify-end flex-grow gap-3 md:gap-5 lg:gap-7 sm:justify-end shadow-2 ">
-        <div>
-            <div id="serverTime" class="text-lg font-medium md:text-xl lg:text-3xl text-primary text-end">
+        <div class="min-w-44 text-end">
+            <div id="time" class="text-lg font-medium md:text-xl lg:text-3xl text-primary-500">
             </div>
-            <div id="serverDate" class="text-sm font-light lg:text-base">
-
-            </div>
+            <div id="date" class="text-sm font-light lg:text-base"></div>
         </div>
         {{-- User Area --}}
         <div class="relative" x-data="{ dropdownOpen: false }" @click.outside="dropdownOpen = false">
-            <a class="flex items-center gap-4 px-4 py-4 bg-gradient-to-r from-primary to-primarydark dark:bg-slate-800 md:px-6"
+            <a class="flex items-center gap-4 px-4 py-4 bg-gradient-to-r from-primary-500 to-primarydark dark:bg-slate-800 md:px-6"
                 href="#" @click.prevent="dropdownOpen = ! dropdownOpen">
                 <div class="hidden text-right lg:block lg:w-64">
-                    <div class="text-base font-medium truncate text-secondary">{{ auth()->user()->name }}</div>
+                    <div class="text-base font-medium truncate text-secondary-500">{{ auth()->user()->name }}</div>
                     <div class="text-sm font-normal text-white truncate">{{ auth()->user()->role_name }}</div>
                 </div>
 
@@ -30,7 +28,7 @@
 
             {{-- Dropdown Start --}}
             <div x-show="dropdownOpen" x-transition
-                class="absolute right-0 flex flex-col w-screen bg-white border rounded-sm lg:left-0 lg:w-auto border-stroke shadow-default dark:border-strokedark dark:bg-boxdark">
+                class="absolute right-0 flex flex-col w-screen bg-white border rounded-sm lg:left-0 lg:w-auto border-stroke dark:border-strokedark dark:bg-boxdark">
                 <ul class="flex flex-col lg:hidden">
                     <li>
                         <div
@@ -45,7 +43,8 @@
                     @foreach ($menus as $menu)
                         <li>
                             <a href="{{ $menu['href'] }}"
-                                class="flex items-center gap-3.5 px-5 py-3 text-sm font-normal duration-300 ease-in-out hover:bg-primary/5 hover:text-primary lg:text-base">
+                                class="flex items-center gap-3.5 px-5 py-3 text-sm font-normal duration-300 ease-in-out hover:bg-primary-500/5 hover:text-primary-500 lg:text-base"
+                                wire:navigate>
                                 <span class="{{ $menu['icon'] }}"></span>
                                 {{ $menu['title'] }}
                             </a>
@@ -55,7 +54,7 @@
                         <div class="flex items-center justify-between px-5 py-3">
                             Dark Mode
                             {{-- Dark Mode Toggler --}}
-                            <label :class="darkMode ? 'bg-primary' : 'bg-stroke'"
+                            <label :class="darkMode ? 'bg-primary-500' : 'bg-stroke'"
                                 class="relative m-0 block h-7.5 w-14 rounded-full">
                                 <input type="checkbox" :value="darkMode" @change="darkMode = !darkMode"
                                     class="absolute top-0 z-50 w-full h-full m-0 opacity-0 cursor-pointer" />
@@ -98,8 +97,8 @@
     <script type="module">
         moment.locale('id')
         window.setInterval(function() {
-            document.getElementById('serverTime').innerHTML = moment().format('H:m:s');
-            document.getElementById('serverDate').innerHTML = moment().format('LL');
+            document.getElementById('time').innerHTML = moment().format('HH:mm:ss');
+            document.getElementById('date').innerHTML = moment().format('LL');
         }, 1000);
     </script>
 @endpush

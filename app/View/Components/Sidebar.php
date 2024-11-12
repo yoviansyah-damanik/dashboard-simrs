@@ -122,24 +122,24 @@ class Sidebar extends Component
                             ]
                         ]
                     ],
-                    [
-                        'title' => 'IGD',
-                        'icon' => 'i-medical-icon-i-first-aid',
-                        'items' => [
-                            [
-                                'title' => 'Data Pasien',
-                                'href' => route('emergency'),
-                                'isActive' => request()->routeIs('emergency'),
-                                'isShown' => auth()->user()->hasPermissionTo('emergency show')
-                            ],
-                            [
-                                'title' => 'Rekap IGD',
-                                'href' => route('emergency.recap'),
-                                'isActive' => request()->routeIs('emergency.recap'),
-                                'isShown' => auth()->user()->hasPermissionTo('emergency recap')
-                            ]
-                        ]
-                    ],
+                    // [
+                    //     'title' => 'IGD',
+                    //     'icon' => 'i-medical-icon-i-first-aid',
+                    //     'items' => [
+                    //         [
+                    //             'title' => 'Data Pasien',
+                    //             'href' => route('emergency'),
+                    //             'isActive' => request()->routeIs('emergency'),
+                    //             'isShown' => auth()->user()->hasPermissionTo('emergency show')
+                    //         ],
+                    //         [
+                    //             'title' => 'Rekap IGD',
+                    //             'href' => route('emergency.recap'),
+                    //             'isActive' => request()->routeIs('emergency.recap'),
+                    //             'isShown' => auth()->user()->hasPermissionTo('emergency recap')
+                    //         ]
+                    //     ]
+                    // ],
                 ]
             ],
             [

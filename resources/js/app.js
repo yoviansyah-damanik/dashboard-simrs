@@ -1,4 +1,5 @@
 import './bootstrap';
+import.meta.glob(["../images/**"]);
 
 import sprintf from 'sprintf-js';
 window.sprintf = sprintf.sprintf;

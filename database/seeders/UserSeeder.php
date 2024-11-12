@@ -38,7 +38,7 @@ class UserSeeder extends Seeder
                 'username' => 'puskesad2024',
                 'name' => 'IT Puskesad',
                 'email' => 'puskesad@gmail.com',
-                'password' => bcrypt('password'),
+                'password' => bcrypt('Puskesad2024@'),
                 'as' => 'IT Puskesad'
             ]
         )->assignRole('Puskesad');

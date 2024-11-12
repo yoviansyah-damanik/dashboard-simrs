@@ -63,7 +63,7 @@ class Button extends Component
             'yellow' => 'focus:outline-none text-white bg-yellow-500 hover:bg-yellow-600 focus:ring-4 focus:ring-yellow-300 dark:focus:ring-yellow-900',
             'default' => 'text-gray-900 focus:outline-none bg-white border border-gray-200 hover:bg-gray-100 hover:text-primary-500 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-600 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-600',
             'transparent' => 'bg-transparent dark:text-white dark:hover:text-primary-500 outline-none border-none',
-            'primary-transparent' => 'bg-primary-500-50 hover:text-primary-500 hover:bg-primary-500-100 dark:text-gray-500 dark:hover:text-primary-500 outline-none border-none',
+            'primary-transparent' => 'bg-primary-50 hover:text-primary-500 hover:bg-primary-100 dark:text-gray-500 dark:hover:text-primary-500 outline-none border-none',
             'inactive' => 'bg-gray-100 border border-gray-200'
         ];
 

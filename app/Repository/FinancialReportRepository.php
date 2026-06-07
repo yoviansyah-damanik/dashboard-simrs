@@ -70,7 +70,6 @@ class FinancialReportRepository implements FinancialReportInterface
         $kodePoliklinik = RegisteredPatient::KODE_POLIKLINIK;
         $statusPelayanan = RegisteredPatient::STATUS_PELAYANAN;
         $statusLanjut = RegisteredPatient::STATUS_LANJUT;
-        $statusBayar = RegisteredPatient::STATUS_BAYAR;
         $tanggalRegistrasi = RegisteredPatient::TGL_REGISTRASI;
         $biayaRegistrasi = RegisteredPatient::BIAYA_REGISTRASI;
 
@@ -103,6 +102,12 @@ class FinancialReportRepository implements FinancialReportInterface
                 'COUNT(*) AS total_pasien,'
                     . "IFNULL(SUM({$pendapatan}),0) AS total_pendapatan,"
 
+                    . "IFNULL(SUM({$rp}.{$biayaRegistrasi}),0) AS sumber_registrasi,"
+                    . "IFNULL(SUM(tindakan.total),0) AS sumber_tindakan,"
+                    . "IFNULL(SUM(lab.total),0) AS sumber_laboratorium,"
+                    . "IFNULL(SUM(radiologi.total),0) AS sumber_radiologi,"
+                    . "IFNULL(SUM(obat.total),0) AS sumber_obat,"
+
                     . "IFNULL(SUM(CASE WHEN {$isIgd} THEN 1 ELSE 0 END),0) AS igd_jumlah_pasien,"
                     . "IFNULL(SUM(CASE WHEN {$isIgd} THEN ({$pendapatan}) ELSE 0 END),0) AS igd_total_pendapatan,"
 
@@ -110,10 +115,7 @@ class FinancialReportRepository implements FinancialReportInterface
                     . "IFNULL(SUM(CASE WHEN {$bukanIgd} AND {$isRanap} THEN ({$pendapatan}) ELSE 0 END),0) AS rawat_inap_total_pendapatan,"
 
                     . "IFNULL(SUM(CASE WHEN {$bukanIgd} AND {$isRalan} THEN 1 ELSE 0 END),0) AS rawat_jalan_jumlah_pasien,"
-                    . "IFNULL(SUM(CASE WHEN {$bukanIgd} AND {$isRalan} THEN ({$pendapatan}) ELSE 0 END),0) AS rawat_jalan_total_pendapatan,"
-
-                    . "IFNULL(SUM(CASE WHEN {$rp}.{$statusBayar} = 'Sudah Bayar' THEN 1 ELSE 0 END),0) AS sudah_bayar_jumlah_pasien,"
-                    . "IFNULL(SUM(CASE WHEN {$rp}.{$statusBayar} = 'Belum Bayar' THEN 1 ELSE 0 END),0) AS belum_bayar_jumlah_pasien"
+                    . "IFNULL(SUM(CASE WHEN {$bukanIgd} AND {$isRalan} THEN ({$pendapatan}) ELSE 0 END),0) AS rawat_jalan_total_pendapatan"
             )
             ->first();
 
@@ -122,6 +124,13 @@ class FinancialReportRepository implements FinancialReportInterface
         return [
             'total_pasien' => (int) $summary['total_pasien'],
             'total_pendapatan' => (float) $summary['total_pendapatan'],
+            'sumber_pendapatan' => [
+                'registrasi' => (float) $summary['sumber_registrasi'],
+                'tindakan' => (float) $summary['sumber_tindakan'],
+                'laboratorium' => (float) $summary['sumber_laboratorium'],
+                'radiologi' => (float) $summary['sumber_radiologi'],
+                'obat' => (float) $summary['sumber_obat'],
+            ],
             'rawat_jalan' => [
                 'jumlah_pasien' => (int) $summary['rawat_jalan_jumlah_pasien'],
                 'total_pendapatan' => (float) $summary['rawat_jalan_total_pendapatan'],
@@ -133,10 +142,6 @@ class FinancialReportRepository implements FinancialReportInterface
             'igd' => [
                 'jumlah_pasien' => (int) $summary['igd_jumlah_pasien'],
                 'total_pendapatan' => (float) $summary['igd_total_pendapatan'],
-            ],
-            'status_bayar' => [
-                'sudah_bayar' => (int) $summary['sudah_bayar_jumlah_pasien'],
-                'belum_bayar' => (int) $summary['belum_bayar_jumlah_pasien'],
             ],
         ];
     }

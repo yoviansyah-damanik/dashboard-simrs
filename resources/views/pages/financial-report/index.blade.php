@@ -91,6 +91,50 @@
         </div>
     </div>
 
+    {{-- Rincian Sumber Pendapatan --}}
+    <div class="bg-white dark:bg-boxdark rounded-3xl border border-stroke dark:border-strokedark shadow-sm p-6">
+        <p class="text-xs font-black text-gray-700 dark:text-white uppercase tracking-widest mb-4">
+            Rincian Sumber Pendapatan
+        </p>
+
+        @php
+            $sources = [
+                ['key' => 'registrasi', 'label' => 'Registrasi', 'icon' => 'icon-[solar--clipboard-list-bold-duotone]', 'color' => 'text-primary bg-primary/10'],
+                ['key' => 'tindakan', 'label' => 'Tindakan', 'icon' => 'icon-[solar--stethoscope-bold-duotone]', 'color' => 'text-cyan-600 bg-cyan-500/10'],
+                ['key' => 'laboratorium', 'label' => 'Laboratorium', 'icon' => 'icon-[solar--test-tube-bold-duotone]', 'color' => 'text-violet-600 bg-violet-500/10'],
+                ['key' => 'radiologi', 'label' => 'Radiologi', 'icon' => 'icon-[solar--radial-blur-bold-duotone]', 'color' => 'text-rose-600 bg-rose-500/10'],
+                ['key' => 'obat', 'label' => 'Obat', 'icon' => 'icon-[solar--pills-2-bold-duotone]', 'color' => 'text-emerald-600 bg-emerald-500/10'],
+            ];
+            $totalSumber = max(array_sum($this->summary['sumber_pendapatan']), 1);
+        @endphp
+
+        <div class="space-y-4">
+            @foreach ($sources as $source)
+                @php
+                    $nominal = $this->summary['sumber_pendapatan'][$source['key']];
+                    $persentase = round(($nominal / $totalSumber) * 100, 1);
+                @endphp
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 {{ $source['color'] }}">
+                        <span class="{{ $source['icon'] }} text-lg"></span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs font-bold text-gray-700 dark:text-white">{{ $source['label'] }}</span>
+                            <span class="text-xs font-black text-gray-800 dark:text-white">
+                                Rp {{ number_format($nominal, 0, ',', '.') }}
+                                <span class="text-gray-400 font-bold">({{ $persentase }}%)</span>
+                            </span>
+                        </div>
+                        <div class="h-2 rounded-full bg-gray-100 dark:bg-meta-4 overflow-hidden">
+                            <div class="h-full rounded-full bg-primary" style="width: {{ $persentase }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+
     {{-- Rincian per Jenis Kunjungan --}}
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
         @php
@@ -141,32 +185,4 @@
         @endforeach
     </div>
 
-    {{-- Status Pembayaran --}}
-    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <div
-            class="bg-white dark:bg-boxdark rounded-3xl border border-stroke dark:border-strokedark shadow-sm p-6 flex items-center gap-5">
-            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0">
-                <span class="icon-[solar--check-circle-bold-duotone] text-2xl"></span>
-            </div>
-            <div>
-                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sudah Bayar</p>
-                <p class="text-xl font-black text-gray-800 dark:text-white">
-                    {{ number_format($this->summary['status_bayar']['sudah_bayar'], 0, ',', '.') }} pasien
-                </p>
-            </div>
-        </div>
-
-        <div
-            class="bg-white dark:bg-boxdark rounded-3xl border border-stroke dark:border-strokedark shadow-sm p-6 flex items-center gap-5">
-            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600 shrink-0">
-                <span class="icon-[solar--clock-circle-bold-duotone] text-2xl"></span>
-            </div>
-            <div>
-                <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Belum Bayar</p>
-                <p class="text-xl font-black text-gray-800 dark:text-white">
-                    {{ number_format($this->summary['status_bayar']['belum_bayar'], 0, ',', '.') }} pasien
-                </p>
-            </div>
-        </div>
-    </div>
 </x-content>

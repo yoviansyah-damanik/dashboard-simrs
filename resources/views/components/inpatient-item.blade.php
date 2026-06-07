@@ -1,16 +1,24 @@
 <div class=
     "relative px-6 pb-6 pr-12 overflow-hidden bg-white rounded-md pt-9 drop-shadow-md">
-    <div @class([
-        'absolute top-0 text-sm left-0 text-center py-1 px-3 rounded-br-md inline-flex gap-1',
-        'bg-green-100 text-green-700' =>
-            $patient['ranap']['status_ranap'] == 'Masa Perawatan',
-        'bg-red-100 text-red-700' =>
-            $patient['ranap']['status_ranap'] != 'Masa Perawatan',
-    ])>
-        <span class="hidden lg:block">
-            Status Ranap:
-        </span>
-        {{ $patient['ranap']['status_ranap'] }}
+    <div class="absolute top-0 left-0 flex items-start">
+        <div @class([
+            'text-sm text-center py-1 px-3 rounded-br-md inline-flex gap-1',
+            'bg-green-100 text-green-700' =>
+                $patient['ranap']['status_ranap'] == 'Masa Perawatan',
+            'bg-red-100 text-red-700' =>
+                $patient['ranap']['status_ranap'] != 'Masa Perawatan',
+        ])>
+            <span class="hidden lg:block">
+                Status Ranap:
+            </span>
+            {{ $patient['ranap']['status_ranap'] }}
+        </div>
+        @if (str_contains(strtoupper($patient['pasien']['data']['jenis_pasien']), 'TNI'))
+            <div
+                class="bg-emerald-600 text-white text-[10px] font-black px-3 py-1 rounded-b-md shadow-sm ml-1 uppercase tracking-tighter">
+                Pasien Dinas TNI
+            </div>
+        @endif
     </div>
     <div class="xl:[column-count:5] sm:[column-count:3] [column-count:2] gap-x-3">
         {{-- Data Pendaftaran --}}

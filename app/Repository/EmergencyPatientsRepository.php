@@ -147,7 +147,7 @@ class EmergencyPatientsRepository implements EmergencyPatientsInterface
         ?string $type = null,
         ?string $payType = null,
         ?string $doctor = null,
-    ): LengthAwarePaginator | array {
+    ): LengthAwarePaginator | \Illuminate\Support\Collection | array {
         $result = RegisteredPatient::with(
             [
                 ...collect((new static)->relations())->keys()->toArray(),

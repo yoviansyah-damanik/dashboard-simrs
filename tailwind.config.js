@@ -1,6 +1,6 @@
-const { addDynamicIconSelectors } = require('@iconify/tailwind');
-const { iconsPlugin, getIconCollections } = require("@egoist/tailwindcss-icons")
-const defaultTheme = require('tailwindcss/defaultTheme')
+import { addDynamicIconSelectors } from '@iconify/tailwind';
+import { iconsPlugin, getIconCollections } from "@egoist/tailwindcss-icons";
+import defaultTheme from 'tailwindcss/defaultTheme';
 
 /** @type {import('tailwindcss').Config} */
 export default {

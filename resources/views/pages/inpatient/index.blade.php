@@ -1,6 +1,8 @@
 <x-content>
     <x-breadcrumb title="Rawat Inap" :items="[['title' => 'Rawat Inap']]" />
 
+    <x-export-loading wire:target="exportCsv, exportPdf" />
+
     <div class="flex flex-col gap-3 lg:flex-row">
         <x-form.input type="search" block class="flex-1" wire:model.live.debounce.750ms="search"
             placeholder="Cari berdasarkan Nomor RM atau Nama Pasien" />
@@ -9,7 +11,17 @@
             <x-form.input :loading="in_array($inpatientStatus, ['masih_perawatan'])" block type="date" wire:model.live='startDate' :max="date('Y-m-d')" />
             <x-form.input :loading="in_array($inpatientStatus, ['masih_perawatan'])" block type="date" wire:model.live='endDate' :max="date('Y-m-d')" />
         </div>
+        <div class="flex gap-2">
+            <x-button color="primary" icon="i-ph-file-csv" wire:click="exportCsv">
+                CSV
+            </x-button>
+            <x-button color="red" icon="i-ph-file-pdf" wire:click="exportPdf">
+
+                PDF
+            </x-button>
+        </div>
     </div>
+
     <div class="grid grid-flow-col grid-rows-5 gap-3 sm:grid-rows-3 lg:grid-rows-2">
         <x-form.select label="Perpage" block :items="$limits" wire:model.live='limit' />
         <x-form.select label="Status Pelayanan" block :items="$statusGroup" wire:model.live='status' />

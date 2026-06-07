@@ -1,6 +1,14 @@
 <div
     class=
     "relative p-6 pr-12 overflow-hidden bg-white border-l-4 lg:border-l-8 rounded-md drop-shadow-md {{ StatusHelper::getColor('status_pelayanan', $patient['pendaftaran']['status_pelayanan']) }}">
+    @if (str_contains(strtoupper($patient['pasien']['data']['jenis_pasien'] ?? $patient['pasien']['jenis_pasien']), 'TNI'))
+        <div class="absolute top-0 left-0">
+            <div
+                class="bg-emerald-600 text-white text-[10px] font-black px-3 py-1 rounded-br-md shadow-sm uppercase tracking-tighter">
+                Pasien Dinas TNI
+            </div>
+        </div>
+    @endif
     <div class="xl:[column-count:5] sm:[column-count:3] [column-count:2] gap-x-3">
         {{-- Data Pendaftaran --}}
         <x-patient-item title="No Registrasi" :value="$patient['pendaftaran']['no_pendaftaran']" />

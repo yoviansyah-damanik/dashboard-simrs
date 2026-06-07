@@ -43,6 +43,7 @@ class RoleAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'icd icd9 show']);
         Permission::create(['name' => 'icd recap']);
         Permission::create(['name' => 'nutrition show']);
+        Permission::create(['name' => 'financial-report show']);
         Permission::create(['name' => 'human_resource medical_personnel show']);
         Permission::create(['name' => 'human_resource nonmedica_personnel show']);
         Permission::create(['name' => 'birth show']);

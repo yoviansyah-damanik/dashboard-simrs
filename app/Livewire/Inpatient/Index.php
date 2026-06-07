@@ -53,8 +53,10 @@ class Index extends Component
         $this->genders = FilterHelper::getGenders();
         $this->gender = $this->genders[0]['value'];
 
-        $this->startDate = Carbon::now()->format('Y-m-d');
-        $this->endDate = Carbon::now()->format('Y-m-d');
+        if (!isset($this->startDate))
+            $this->startDate = Carbon::now()->format('Y-m-d');
+        if (!isset($this->endDate))
+            $this->endDate = Carbon::now()->format('Y-m-d');
 
         $this->statusGroup = FilterHelper::getStatuses();
         $this->status = $this->statusGroup[0]['value'];
@@ -103,6 +105,87 @@ class Index extends Component
         );
 
         return view('pages.inpatient.index', compact('patients'));
+    }
+
+    public function exportCsv()
+    {
+        set_time_limit(0);
+        $patients = InpatientsRepository::getAll(
+            startDate: $this->startDate,
+            endDate: $this->endDate,
+            ageCategory: $this->ageCategory,
+            gender: $this->gender,
+            search: $this->search,
+            type: $this->type,
+            payType: $this->payType,
+            limit: 0,
+            ward: $this->ward,
+            room: $this->room,
+            doctor: $this->doctor,
+            tniGroup: $this->tniGroup,
+            inpatientStatus: $this->inpatientStatus
+        );
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="data-rawat-inap-' . now()->format('Y-m-d-His') . '.csv"',
+        ];
+
+        $callback = function () use ($patients) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['No', 'Waktu Masuk', 'Waktu Keluar', 'No Rawat', 'No RM', 'Nama Pasien', 'Jenis Pasien', 'Kamar', 'Bangsal', 'Dokter', 'Jenis Bayar']);
+
+            foreach ($patients as $index => $patient) {
+                fputcsv($file, [
+                    $index + 1,
+                    $patient['ranap']['waktu_masuk'],
+                    $patient['ranap']['waktu_keluar'],
+                    $patient['pendaftaran']['no_rawat'],
+                    $patient['pendaftaran']['no_rekam_medis'],
+                    $patient['pasien']['data']['nama'],
+                    $patient['pasien']['data']['jenis_pasien'],
+                    $patient['ranap']['kamar']['kode_kamar'],
+                    $patient['ranap']['kamar']['bangsal']['nama_bangsal'],
+                    $patient['dokter']['nama_dokter'],
+                    $patient['pendaftaran']['jenis_bayar'],
+                ]);
+            }
+            fputcsv($file, []);
+            fputcsv($file, ['Data diperoleh melalui ' . config('app.name') . ' milik ' . config('app.hospital_name') . ' pada ' . now()->format('d/m/Y H:i:s')]);
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportPdf()
+    {
+        set_time_limit(0);
+        $patients = InpatientsRepository::getAll(
+            startDate: $this->startDate,
+            endDate: $this->endDate,
+            ageCategory: $this->ageCategory,
+            gender: $this->gender,
+            search: $this->search,
+            type: $this->type,
+            payType: $this->payType,
+            limit: 0,
+            ward: $this->ward,
+            room: $this->room,
+            doctor: $this->doctor,
+            tniGroup: $this->tniGroup,
+            inpatientStatus: $this->inpatientStatus
+        );
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.inpatient-pdf', [
+            'patients' => $patients,
+            'startDate' => $this->startDate,
+            'endDate' => $this->endDate
+        ])->setPaper('a4', 'landscape');
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->stream();
+        }, 'data-rawat-inap-' . now()->format('Y-m-d-His') . '.pdf');
     }
 
     public function updated($attribute)

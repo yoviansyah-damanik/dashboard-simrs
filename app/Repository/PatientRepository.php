@@ -29,7 +29,7 @@ interface PatientInterface
         ?string $ageCategory = null,
         ?string $search = null,
         ?string $gender = null
-    ): LengthAwarePaginator | array;
+    ): LengthAwarePaginator | \Illuminate\Support\Collection | array;
     public static function getMapping(Patient $patient): array;
     public static function getRelations();
 }
@@ -262,7 +262,7 @@ class PatientRepository implements PatientInterface
         ?string $tniGroup = null,
         ?string $tniUnit = null,
         ?string $polriGroup = null
-    ): LengthAwarePaginator | array {
+    ): LengthAwarePaginator | \Illuminate\Support\Collection | array {
         $result = Patient::with([
             ...collect((new static)->relations())->keys()->toArray()
         ])
@@ -325,15 +325,17 @@ class PatientRepository implements PatientInterface
             ->orderBy(Patient::NO_REKAM_MEDIS, 'ASC')
             ->orderBy(Patient::NAMA_PASIEN, 'ASC')
             ->whereAny([Patient::NO_REKAM_MEDIS, Patient::NAMA_PASIEN, Patient::NIK, Patient::NOKA], 'like', $search . "%")
-            ->paginate($limit);
+            ->when($limit > 0, fn($q) => $q->paginate($limit), fn($q) => $q->get());
 
-        return tap(
-            $result,
-            fn($paginatedInstance) => $paginatedInstance->getCollection()->transform(
-                fn($value) => (new self)
-                    ->mapping((new self)->reconstruction($value))
-            )
-        );
+
+        $collection = $result instanceof LengthAwarePaginator ? $result->getCollection() : $result;
+
+        $collection->transform(function ($value) {
+            return (new self)->mapping((new self)->reconstruction($value));
+        });
+
+        return $result;
+
     }
 
     /**

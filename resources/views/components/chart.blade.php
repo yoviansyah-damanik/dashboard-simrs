@@ -1,30 +1,8 @@
-<canvas class="w-full max-h-90" id="{!! $chartId !!}"></canvas>
-
-@script
-    <script>
-        const ctx = document.getElementById('{{ $chartId }}');
-
-        const chart = new Chart(ctx, {
-            type: '{{ $chartType }}',
-            data: {},
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    },
-                    x: {
-                        beginAtZero: true
-                    },
-                },
-                indexAxis: '{{ $barType }}',
-                responsive: true,
-                maintainAspectRatio: false
-            }
-        });
-
-        Livewire.on(`refreshChartData-{!! $chartId !!}`, (data) => {
-            chart.data = data[0];
-            chart.update();
-        });
-    </script>
-@endscript
+<div 
+    x-data="chartComponent(@js($chartId), @js($chartType), @js($barType ?? 'x'), @js($labels ?? []), @js($datasets ?? []))"
+    x-ref="chartContainer"
+    wire:ignore
+    class="w-full h-full"
+>
+    <canvas class="w-full h-full" id="{{ $chartId }}"></canvas>
+</div>

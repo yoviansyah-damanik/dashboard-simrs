@@ -170,7 +170,7 @@ class InpatientsRepository implements InpatientsInterface
         ?string $tniGroup = null,
         ?string $polriGroup = null,
         ?string $inpatientStatus = null
-    ): LengthAwarePaginator | array {
+    ): LengthAwarePaginator | \Illuminate\Support\Collection | array {
         $withs =   [
             ...collect((new static)->relations())->keys()->toArray(),
             ...collect(PatientRepository::getRelations())
@@ -240,15 +240,16 @@ class InpatientsRepository implements InpatientsInterface
             ->where(RegisteredPatient::STATUS_LANJUT, RegisteredPatient::STATUS_RANAP)
             ->orderBy(RegisteredPatient::TGL_REGISTRASI, 'desc')
             ->orderBy(RegisteredPatient::JAM_REGISTRASI, 'desc')
-            ->paginate($limit);
+            ->when($limit > 0, fn($q) => $q->paginate($limit), fn($q) => $q->get());
 
-        return tap(
-            $result,
-            fn($paginatedInstance)
-            => $paginatedInstance->getCollection()->transform(
-                fn($value) => (new self)
-                    ->mapping((new self)->reconstruction($value))
-            )
-        );
+
+        $collection = $result instanceof LengthAwarePaginator ? $result->getCollection() : $result;
+
+        $collection->transform(function ($value) {
+            return (new self)->mapping((new self)->reconstruction($value));
+        });
+
+        return $result;
+
     }
 }

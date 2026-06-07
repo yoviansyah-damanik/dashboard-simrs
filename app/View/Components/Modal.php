@@ -19,7 +19,7 @@ class Modal extends Component
         public string $size = 'md',
     ) {
         $this->backdropClass = join(' ', [
-            'fixed inset-0 z-9999 flex justify-center items-start'
+            'fixed inset-0 z-[99999] flex justify-center items-start bg-black/50 backdrop-blur-sm p-4 overflow-y-auto'
         ]);
         $this->modalClass = join(' ', [
             'bg-white dark:bg-slate-800 min-h-40 min-w-[250px] w-full rounded-xl mt-9 mx-3 sm:m-9 shadow-sm overflow-hidden',

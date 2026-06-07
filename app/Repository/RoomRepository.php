@@ -153,6 +153,7 @@ class RoomRepository implements RoomInterface
         if (is_bool($withRelations)) (new static)->setWithRelation($withRelations);
 
         $result = Room::whereAny([Room::KODE_KAMAR], 'like', $search . '%')
+            ->whereNot(Room::KODE_BANGSAL, 'TRANS')
             ->when(
                 !is_null($status) && in_array($status, Room::KELOMPOK_STATUS),
                 fn($q) => $q->where(Room::STATUS_KAMAR, $status),

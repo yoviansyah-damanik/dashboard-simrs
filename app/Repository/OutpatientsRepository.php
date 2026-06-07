@@ -149,30 +149,30 @@ class OutpatientsRepository implements OutpatientsInterface
         ?string $doctor = null,
         ?string $tniGroup = null,
         ?string $polriGroup = null
-    ): LengthAwarePaginator | array {
-        $result = RegisteredPatient::with(
-            [
-                ...collect((new static)->relations())->keys()->toArray(),
-                ...collect(PatientRepository::getRelations())
-                    ->map(function ($item, $key) {
-                        return 'pasien.' . $key;
-                    })
-                    ->values()
-                    ->toArray(),
-                ...collect(DoctorRepository::getRelations())
-                    ->map(function ($item, $key) {
-                        return 'dokter.' . $key;
-                    })
-                    ->values()
-                    ->toArray(),
-                ...collect(PolyclinicRepository::getRelations())
-                    ->map(function ($item, $key) {
-                        return 'poliklinik.' . $key;
-                    })
-                    ->values()
-                    ->toArray(),
-            ]
-        )
+    ): LengthAwarePaginator | \Illuminate\Support\Collection | array {
+        $withs = [
+            ...collect((new static)->relations())->keys()->toArray(),
+            ...collect(PatientRepository::getRelations())
+                ->map(function ($item, $key) {
+                    return 'pasien.' . $key;
+                })
+                ->values()
+                ->toArray(),
+            ...collect(DoctorRepository::getRelations())
+                ->map(function ($item, $key) {
+                    return 'dokter.' . $key;
+                })
+                ->values()
+                ->toArray(),
+            ...collect(PolyclinicRepository::getRelations())
+                ->map(function ($item, $key) {
+                    return 'poliklinik.' . $key;
+                })
+                ->values()
+                ->toArray(),
+        ];
+
+        $result = RegisteredPatient::with($withs)
             ->whereHas('pasien', function ($q) use ($search, $type, $gender) {
                 if (in_array($gender, collect(Patient::KELOMPOK_JENIS_KELAMIN)->keys()->toArray()))
                     $q->where(Patient::JENIS_KELAMIN, $gender);
@@ -250,14 +250,17 @@ class OutpatientsRepository implements OutpatientsInterface
             ->whereNot(RegisteredPatient::KODE_POLIKLINIK, RegisteredPatient::KODE_IGD)
             ->orderBy(RegisteredPatient::TGL_REGISTRASI, 'desc')
             ->orderBy(RegisteredPatient::JAM_REGISTRASI, 'desc')
-            ->paginate($limit);
+            ->when($limit > 0, fn($q) => $q->paginate($limit), fn($q) => $q->get());
 
-        return tap($result, function ($paginatedInstance) {
-            return $paginatedInstance->getCollection()->transform(function ($value) {
-                return (new self)
-                    ->mapping((new self)->reconstruction($value));
-            });
+
+        $collection = $result instanceof LengthAwarePaginator ? $result->getCollection() : $result;
+
+        $collection->transform(function ($value) {
+            return (new self)->mapping((new self)->reconstruction($value));
         });
+
+        return $result;
+
     }
 
     /**

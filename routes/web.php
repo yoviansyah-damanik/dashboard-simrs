@@ -102,6 +102,11 @@ Route::middleware('auth')
             ->middleware('permission:pharmacy show')
             ->name('pharmacy');
 
+        // LAPORAN KEUANGAN
+        Route::get('/laporan-keuangan', \App\Livewire\FinancialReport\Index::class)
+            ->middleware('permission:financial-report show')
+            ->name('financial-report');
+
         Route::get('/icd', \App\Livewire\Icd\Recap::class)
             ->middleware('permission:icd recap')
             ->name('icd');

@@ -15,6 +15,7 @@ return [
 
     'name' => env('APP_NAME', 'Laravel'),
     'hospital_name' => env('HOSPITAL_NAME', 'Rumkit Tk. IV Padangsidimpuan'),
+    'exclude_polys' => explode(',', env('EXCLUDE_POLYS', '-,ADM,FAR,OK')),
 
     /*
     |--------------------------------------------------------------------------

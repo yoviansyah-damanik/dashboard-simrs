@@ -3,6 +3,7 @@
 namespace App\Livewire\Users;
 
 use Livewire\Component;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use App\Helpers\FilterHelper;
 use App\Repository\UserRepository;
@@ -20,6 +21,12 @@ class Index extends Component
 
     #[Url]
     public string $role;
+
+    #[On('refreshUsers')]
+    public function refreshUsers()
+    {
+        // Memicu render ulang tabel pengguna setelah aksi tambah/ubah/hapus/aktivasi
+    }
 
     public function mount()
     {

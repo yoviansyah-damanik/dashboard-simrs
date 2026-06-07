@@ -250,7 +250,7 @@ class Sidebar extends Component
                 'title' => 'Laporan Keuangan',
                 'items' => [
                     [
-                        'title' => 'Pendapatan Registrasi',
+                        'title' => 'Pendapatan',
                         'icon' => 'i-ph-wallet',
                         'href' => route('financial-report'),
                         'isActive' => request()->routeIs('financial-report'),
@@ -268,6 +268,13 @@ class Sidebar extends Component
                             'icon' => 'i-ph-users',
                             'isActive' => request()->routeIs('users'),
                             'isShown' => auth()->user()->hasPermissionTo('users')
+                        ],
+                        [
+                            'title' => 'Hak Akses',
+                            'href' => route('role-and-permissions'),
+                            'icon' => 'i-ph-shield-check',
+                            'isActive' => request()->routeIs('role-and-permissions'),
+                            'isShown' => auth()->user()->hasPermissionTo('role_and_permissions')
                         ],
                         [
                             'title' => 'Akun',

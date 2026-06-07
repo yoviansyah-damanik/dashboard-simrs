@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(php add_is_active_column.php)",
+      "Bash(rm /mnt/d/WebApps/dashboard-simrs/add_is_active_column.php 2>/dev/null || rm \"d:\\\\WebApps\\\\dashboard-simrs\\\\add_is_active_column.php\" 2>/dev/null; echo done)",
+      "PowerShell(Remove-Item -Path \"d:\\\\WebApps\\\\dashboard-simrs\\\\add_is_active_column.php\" -Force -Confirm:$false)",
+      "Bash(cd \"/mnt/d/WebApps/dashboard-simrs\")",
+      "Bash(ls resources/views/components/form/)",
+      "PowerShell(cd d:\\\\WebApps\\\\dashboard-simrs; foreach \\($f in @\\('app\\\\Repository\\\\UserRepository.php','app\\\\Models\\\\User.php','app\\\\Livewire\\\\Users\\\\Index.php','app\\\\Livewire\\\\Users\\\\Create.php','app\\\\Livewire\\\\Users\\\\Delete.php','app\\\\Livewire\\\\Users\\\\ActivationMenu.php','app\\\\Livewire\\\\Users\\\\ForgotPassword.php'\\)\\) { Write-Output \"== $f ==\"; php -l $f })",
+      "Bash(cd /mnt/d/WebApps/dashboard-simrs)",
+      "Bash(grep -rn \"role_and_permissions\\\\|RoleAndPermission\\\\|role-and-permission\" app routes resources/views database --include=\"*.php\" -l)",
+      "PowerShell(cd d:\\\\WebApps\\\\dashboard-simrs; foreach \\($f in @\\('app\\\\Repository\\\\RoleAndPermissionRepository.php','app\\\\Livewire\\\\RoleAndPermissions\\\\Index.php','app\\\\Livewire\\\\RoleAndPermissions\\\\Form.php','app\\\\Livewire\\\\RoleAndPermissions\\\\Delete.php','app\\\\View\\\\Components\\\\Sidebar.php','routes\\\\web.php'\\)\\) { Write-Output \"== $f ==\"; php -l $f })"
+    ],
+    "additionalDirectories": [
+      "\\mnt\\d\\WebApps\\dashboard-simrs"
+    ]
+  }
+}

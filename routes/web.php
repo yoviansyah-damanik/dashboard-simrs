@@ -127,6 +127,9 @@ Route::middleware('auth')
         Route::get('/manajemen-pengguna', \App\Livewire\Users\Index::class)
             ->middleware('permission:users')
             ->name('users');
+        Route::get('/hak-akses', \App\Livewire\RoleAndPermissions\Index::class)
+            ->middleware('permission:role_and_permissions')
+            ->name('role-and-permissions');
         Route::get('/akun', \App\Livewire\Account::class)
             ->name('account');
         Route::get('/api', \App\Livewire\Api::class)

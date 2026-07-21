@@ -106,6 +106,9 @@ Route::middleware('auth')
         Route::get('/laporan-keuangan', \App\Livewire\FinancialReport\Index::class)
             ->middleware('permission:financial-report show')
             ->name('financial-report');
+        Route::get('/laporan-pasien', \App\Livewire\PatientReport\Index::class)
+            ->middleware('permission:patient-report show')
+            ->name('patient-report');
 
         Route::get('/icd', \App\Livewire\Icd\Recap::class)
             ->middleware('permission:icd recap')

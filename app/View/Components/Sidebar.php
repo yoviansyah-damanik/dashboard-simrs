@@ -225,7 +225,15 @@ class Sidebar extends Component
             ],
             [
                 'title' => 'Layanan Khusus',
-                'items' => []
+                'items' => [
+                    [
+                        'title' => 'Laporan Data Pasien',
+                        'href' => route('patient-report'),
+                        'icon' => 'i-ph-clipboard-text',
+                        'isActive' => request()->routeIs('patient-report'),
+                        'isShown' => auth()->user()->hasPermissionTo('patient-report show')
+                    ],
+                ]
             ],
             [
                 'title' => 'SDM',

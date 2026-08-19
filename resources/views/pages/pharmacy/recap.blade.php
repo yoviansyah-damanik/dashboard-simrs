@@ -1,13 +1,13 @@
 <x-content>
-    <x-breadcrumb title="Data Pasien" :items="[['title' => 'Data Pasien'], ['title' => 'Rekap']]" />
+    <x-breadcrumb title="Farmasi" :items="[['title' => 'Layanan Penunjang Medis'], ['title' => 'Farmasi'], ['title' => 'Rekap']]" />
 
     <div class="space-y-6">
         <!-- Header -->
         <div class="flex flex-col gap-6">
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <p class="text-sm text-gray-500 font-bold uppercase tracking-widest">Infografis dan demografis
-                        pasien secara menyeluruh.</p>
+                    <p class="text-sm text-gray-500 font-bold uppercase tracking-widest">Rekapitulasi resep obat dan
+                        tren penggunaan obat farmasi.</p>
                 </div>
             </div>
 
@@ -96,99 +96,90 @@
                 class="bg-gradient-to-br from-indigo-600 to-violet-800 p-6 rounded-3xl shadow-xl relative overflow-hidden flex flex-col lg:flex-row items-stretch gap-6 group border border-white/10">
                 <!-- Panel 1: Total Volume -->
                 <div class="relative z-10 text-white min-w-[200px] flex flex-col justify-center">
-                    <p class="text-sm font-black uppercase tracking-[0.2em] text-indigo-200 mb-2">Total Pasien
-                        Terdaftar</p>
+                    <p class="text-sm font-black uppercase tracking-[0.2em] text-indigo-200 mb-2">Total Resep
+                        Obat</p>
                     <div class="flex items-baseline gap-2">
                         <h3 class="text-6xl font-black leading-none">{{ number_format($this->summary['total']) }}</h3>
-                        <span class="text-sm font-bold text-indigo-300">Jiwa</span>
+                        <span class="text-sm font-bold text-indigo-300">Resep</span>
                     </div>
                     <div class="flex items-center gap-6 mt-6">
                         <div class="flex flex-col">
-                            <span class="text-sm font-black text-indigo-200 uppercase tracking-widest">Laki-laki</span>
+                            <span class="text-sm font-black text-indigo-200 uppercase tracking-widest">Ralan</span>
                             <span
-                                class="text-2xl font-black text-blue-300">{{ number_format($this->summary['gender']['laki']) }}</span>
+                                class="text-2xl font-black text-cyan-300">{{ number_format($this->summary['status']['ralan']) }}</span>
                         </div>
                         <div class="w-px h-8 bg-white/20"></div>
                         <div class="flex flex-col">
-                            <span class="text-sm font-black text-indigo-200 uppercase tracking-widest">Perempuan</span>
+                            <span class="text-sm font-black text-indigo-200 uppercase tracking-widest">Ranap</span>
                             <span
-                                class="text-2xl font-black text-pink-300">{{ number_format($this->summary['gender']['perempuan']) }}</span>
+                                class="text-2xl font-black text-violet-300">{{ number_format($this->summary['status']['ranap']) }}</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Panel 2: Age Demographics Grid -->
+                <!-- Panel 2: Jenis Resep Grid -->
                 <div class="relative z-10 text-white flex-1 border-x border-white/10 px-8 hidden lg:block">
                     <p class="text-sm font-black uppercase tracking-[0.2em] text-indigo-200 mb-4 text-center">
-                        Rincian Kelompok Usia &amp; Gender</p>
+                        Rincian Jenis Resep</p>
                     <div class="grid grid-cols-3 gap-3">
-                        @foreach ($this->summary['age_groups'] as $age)
+                        @foreach ($this->summary['jenis_resep'] as $item)
                             <div
                                 class="flex flex-col p-2.5 bg-white/10 rounded-xl border border-white/10 backdrop-blur-sm group/card hover:bg-white/20 transition-all">
                                 <div class="flex items-center justify-between mb-1.5">
                                     <span
-                                        class="text-sm font-black text-indigo-100 uppercase tracking-tighter truncate w-3/4">{{ $age->kelompok }}</span>
+                                        class="text-sm font-black text-indigo-100 uppercase tracking-tighter truncate w-3/4">{{ $item->jenis_resep }}</span>
                                     <span
-                                        class="text-sm font-black bg-white/20 px-1.5 py-0.5 rounded-md">{{ number_format($age->total) }}</span>
-                                </div>
-                                <div class="flex items-center gap-2 pt-1.5 border-t border-white/5">
-                                    <div class="flex-1 flex items-center gap-1 justify-center">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                                        <span
-                                            class="text-sm font-black text-blue-200">{{ number_format($age->laki) }}</span>
-                                    </div>
-                                    <div class="flex-1 flex items-center gap-1 justify-center">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-pink-400"></span>
-                                        <span
-                                            class="text-sm font-black text-pink-200">{{ number_format($age->perempuan) }}</span>
-                                    </div>
+                                        class="text-sm font-black bg-white/20 px-1.5 py-0.5 rounded-md">{{ number_format($item->total) }}</span>
                                 </div>
                             </div>
                         @endforeach
                     </div>
                 </div>
 
-                <!-- Panel 3: Average Age -->
+                <!-- Panel 3: Resep Pulang -->
                 <div class="relative z-10 text-white min-w-[200px] flex flex-col justify-center items-center text-center">
-                    <p class="text-sm font-black uppercase tracking-[0.2em] text-indigo-200 mb-2">Rata-rata Usia</p>
-                    <h3 class="text-5xl font-black leading-none">{{ $this->summary['average_age'] }}</h3>
+                    <p class="text-sm font-black uppercase tracking-[0.2em] text-indigo-200 mb-2">Resep Pulang
+                    </p>
+                    <h3 class="text-5xl font-black leading-none">{{ number_format($this->summary['resep_pulang']) }}
+                    </h3>
                     <div class="mt-4 px-4 py-1.5 bg-white/10 rounded-full border border-white/10">
-                        <span class="text-sm font-black text-indigo-100 uppercase tracking-[0.1em]">Tahun</span>
+                        <span class="text-sm font-black text-indigo-100 uppercase tracking-[0.1em]">Pasien Ranap
+                            Pulang</span>
                     </div>
                     <span
-                        class="icon-[solar--users-group-two-rounded-bold-duotone] text-6xl opacity-20 absolute -right-4 -bottom-4 rotate-12"></span>
+                        class="icon-[solar--bag-heart-bold-duotone] text-6xl opacity-20 absolute -right-4 -bottom-4 rotate-12"></span>
                 </div>
             </div>
 
             <!-- 4-Card KPI Row -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <div
-                    class="bg-white dark:bg-boxdark p-4 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-indigo-500 transition-all">
-                    <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">Umum</span>
-                    <div class="flex items-center gap-1.5">
-                        <h4 class="text-2xl font-black text-indigo-600">{{ number_format($this->summary['type']['umum']) }}
-                        </h4>
-                        <span class="icon-[solar--user-bold-duotone] text-sm text-indigo-400"></span>
-                    </div>
+                    class="bg-white dark:bg-boxdark p-4 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-emerald-600 transition-all">
+                    <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">Sudah
+                        Diserahkan</span>
+                    <h4 class="text-2xl font-black text-emerald-600">
+                        {{ number_format($this->summary['penyerahan']['sudah']) }}</h4>
                 </div>
                 <div
-                    class="bg-white dark:bg-boxdark p-4 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-emerald-600 transition-all">
-                    <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">TNI</span>
-                    <h4 class="text-2xl font-black text-emerald-600">{{ number_format($this->summary['type']['tni']) }}
-                    </h4>
+                    class="bg-white dark:bg-boxdark p-4 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-red-500 transition-all">
+                    <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">Belum
+                        Diserahkan</span>
+                    <h4 class="text-2xl font-black text-red-600">
+                        {{ number_format($this->summary['penyerahan']['belum']) }}</h4>
+                </div>
+                <div
+                    class="bg-white dark:bg-boxdark p-4 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-indigo-500 transition-all">
+                    <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">Item Obat
+                        Terpakai</span>
+                    <h4 class="text-2xl font-black text-indigo-600">
+                        {{ number_format($this->drugUsage['total_qty']) }}</h4>
                 </div>
                 <div
                     class="bg-white dark:bg-boxdark p-4 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-amber-500 transition-all">
-                    <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">POLRI</span>
-                    <h4 class="text-2xl font-black text-amber-600">{{ number_format($this->summary['type']['polri']) }}
-                    </h4>
-                </div>
-                <div
-                    class="bg-white dark:bg-boxdark p-4 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-gray-500 transition-all">
-                    <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">Provinsi
-                        Terdata</span>
-                    <h4 class="text-2xl font-black text-gray-700 dark:text-gray-300">
-                        {{ count($this->summary['charts']['region']['labels']) }}</h4>
+                    <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">Total Biaya
+                        Obat</span>
+                    <h4 class="text-xl font-black text-amber-600">
+                        Rp{{ number_format($this->drugUsage['total_biaya']) }}</h4>
                 </div>
             </div>
         </div>
@@ -197,17 +188,17 @@
         <div class="space-y-8">
             @if ($mainView === 'chart')
                 <div class="space-y-6">
-                    <!-- Trend & Region Row -->
+                    <!-- Trend Row -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div
                             class="bg-white dark:bg-boxdark p-6 rounded-3xl border border-stroke dark:border-strokedark shadow-sm">
                             <h4
                                 class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
-                                <span class="icon-[solar--graph-bold-duotone] text-lg text-primary"></span>Tren
-                                Pendaftaran Pasien
+                                <span class="icon-[solar--graph-bold-duotone] text-lg text-primary"></span>Tren Jumlah
+                                Resep
                             </h4>
-                            <div class="h-96" wire:ignore wire:key="chart-pat-trend">
-                                <x-chart chartId="chartPatTrend" chartType="line"
+                            <div class="h-96" wire:ignore wire:key="chart-pharm-trend">
+                                <x-chart chartId="chartPharmTrend" chartType="line"
                                     :labels="$this->summary['charts']['trend']['labels']"
                                     :datasets="$this->summary['charts']['trend']['datasets']" />
                             </div>
@@ -217,18 +208,18 @@
                             class="bg-white dark:bg-boxdark p-6 rounded-3xl border border-stroke dark:border-strokedark shadow-sm">
                             <h4
                                 class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
-                                <span class="icon-[solar--map-point-bold-duotone] text-lg text-primary"></span>10 Provinsi
-                                Terbanyak
+                                <span class="icon-[solar--pill-bold-duotone] text-lg text-primary"></span>Tren
+                                Penggunaan Obat
                             </h4>
-                            <div class="h-96" wire:ignore wire:key="chart-pat-region">
-                                <x-chart chartId="chartPatRegion" chartType="bar" barType="y"
-                                    :labels="$this->summary['charts']['region']['labels']"
-                                    :datasets="$this->summary['charts']['region']['datasets']" />
+                            <div class="h-96" wire:ignore wire:key="chart-pharm-drug-trend">
+                                <x-chart chartId="chartPharmDrugTrend" chartType="line"
+                                    :labels="$this->drugUsage['charts']['trend']['labels']"
+                                    :datasets="$this->drugUsage['charts']['trend']['datasets']" />
                             </div>
                         </div>
                     </div>
 
-                    <!-- Demographics Section -->
+                    <!-- Analisis Resep Section -->
                     <div
                         class="bg-gray-50/50 dark:bg-meta-4/5 p-6 rounded-3xl border border-stroke dark:border-strokedark space-y-6">
                         <div class="flex items-center gap-3">
@@ -236,7 +227,7 @@
                                 <span class="icon-[solar--chart-bold-duotone] text-xl"></span>
                             </div>
                             <h3 class="text-xl font-black text-gray-800 dark:text-white uppercase tracking-widest">
-                                Analisis Demografi Pasien</h3>
+                                Analisis Resep Obat</h3>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -244,80 +235,46 @@
                                 class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col">
                                 <h4
                                     class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 text-center">
-                                    Sebaran Jenis Kelamin</h4>
+                                    Status Kunjungan (Ralan / Ranap)</h4>
                                 <div class="h-64 flex items-center justify-center" wire:ignore
-                                    wire:key="chart-pat-gender">
-                                    <x-chart chartId="chartPatGender" chartType="doughnut"
-                                        :labels="$this->demographics['charts']['gender']['labels']"
-                                        :datasets="$this->demographics['charts']['gender']['datasets']" />
+                                    wire:key="chart-pharm-status">
+                                    <x-chart chartId="chartPharmStatus" chartType="doughnut"
+                                        :labels="$this->summary['charts']['status']['labels']"
+                                        :datasets="$this->summary['charts']['status']['datasets']" />
                                 </div>
                             </div>
                             <div
                                 class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col">
                                 <h4
                                     class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 text-center">
-                                    Kelompok Usia per Gender</h4>
-                                <div class="h-64" wire:ignore wire:key="chart-pat-age">
-                                    <x-chart chartId="chartPatAge" chartType="bar" barType="x"
-                                        :labels="$this->demographics['charts']['age']['labels']"
-                                        :datasets="$this->demographics['charts']['age']['datasets']" />
-                                </div>
-                            </div>
-                            <div
-                                class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col">
-                                <h4
-                                    class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 text-center">
-                                    Top 10 Penjamin / Pembayar</h4>
-                                <div class="h-64" wire:ignore wire:key="chart-pat-paytype">
-                                    <x-chart chartId="chartPatPayType" chartType="bar" barType="y"
-                                        :labels="$this->demographics['charts']['pay_type']['labels']"
-                                        :datasets="$this->demographics['charts']['pay_type']['datasets']" />
-                                </div>
-                            </div>
-                            <div
-                                class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col">
-                                <h4
-                                    class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 text-center">
-                                    Sebaran Pendidikan</h4>
-                                <div class="h-64" wire:ignore wire:key="chart-pat-education">
-                                    <x-chart chartId="chartPatEducation" chartType="bar" barType="x"
-                                        :labels="$this->demographics['charts']['education']['labels']"
-                                        :datasets="$this->demographics['charts']['education']['datasets']" />
-                                </div>
-                            </div>
-                            <div
-                                class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col">
-                                <h4
-                                    class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 text-center">
-                                    Status Pernikahan</h4>
+                                    Status Penyerahan Obat</h4>
                                 <div class="h-64 flex items-center justify-center" wire:ignore
-                                    wire:key="chart-pat-marital">
-                                    <x-chart chartId="chartPatMarital" chartType="pie"
-                                        :labels="$this->demographics['charts']['marital_status']['labels']"
-                                        :datasets="$this->demographics['charts']['marital_status']['datasets']" />
-                                </div>
-                            </div>
-                            <div
-                                class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col">
-                                <h4
-                                    class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 text-center">
-                                    Golongan Darah</h4>
-                                <div class="h-64 flex items-center justify-center" wire:ignore
-                                    wire:key="chart-pat-blood">
-                                    <x-chart chartId="chartPatBlood" chartType="doughnut"
-                                        :labels="$this->demographics['charts']['blood_type']['labels']"
-                                        :datasets="$this->demographics['charts']['blood_type']['datasets']" />
+                                    wire:key="chart-pharm-penyerahan">
+                                    <x-chart chartId="chartPharmPenyerahan" chartType="doughnut"
+                                        :labels="$this->summary['charts']['penyerahan']['labels']"
+                                        :datasets="$this->summary['charts']['penyerahan']['datasets']" />
                                 </div>
                             </div>
                             <div
                                 class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col md:col-span-2">
                                 <h4
                                     class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 text-center">
-                                    Sebaran Agama</h4>
-                                <div class="h-64" wire:ignore wire:key="chart-pat-religion">
-                                    <x-chart chartId="chartPatReligion" chartType="bar" barType="x"
-                                        :labels="$this->demographics['charts']['religion']['labels']"
-                                        :datasets="$this->demographics['charts']['religion']['datasets']" />
+                                    Sebaran Jenis Resep</h4>
+                                <div class="h-64" wire:ignore wire:key="chart-pharm-jenis">
+                                    <x-chart chartId="chartPharmJenis" chartType="bar" barType="x"
+                                        :labels="$this->summary['charts']['jenis_resep']['labels']"
+                                        :datasets="$this->summary['charts']['jenis_resep']['datasets']" />
+                                </div>
+                            </div>
+                            <div
+                                class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col md:col-span-2">
+                                <h4
+                                    class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 text-center">
+                                    10 Obat Terbanyak Digunakan</h4>
+                                <div class="h-96" wire:ignore wire:key="chart-pharm-top-obat">
+                                    <x-chart chartId="chartPharmTopObat" chartType="bar" barType="y"
+                                        :labels="$this->drugUsage['charts']['top_obat']['labels']"
+                                        :datasets="$this->drugUsage['charts']['top_obat']['datasets']" />
                                 </div>
                             </div>
                         </div>
@@ -326,68 +283,40 @@
             @else
                 <!-- Dalam Angka View -->
                 <div class="space-y-8">
-                    <x-recap.in-figures title="Jenis Kelamin">
-                        <x-box title="Laki-laki" :value="number_format($this->summary['gender']['laki'])"
-                            icon="icon-[solar--men-bold-duotone]" />
-                        <x-box title="Perempuan" :value="number_format($this->summary['gender']['perempuan'])"
-                            icon="icon-[solar--women-bold-duotone]" />
+                    <x-recap.in-figures title="Status Kunjungan">
+                        <x-box title="Ralan" :value="number_format($this->summary['status']['ralan'])"
+                            icon="icon-[solar--user-hand-up-bold-duotone]" />
+                        <x-box title="Ranap" :value="number_format($this->summary['status']['ranap'])"
+                            icon="icon-[solar--bed-bold-duotone]" />
+                        <x-box title="Resep Pulang" :value="number_format($this->summary['resep_pulang'])"
+                            icon="icon-[solar--bag-heart-bold-duotone]" />
                     </x-recap.in-figures>
 
-                    <x-recap.in-figures title="Kelompok Usia">
-                        @foreach ($this->summary['age_groups'] as $age)
-                            <x-box :title="$age->kelompok" :value="number_format($age->total)"
-                                icon="icon-[solar--calendar-bold-duotone]" />
+                    <x-recap.in-figures title="Jenis Resep">
+                        @foreach ($this->summary['jenis_resep'] as $item)
+                            <x-box :title="$item->jenis_resep" :value="number_format($item->total)"
+                                icon="icon-[solar--pill-bold-duotone]" />
                         @endforeach
                     </x-recap.in-figures>
 
-                    <x-recap.in-figures title="Jenis Pasien">
-                        <x-box title="Umum" :value="number_format($this->summary['type']['umum'])"
-                            icon="icon-[solar--user-bold-duotone]" />
-                        <x-box title="TNI" :value="number_format($this->summary['type']['tni'])"
-                            icon="icon-[solar--shield-star-bold-duotone]" />
-                        <x-box title="POLRI" :value="number_format($this->summary['type']['polri'])"
-                            icon="icon-[solar--shield-check-bold-duotone]" />
+                    <x-recap.in-figures title="Status Penyerahan">
+                        <x-box title="Sudah Diserahkan" :value="number_format($this->summary['penyerahan']['sudah'])"
+                            icon="icon-[solar--check-circle-bold-duotone]" />
+                        <x-box title="Belum Diserahkan" :value="number_format($this->summary['penyerahan']['belum'])"
+                            icon="icon-[solar--clock-circle-bold-duotone]" />
                     </x-recap.in-figures>
 
-                    <x-recap.in-figures title="Penjamin / Pembayar">
-                        @foreach ($this->demographics['pay_type'] as $item)
-                            <x-box :title="$item->png_jawab" :value="number_format($item->total)"
-                                icon="icon-[solar--wallet-money-bold-duotone]" />
-                        @endforeach
+                    <x-recap.in-figures title="Penggunaan Obat">
+                        <x-box title="Item Obat Terpakai" :value="number_format($this->drugUsage['total_qty'])"
+                            icon="icon-[solar--box-bold-duotone]" />
+                        <x-box title="Total Biaya Obat" :value="'Rp' . number_format($this->drugUsage['total_biaya'])"
+                            icon="icon-[solar--wallet-money-bold-duotone]" />
                     </x-recap.in-figures>
 
-                    <x-recap.in-figures title="Pendidikan">
-                        @foreach ($this->demographics['education'] as $item)
-                            <x-box :title="$item->pnd ?: '-'" :value="number_format($item->total)"
-                                icon="icon-[solar--square-academic-cap-bold-duotone]" />
-                        @endforeach
-                    </x-recap.in-figures>
-
-                    <x-recap.in-figures title="Status Pernikahan">
-                        @foreach ($this->demographics['marital_status'] as $item)
-                            <x-box :title="$item->stts_nikah ?: '-'" :value="number_format($item->total)"
-                                icon="icon-[solar--heart-bold-duotone]" />
-                        @endforeach
-                    </x-recap.in-figures>
-
-                    <x-recap.in-figures title="Golongan Darah">
-                        @foreach ($this->demographics['blood_type'] as $item)
-                            <x-box :title="$item->gol_darah ?: '-'" :value="number_format($item->total)"
-                                icon="icon-[solar--drop-bold-duotone]" />
-                        @endforeach
-                    </x-recap.in-figures>
-
-                    <x-recap.in-figures title="Agama">
-                        @foreach ($this->demographics['religion'] as $item)
-                            <x-box :title="$item->agama ?: '-'" :value="number_format($item->total)"
-                                icon="icon-[solar--hand-heart-bold-duotone]" />
-                        @endforeach
-                    </x-recap.in-figures>
-
-                    <x-recap.in-figures title="Sebaran Provinsi">
-                        @foreach ($this->summary['charts']['region']['labels'] as $index => $label)
-                            <x-box :title="$label" :value="number_format($this->summary['charts']['region']['datasets'][0]['data'][$index])"
-                                icon="icon-[solar--map-point-bold-duotone]" />
+                    <x-recap.in-figures title="10 Obat Terbanyak Digunakan">
+                        @foreach ($this->drugUsage['top_obat'] as $item)
+                            <x-box :title="$item->nama_brng" :value="number_format($item->qty)"
+                                icon="icon-[solar--pill-bold-duotone]" />
                         @endforeach
                     </x-recap.in-figures>
                 </div>
@@ -506,18 +435,15 @@
             };
 
             handleRefresh('refresh-main-charts', [
-                { name: 'chartPatTrend', prop: 'trend' },
-                { name: 'chartPatRegion', prop: 'region' }
+                { name: 'chartPharmTrend', prop: 'trend' },
+                { name: 'chartPharmStatus', prop: 'status' },
+                { name: 'chartPharmJenis', prop: 'jenis_resep' },
+                { name: 'chartPharmPenyerahan', prop: 'penyerahan' }
             ]);
 
-            handleRefresh('refresh-demo-charts', [
-                { name: 'chartPatGender', prop: 'gender' },
-                { name: 'chartPatAge', prop: 'age' },
-                { name: 'chartPatPayType', prop: 'pay_type' },
-                { name: 'chartPatEducation', prop: 'education' },
-                { name: 'chartPatMarital', prop: 'marital_status' },
-                { name: 'chartPatBlood', prop: 'blood_type' },
-                { name: 'chartPatReligion', prop: 'religion' }
+            handleRefresh('refresh-drug-charts', [
+                { name: 'chartPharmDrugTrend', prop: 'trend' },
+                { name: 'chartPharmTopObat', prop: 'top_obat' }
             ]);
         </script>
     @endscript

@@ -85,6 +85,12 @@ class Sidebar extends Component
                                     'href' => route('registered-patient.recap'),
                                     'isActive' => request()->routeIs('registered-patient.recap'),
                                     'isShown' => auth()->user()->hasPermissionTo('registered-patient recap')
+                                ],
+                                [
+                                    'title' => 'Laporan Kunjungan dan Pengunjung',
+                                    'href' => route('registered-patient.report'),
+                                    'isActive' => request()->routeIs('registered-patient.report'),
+                                    'isShown' => auth()->user()->hasPermissionTo('registered-patient report')
                                 ]
                             ]
                         ],
@@ -121,6 +127,18 @@ class Sidebar extends Component
                                     'href' => route('outpatient.recap'),
                                     'isActive' => request()->routeIs('outpatient.recap'),
                                     'isShown' => auth()->user()->hasPermissionTo('outpatient recap')
+                                ]
+                            ]
+                        ],
+                        [
+                            'title' => 'Jadwal Operasi',
+                            'icon' => 'i-medical-icon-i-pathology',
+                            'items' => [
+                                [
+                                    'title' => 'Data Jadwal',
+                                    'href' => route('operation-schedule'),
+                                    'isActive' => request()->routeIs('operation-schedule'),
+                                    'isShown' => auth()->user()->hasPermissionTo('operation-schedule show')
                                 ]
                             ]
                         ],
@@ -164,10 +182,21 @@ class Sidebar extends Component
                         ],
                         [
                             'title' => 'Farmasi',
-                            'href' => route('pharmacy'),
                             'icon' => 'i-medical-icon-i-pharmacy',
-                            'isActive' => request()->routeIs('pharmacy'),
-                            'isShown' => auth()->user()->hasPermissionTo('pharmacy show')
+                            'items' => [
+                                [
+                                    'title' => 'Data Resep',
+                                    'href' => route('pharmacy'),
+                                    'isActive' => request()->routeIs('pharmacy'),
+                                    'isShown' => auth()->user()->hasPermissionTo('pharmacy show')
+                                ],
+                                [
+                                    'title' => 'Rekap Farmasi',
+                                    'href' => route('pharmacy.recap'),
+                                    'isActive' => request()->routeIs('pharmacy.recap'),
+                                    'isShown' => auth()->user()->hasPermissionTo('pharmacy recap')
+                                ]
+                            ]
                         ],
                         [
                             'title' => 'Gizi',

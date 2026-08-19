@@ -6,23 +6,23 @@
         <div class="flex flex-col gap-6">
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">Monitoring pasien dan rekapitulasi okupansi secara real-time.</p>
+                    <p class="text-sm text-gray-500 font-bold uppercase tracking-widest">Monitoring pasien dan rekapitulasi okupansi secara real-time.</p>
                 </div>
 
             <!-- Main Tabs -->
             <div class="flex p-1 bg-gray-100 dark:bg-meta-4 rounded-2xl">
                 <button wire:click="switchTab('current_patients')"
-                    class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all {{ $mainTab === 'current_patients' ? 'bg-white dark:bg-boxdark shadow-lg text-primary' : 'text-gray-500 hover:text-gray-700' }}">
+                    class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all {{ $mainTab === 'current_patients' ? 'bg-white dark:bg-boxdark shadow-lg text-primary' : 'text-gray-500 hover:text-gray-700' }}">
                     <span class="icon-[solar--users-group-two-rounded-bold-duotone] text-lg"></span>
                     Pasien Dirawat
                 </button>
                 <button wire:click="switchTab('recap')"
-                    class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all {{ $mainTab === 'recap' ? 'bg-white dark:bg-boxdark shadow-lg text-primary' : 'text-gray-500 hover:text-gray-700' }}">
+                    class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all {{ $mainTab === 'recap' ? 'bg-white dark:bg-boxdark shadow-lg text-primary' : 'text-gray-500 hover:text-gray-700' }}">
                     <span class="icon-[solar--folder-with-files-bold-duotone] text-lg"></span>
                     Rekapitulasi
                 </button>
                 <button wire:click="switchTab('snapshot')"
-                    class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all {{ $mainTab === 'snapshot' ? 'bg-white dark:bg-boxdark shadow-lg text-primary' : 'text-gray-500 hover:text-gray-700' }}">
+                    class="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black uppercase tracking-widest transition-all {{ $mainTab === 'snapshot' ? 'bg-white dark:bg-boxdark shadow-lg text-primary' : 'text-gray-500 hover:text-gray-700' }}">
                     <span class="icon-[solar--screencast-2-bold-duotone] text-lg"></span>
                     Snapshot Bed
                 </button>
@@ -36,12 +36,12 @@
                 @if ($mainTab === 'recap')
                     <div class="flex p-1 bg-gray-100 dark:bg-meta-4 rounded-xl">
                         <button wire:click="$set('mainView', 'list')"
-                            class="flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all {{ $mainView === 'list' ? 'bg-white dark:bg-boxdark shadow-sm text-primary' : 'text-gray-500' }}">
+                            class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-black uppercase tracking-widest transition-all {{ $mainView === 'list' ? 'bg-white dark:bg-boxdark shadow-sm text-primary' : 'text-gray-500' }}">
                             <span class="icon-[solar--list-bold-duotone] text-lg"></span>
                             List
                         </button>
                         <button wire:click="$set('mainView', 'chart')"
-                            class="flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all {{ $mainView === 'chart' ? 'bg-white dark:bg-boxdark shadow-sm text-primary' : 'text-gray-500' }}">
+                            class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-black uppercase tracking-widest transition-all {{ $mainView === 'chart' ? 'bg-white dark:bg-boxdark shadow-sm text-primary' : 'text-gray-500' }}">
                             <span class="icon-[solar--chart-bold-duotone] text-lg"></span>
                             Grafik
                         </button>
@@ -62,12 +62,12 @@
                 @if ($mainTab === 'snapshot')
                     <div class="flex p-1 bg-gray-100 dark:bg-meta-4 rounded-xl">
                         <button wire:click="$set('snapshotView', 'list')"
-                            class="flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all {{ $snapshotView === 'list' ? 'bg-white dark:bg-boxdark shadow-sm text-primary' : 'text-gray-500' }}">
+                            class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-black uppercase tracking-widest transition-all {{ $snapshotView === 'list' ? 'bg-white dark:bg-boxdark shadow-sm text-primary' : 'text-gray-500' }}">
                             <span class="icon-[solar--widget-bold-duotone] text-lg"></span>
                             List
                         </button>
                         <button wire:click="$set('snapshotView', 'chart')"
-                            class="flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all {{ $snapshotView === 'chart' ? 'bg-white dark:bg-boxdark shadow-sm text-primary' : 'text-gray-500' }}">
+                            class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-black uppercase tracking-widest transition-all {{ $snapshotView === 'chart' ? 'bg-white dark:bg-boxdark shadow-sm text-primary' : 'text-gray-500' }}">
                             <span class="icon-[solar--chart-bold-duotone] text-lg"></span>
                             Grafik
                         </button>
@@ -144,8 +144,8 @@
                         <span class="icon-[solar--users-group-two-rounded-bold-duotone] text-2xl"></span>
                     </div>
                     <div>
-                        <h3 class="text-xl font-bold text-gray-800 dark:text-white">Total Pasien Dirawat Saat Ini</h3>
-                        <p class="text-xs text-gray-500 font-bold uppercase tracking-widest mt-0.5">Real-time Census</p>
+                        <h3 class="text-2xl font-bold text-gray-800 dark:text-white">Total Pasien Dirawat Saat Ini</h3>
+                        <p class="text-sm text-gray-500 font-bold uppercase tracking-widest mt-0.5">Real-time Census</p>
                     </div>
                 </div>
                 <div class="text-right">
@@ -161,18 +161,18 @@
                     <table class="w-full text-left border-collapse min-w-[1000px]">
                         <thead>
                             <tr class="bg-gray-50 dark:bg-meta-4">
-                                <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Pasien</th>
-                                <th class="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-center">No.
+                                <th class="px-6 py-4 text-sm font-black uppercase tracking-widest">Pasien</th>
+                                <th class="px-4 py-4 text-sm font-black uppercase tracking-widest text-center">No.
                                     RM</th>
-                                <th class="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-center">Kamar
+                                <th class="px-4 py-4 text-sm font-black uppercase tracking-widest text-center">Kamar
                                     / Bangsal</th>
-                                <th class="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-center">Kelas
+                                <th class="px-4 py-4 text-sm font-black uppercase tracking-widest text-center">Kelas
                                 </th>
-                                <th class="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-center">
+                                <th class="px-4 py-4 text-sm font-black uppercase tracking-widest text-center">
                                     Penjamin</th>
-                                <th class="px-4 py-4 text-[10px] font-black uppercase tracking-widest text-center">Tgl
+                                <th class="px-4 py-4 text-sm font-black uppercase tracking-widest text-center">Tgl
                                     Masuk</th>
-                                <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Lama
+                                <th class="px-6 py-4 text-sm font-black uppercase tracking-widest text-center">Lama
                                     Rawat</th>
                             </tr>
                         </thead>
@@ -184,36 +184,36 @@
                                             <span
                                                 class="text-sm font-bold text-gray-800 dark:text-white group-hover:text-primary transition-colors">{{ $p->nm_pasien }}</span>
                                             <span
-                                                class="text-[10px] font-bold text-gray-400 uppercase">{{ $p->no_rawat }}</span>
+                                                class="text-sm font-bold text-gray-400 uppercase">{{ $p->no_rawat }}</span>
                                         </div>
                                     </td>
                                     <td class="px-4 py-4 text-center">
                                         <span
-                                            class="px-2 py-1 bg-gray-100 dark:bg-meta-4 rounded text-xs font-black text-gray-600 dark:text-gray-300">{{ $p->no_rkm_medis }}</span>
+                                            class="px-2 py-1 bg-gray-100 dark:bg-meta-4 rounded text-sm font-black text-gray-600 dark:text-gray-300">{{ $p->no_rkm_medis }}</span>
                                     </td>
                                     <td class="px-4 py-4 text-center">
                                         <div class="flex flex-col">
                                             <span
-                                                class="text-xs font-black text-gray-700 dark:text-gray-200">{{ $p->nm_bangsal }}</span>
+                                                class="text-sm font-black text-gray-700 dark:text-gray-200">{{ $p->nm_bangsal }}</span>
                                         </div>
                                     </td>
                                     <td class="px-4 py-4 text-center">
-                                        <span class="text-xs font-bold text-indigo-600">{{ $p->kelas }}</span>
+                                        <span class="text-sm font-bold text-indigo-600">{{ $p->kelas }}</span>
                                     </td>
                                     <td class="px-4 py-4 text-center">
                                         <span
-                                            class="text-[10px] font-black text-emerald-600 uppercase">{{ $p->png_jawab }}</span>
+                                            class="text-sm font-black text-emerald-600 uppercase">{{ $p->png_jawab }}</span>
                                     </td>
                                     <td class="px-4 py-4 text-center">
                                         <div class="flex flex-col">
                                             <span
-                                                class="text-xs font-bold">{{ Carbon\Carbon::parse($p->tgl_masuk)->format('d/m/Y') }}</span>
-                                            <span class="text-[10px] text-gray-400">{{ $p->jam_masuk }}</span>
+                                                class="text-sm font-bold">{{ Carbon\Carbon::parse($p->tgl_masuk)->format('d/m/Y') }}</span>
+                                            <span class="text-sm text-gray-400">{{ $p->jam_masuk }}</span>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 text-center">
                                         <span
-                                            class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest {{ $p->lama_inap > 5 ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600' }}">
+                                            class="px-3 py-1 rounded-full text-sm font-black uppercase tracking-widest {{ $p->lama_inap > 5 ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600' }}">
                                             {{ $p->lama_inap }} Hari
                                         </span>
                                     </td>
@@ -245,7 +245,7 @@
                     @if ($mainView === 'list')
                         <!-- Total Patients & Gender Breakdown -->
                         <div class="relative z-10 text-white flex flex-col justify-center md:col-span-3">
-                            <p class="text-[11px] font-black uppercase tracking-[0.2em] text-violet-200 mb-2">Total
+                            <p class="text-sm font-black uppercase tracking-[0.2em] text-violet-200 mb-2">Total
                                 Pasien</p>
                             <div class="flex items-baseline gap-2">
                                 <h3 class="text-6xl font-black leading-none">
@@ -255,16 +255,16 @@
                             <div class="flex items-center gap-3 mt-6">
                                 <div class="flex flex-col">
                                     <span
-                                        class="text-[9px] font-black text-violet-300 uppercase tracking-widest">Laki-laki</span>
+                                        class="text-sm font-black text-violet-300 uppercase tracking-widest">Laki-laki</span>
                                     <span
-                                        class="text-xl font-black text-blue-300">{{ number_format($recapData->sum('total_laki')) }}</span>
+                                        class="text-2xl font-black text-blue-300">{{ number_format($recapData->sum('total_laki')) }}</span>
                                 </div>
                                 <div class="w-px h-8 bg-white/20"></div>
                                 <div class="flex flex-col">
                                     <span
-                                        class="text-[9px] font-black text-violet-300 uppercase tracking-widest">Perempuan</span>
+                                        class="text-sm font-black text-violet-300 uppercase tracking-widest">Perempuan</span>
                                     <span
-                                        class="text-xl font-black text-pink-300">{{ number_format($recapData->sum('total_perempuan')) }}</span>
+                                        class="text-2xl font-black text-pink-300">{{ number_format($recapData->sum('total_perempuan')) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -272,7 +272,7 @@
                         <!-- Age Group Breakdown Redesigned -->
                         <div class="relative z-10 text-white md:col-span-6 border-x border-white/10 px-8">
                             <p
-                                class="text-[11px] font-black uppercase tracking-[0.2em] text-violet-200 mb-6 text-center">
+                                class="text-sm font-black uppercase tracking-[0.2em] text-violet-200 mb-6 text-center">
                                 Rincian Kelompok Usia & Gender</p>
                             <div class="grid grid-cols-3 gap-3">
                                 @foreach ($demographics['age'] as $age)
@@ -280,20 +280,20 @@
                                         class="flex flex-col p-3 bg-white/10 rounded-2xl border border-white/10 shadow-sm backdrop-blur-sm group hover:bg-white/20 transition-all">
                                         <div class="flex items-center justify-between mb-2">
                                             <span
-                                                class="text-[9px] font-black text-violet-100 uppercase tracking-tighter truncate w-3/4">{{ str_replace('Pasien ', '', $age->kelompok_umur) }}</span>
+                                                class="text-sm font-black text-violet-100 uppercase tracking-tighter truncate w-3/4">{{ str_replace('Pasien ', '', $age->kelompok_umur) }}</span>
                                             <span
-                                                class="text-xs font-black bg-white/20 px-1.5 py-0.5 rounded-md">{{ number_format($age->total) }}</span>
+                                                class="text-sm font-black bg-white/20 px-1.5 py-0.5 rounded-md">{{ number_format($age->total) }}</span>
                                         </div>
                                         <div class="flex items-center gap-2 pt-2 border-t border-white/5">
                                             <div class="flex-1 flex items-center gap-1 justify-center">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
                                                 <span
-                                                    class="text-[10px] font-black text-blue-200">{{ number_format($age->laki) }}</span>
+                                                    class="text-sm font-black text-blue-200">{{ number_format($age->laki) }}</span>
                                             </div>
                                             <div class="flex-1 flex items-center gap-1 justify-center">
                                                 <span class="w-1.5 h-1.5 rounded-full bg-pink-400"></span>
                                                 <span
-                                                    class="text-[10px] font-black text-pink-200">{{ number_format($age->perempuan) }}</span>
+                                                    class="text-sm font-black text-pink-200">{{ number_format($age->perempuan) }}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -303,19 +303,19 @@
 
                         <!-- Total Maintenance Days -->
                         <div class="relative z-10 text-white flex flex-col justify-center items-center md:col-span-3">
-                            <p class="text-[11px] font-black uppercase tracking-[0.2em] text-violet-200 mb-2">Hari
+                            <p class="text-sm font-black uppercase tracking-[0.2em] text-violet-200 mb-2">Hari
                                 Perawatan</p>
                             <h3 class="text-5xl font-black leading-none">
                                 {{ number_format($recapData->sum('total_hp')) }}</h3>
                             <div class="mt-4 px-4 py-1.5 bg-white/10 rounded-full border border-white/10">
-                                <span class="text-[10px] font-black text-violet-100 uppercase tracking-[0.1em]">Total
+                                <span class="text-sm font-black text-violet-100 uppercase tracking-[0.1em]">Total
                                     HP Periode</span>
                             </div>
                         </div>
                     @else
                         <!-- Compact View for Chart Mode -->
                         <div class="relative z-10 text-white">
-                            <p class="text-[10px] font-bold uppercase tracking-widest text-violet-100">Total Pasien
+                            <p class="text-sm font-bold uppercase tracking-widest text-violet-100">Total Pasien
                                 (Periode)</p>
                             <h3 class="text-5xl font-black mt-2">{{ number_format($recapData->sum('total_pasien')) }}
                             </h3>
@@ -335,7 +335,7 @@
                         <div
                             class="mt-auto pt-6 border-t border-white/10 flex items-center justify-between text-white">
                             <div class="flex flex-col">
-                                <span class="text-[10px] font-bold text-violet-200 uppercase tracking-widest">Total
+                                <span class="text-sm font-bold text-violet-200 uppercase tracking-widest">Total
                                     Hari Perawatan</span>
                                 <span class="text-2xl font-black">{{ number_format($recapData->sum('total_hp')) }}
                                     HP</span>
@@ -358,10 +358,10 @@
                             <div class="flex items-center gap-4">
                                 <div class="flex items-center gap-1.5"><span
                                         class="w-3 h-3 rounded-full bg-indigo-600"></span><span
-                                        class="text-[10px] font-bold text-gray-500 uppercase">Masuk</span></div>
+                                        class="text-sm font-bold text-gray-500 uppercase">Masuk</span></div>
                                 <div class="flex items-center gap-1.5"><span
                                         class="w-3 h-3 rounded-full bg-emerald-500"></span><span
-                                        class="text-[10px] font-bold text-gray-500 uppercase">Keluar</span></div>
+                                        class="text-sm font-bold text-gray-500 uppercase">Keluar</span></div>
                             </div>
                         </div>
                         <div class="h-[200px]" wire:ignore wire:key="chart-recap-trend">
@@ -378,7 +378,7 @@
                     <!-- Admissions Period -->
                     <div
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-indigo-500 transition-all">
-                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Masuk
+                        <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">Masuk
                             (Periode)</span>
                         <div class="flex items-center gap-2">
                             <h4 class="text-2xl font-black text-indigo-600">
@@ -390,7 +390,7 @@
                     <!-- Discharges Period -->
                     <div
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-emerald-500 transition-all">
-                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Keluar
+                        <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">Keluar
                             (Periode)</span>
                         <div class="flex items-center gap-2">
                             <h4 class="text-2xl font-black text-emerald-600">
@@ -402,7 +402,7 @@
                     <!-- TNI Patients (Period) -->
                     <div
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-red-500 transition-all">
-                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Pasien Dinas
+                        <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">Pasien Dinas
                             (Periode)</span>
                         <div class="flex items-center gap-2">
                             <h4 class="text-2xl font-black text-red-600">
@@ -416,27 +416,27 @@
                 <div class="lg:col-span-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-emerald-500 transition-all">
-                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">BOR</span>
+                        <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">BOR</span>
                         <h4 class="text-2xl font-black text-emerald-600">{{ number_format($overall['bor'], 1) }}%</h4>
-                        <p class="text-[8px] font-bold text-gray-400 mt-1 uppercase">Occupancy</p>
+                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Occupancy</p>
                     </div>
                     <div
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-indigo-500 transition-all">
-                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">ALOS</span>
+                        <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">ALOS</span>
                         <h4 class="text-2xl font-black text-indigo-600">{{ number_format($overall['alos'], 1) }}</h4>
-                        <p class="text-[8px] font-bold text-gray-400 mt-1 uppercase">Avg Stay</p>
+                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Avg Stay</p>
                     </div>
                     <div
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-amber-500 transition-all">
-                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">BTO</span>
+                        <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">BTO</span>
                         <h4 class="text-2xl font-black text-amber-600">{{ number_format($overall['bto'], 1) }}</h4>
-                        <p class="text-[8px] font-bold text-gray-400 mt-1 uppercase">Turnover</p>
+                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Turnover</p>
                     </div>
                     <div
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-red-500 transition-all">
-                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">GDR</span>
+                        <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">GDR</span>
                         <h4 class="text-2xl font-black text-red-600">{{ number_format($overall['gdr'], 1) }}</h4>
-                        <p class="text-[8px] font-bold text-gray-400 mt-1 uppercase">Death Rate</p>
+                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Death Rate</p>
                     </div>
                 </div>
             </div>
@@ -450,46 +450,46 @@
                             <table class="w-full text-left border-collapse min-w-[1200px]">
                                 <thead>
                                     <tr class="bg-gray-50 dark:bg-meta-4">
-                                        <th class="px-4 py-4 text-[10px] font-black uppercase tracking-widest">Bangsal
+                                        <th class="px-4 py-4 text-sm font-black uppercase tracking-widest">Bangsal
                                         </th>
                                         <th
-                                            class="px-3 py-4 text-[10px] font-black uppercase tracking-widest text-center">
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center">
                                             Kelas</th>
                                         <th
-                                            class="px-3 py-4 text-[10px] font-black uppercase tracking-widest text-center bg-gray-100 dark:bg-meta-4/50">
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center bg-gray-100 dark:bg-meta-4/50">
                                             TT</th>
                                         <th
-                                            class="px-3 py-4 text-[10px] font-black uppercase tracking-widest text-center text-primary">
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center text-primary">
                                             Terisi</th>
                                         <th
-                                            class="px-3 py-4 text-[10px] font-black uppercase tracking-widest text-center bg-blue-50 dark:bg-blue-900/10">
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center bg-blue-50 dark:bg-blue-900/10">
                                             Total</th>
                                         <th
-                                            class="px-3 py-4 text-[10px] font-black uppercase tracking-widest text-center text-blue-600">
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center text-blue-600">
                                             L</th>
                                         <th
-                                            class="px-3 py-4 text-[10px] font-black uppercase tracking-widest text-center text-pink-600">
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center text-pink-600">
                                             P</th>
                                         <th
-                                            class="px-3 py-4 text-[10px] font-black uppercase tracking-widest text-center text-emerald-600">
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center text-emerald-600">
                                             Pulang</th>
                                         <th
-                                            class="px-3 py-4 text-[10px] font-black uppercase tracking-widest text-center text-amber-600">
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center text-amber-600">
                                             Rujuk</th>
                                         <th
-                                            class="px-3 py-4 text-[10px] font-black uppercase tracking-widest text-center">
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center">
                                             APS</th>
                                         <th
-                                            class="px-3 py-4 text-[10px] font-black uppercase tracking-widest text-center text-red-600">
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center text-red-600">
                                             Mati</th>
                                         <th
-                                            class="px-3 py-4 text-[10px] font-black uppercase tracking-widest text-center">
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center">
                                             HP</th>
                                         <th
-                                            class="px-3 py-4 text-[10px] font-black uppercase tracking-widest text-center bg-purple-50 dark:bg-purple-900/10">
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center bg-purple-50 dark:bg-purple-900/10">
                                             ALOS</th>
                                         <th
-                                            class="px-3 py-4 text-[10px] font-black uppercase tracking-widest text-center bg-green-50 dark:bg-green-900/10">
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center bg-green-50 dark:bg-green-900/10">
                                             BOR (%)</th>
                                     </tr>
                                 </thead>
@@ -498,11 +498,11 @@
                                     @forelse($recapData as $item)
                                         @php $bor = $item->kapasitas > 0 && $diffDays > 0 ? ($item->total_hp / ($item->kapasitas * $diffDays)) * 100 : 0; @endphp
                                         <tr
-                                            class="hover:bg-gray-50 dark:hover:bg-meta-4/20 transition-colors text-[13px]">
+                                            class="hover:bg-gray-50 dark:hover:bg-meta-4/20 transition-colors text-base">
                                             <td class="px-4 py-4 font-bold text-gray-700 dark:text-gray-300">
                                                 {{ $item->nm_bangsal }}</td>
                                             <td class="px-3 py-4 text-center"><span
-                                                    class="px-2 py-0.5 text-[9px] font-black rounded-md bg-gray-100 dark:bg-meta-4 text-gray-600 dark:text-gray-400">{{ $item->kelas }}</span>
+                                                    class="px-2 py-0.5 text-sm font-black rounded-md bg-gray-100 dark:bg-meta-4 text-gray-600 dark:text-gray-400">{{ $item->kelas }}</span>
                                             </td>
                                             <td class="px-3 py-4 text-center font-black bg-gray-50 dark:bg-meta-4/30">
                                                 {{ number_format($item->kapasitas) }}</td>
@@ -606,7 +606,7 @@
                         <div class="p-2 bg-primary/10 text-primary rounded-lg">
                             <span class="icon-[solar--chart-bold-duotone] text-xl"></span>
                         </div>
-                        <h3 class="text-lg font-black text-gray-800 dark:text-white uppercase tracking-widest">Analisis
+                        <h3 class="text-xl font-black text-gray-800 dark:text-white uppercase tracking-widest">Analisis
                             Demografi & Kepulangan</h3>
                     </div>
 
@@ -614,7 +614,7 @@
                         <div
                             class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col">
                             <h4
-                                class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 text-center">
+                                class="text-sm font-black uppercase tracking-widest text-gray-400 mb-4 text-center">
                                 Jenis Kelamin</h4>
                             <div class="h-48 flex items-center justify-center" wire:ignore
                                 wire:key="chart-main-gender">
@@ -625,7 +625,7 @@
                         <div
                             class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col">
                             <h4
-                                class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 text-center">
+                                class="text-sm font-black uppercase tracking-widest text-gray-400 mb-4 text-center">
                                 Status Kepulangan</h4>
                             <div class="h-48 flex items-center justify-center" wire:ignore
                                 wire:key="chart-main-discharge">
@@ -636,7 +636,7 @@
                         <div
                             class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col">
                             <h4
-                                class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 text-center">
+                                class="text-sm font-black uppercase tracking-widest text-gray-400 mb-4 text-center">
                                 Kelompok Umur</h4>
                             <div class="h-64" wire:ignore wire:key="chart-main-age">
                                 <x-chart chartId="chartAge" chartType="bar" barType="x" :labels="$demographics['charts']['age']['labels']"
@@ -646,7 +646,7 @@
                         <div
                             class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col">
                             <h4
-                                class="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 text-center">
+                                class="text-sm font-black uppercase tracking-widest text-gray-400 mb-4 text-center">
                                 Top Jenis Bayar</h4>
                             <div class="h-64" wire:ignore wire:key="chart-main-ins">
                                 <x-chart chartId="chartInsurance" chartType="bar" barType="y" :labels="$demographics['charts']['insurance']['labels']"
@@ -671,7 +671,7 @@
                 <div class="p-8 relative z-10 flex flex-col lg:flex-row gap-8">
                     <!-- Left Section: Overall Summary -->
                     <div class="flex-shrink-0 flex flex-col justify-center border-r border-white/10 pr-12">
-                        <p class="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-50 mb-3">Kapasitas Bed
+                        <p class="text-sm font-black uppercase tracking-[0.2em] text-emerald-50 mb-3">Kapasitas Bed
                             Keseluruhan</p>
                         <div class="flex items-baseline gap-3">
                             <h3 class="text-7xl font-black text-white leading-none">
@@ -681,7 +681,7 @@
                         </div>
                         <div class="mt-6">
                             <span
-                                class="px-5 py-2 bg-white/20 backdrop-blur-md rounded-2xl text-xs font-black text-white uppercase tracking-widest border border-white/10 inline-flex items-center gap-2">
+                                class="px-5 py-2 bg-white/20 backdrop-blur-md rounded-2xl text-sm font-black text-white uppercase tracking-widest border border-white/10 inline-flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
                                 {{ number_format($snapshotStats['available']) }} Bed Kosong Saat Ini
                             </span>
@@ -690,7 +690,7 @@
 
                     <!-- Right Section: Class Breakdown -->
                     <div class="flex-1">
-                        <p class="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-50 mb-6">Rekapitulasi
+                        <p class="text-sm font-black uppercase tracking-[0.2em] text-emerald-50 mb-6">Rekapitulasi
                             Okupansi Per Kelas</p>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                             @foreach ($realtimeClassStats as $stat)
@@ -701,14 +701,14 @@
                                     class="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10 flex flex-col group hover:bg-white/20 transition-all">
                                     <div class="flex items-center justify-between mb-2">
                                         <span
-                                            class="text-[10px] font-black text-emerald-100 uppercase tracking-widest">{{ $stat->kelas }}</span>
+                                            class="text-sm font-black text-emerald-100 uppercase tracking-widest">{{ $stat->kelas }}</span>
                                         <span
-                                            class="text-[10px] font-black text-white bg-emerald-600/50 px-2 py-0.5 rounded-full">{{ number_format($occ, 0) }}%</span>
+                                            class="text-sm font-black text-white bg-emerald-600/50 px-2 py-0.5 rounded-full">{{ number_format($occ, 0) }}%</span>
                                     </div>
                                     <div class="flex items-baseline gap-1 mt-1">
                                         <span
                                             class="text-2xl font-black text-white">{{ number_format($stat->terisi) }}</span>
-                                        <span class="text-xs font-bold text-emerald-200/50">/
+                                        <span class="text-sm font-bold text-emerald-200/50">/
                                             {{ number_format($stat->kapasitas) }}</span>
                                     </div>
                                     <!-- Mini Progress Bar -->
@@ -730,13 +730,13 @@
                         <div class="space-y-4">
                             <div class="flex items-center gap-3 px-2">
                                 <div class="h-8 w-1.5 bg-primary rounded-full"></div>
-                                <h3 class="text-lg font-black text-gray-800 dark:text-white uppercase tracking-widest">
+                                <h3 class="text-xl font-black text-gray-800 dark:text-white uppercase tracking-widest">
                                     KATEGORI: {{ $kelas }}</h3>
                                 <div class="flex items-center gap-2 px-3 py-1 bg-gray-100 dark:bg-meta-4 rounded-full">
-                                    <span class="text-[10px] font-bold text-gray-500">Total Bed:
+                                    <span class="text-sm font-bold text-gray-500">Total Bed:
                                         {{ number_format($bangsals->sum('kapasitas')) }}</span>
                                     <span class="text-gray-300">|</span>
-                                    <span class="text-[10px] font-bold text-primary">Terisi:
+                                    <span class="text-sm font-bold text-primary">Terisi:
                                         {{ number_format($bangsals->sum('terisi')) }}</span>
                                 </div>
                             </div>
@@ -766,15 +766,15 @@
                                         <div
                                             class="p-4 border-b border-stroke dark:border-strokedark flex items-center justify-between">
                                             <h4
-                                                class="text-[10px] font-black uppercase tracking-widest text-gray-700 dark:text-gray-200 truncate pr-2">
+                                                class="text-sm font-black uppercase tracking-widest text-gray-700 dark:text-gray-200 truncate pr-2">
                                                 {{ $b->nm_bangsal }}</h4>
                                             <span
-                                                class="px-2 py-0.5 rounded text-[9px] font-black uppercase {{ $statusColor }} {{ $occPercent >= 90 ? 'animate-pulse' : '' }}">{{ number_format($occPercent, 0) }}%</span>
+                                                class="px-2 py-0.5 rounded text-sm font-black uppercase {{ $statusColor }} {{ $occPercent >= 90 ? 'animate-pulse' : '' }}">{{ number_format($occPercent, 0) }}%</span>
                                         </div>
                                         <div class="p-5 flex-1 space-y-4">
                                             <div class="flex items-center justify-between">
                                                 <div class="flex flex-col"><span
-                                                        class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Terisi</span><span
+                                                        class="text-sm font-black text-gray-400 uppercase tracking-widest">Terisi</span><span
                                                         class="text-2xl font-black text-gray-800 dark:text-white">{{ number_format($b->terisi) }}</span>
                                                 </div>
                                                 <div
@@ -783,7 +783,7 @@
                                                         class="icon-[solar--bed-bold-duotone] text-xl text-gray-400"></span>
                                                 </div>
                                                 <div class="flex flex-col text-right"><span
-                                                        class="text-[9px] font-black text-gray-400 uppercase tracking-widest">Kapasitas</span><span
+                                                        class="text-sm font-black text-gray-400 uppercase tracking-widest">Kapasitas</span><span
                                                         class="text-2xl font-black text-gray-300 dark:text-gray-500">{{ number_format($b->kapasitas) }}</span>
                                                 </div>
                                             </div>
@@ -856,12 +856,12 @@
                         class="flex items-center justify-between p-3.5 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm group hover:border-emerald-500 transition-all">
                         <div class="flex items-center gap-4 flex-1">
                             <div
-                                class="w-12 h-12 flex items-center justify-center rounded-xl font-black text-xs {{ $badgeColor }}">
+                                class="w-12 h-12 flex items-center justify-center rounded-xl font-black text-sm {{ $badgeColor }}">
                                 {{ number_format($occ, 0) }}%</div>
                             <div class="flex-1">
                                 <div class="flex items-center justify-between mb-1"><span
-                                        class="text-xs font-black text-gray-700 dark:text-gray-200 uppercase tracking-wider">{{ $stat->kelas }}</span><span
-                                        class="text-[11px] font-bold text-gray-400"><span
+                                        class="text-sm font-black text-gray-700 dark:text-gray-200 uppercase tracking-wider">{{ $stat->kelas }}</span><span
+                                        class="text-sm font-bold text-gray-400"><span
                                             class="text-gray-700 dark:text-gray-200">{{ number_format($stat->terisi) }}</span>
                                         / {{ number_format($stat->kapasitas) }} Bed</span></div>
                                 <div class="w-full bg-gray-100 dark:bg-meta-4 h-1.5 rounded-full overflow-hidden">

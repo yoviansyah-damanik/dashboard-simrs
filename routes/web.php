@@ -57,6 +57,9 @@ Route::middleware('auth')
                 Route::get('/rekap', \App\Livewire\RegisteredPatient\Recap::class)
                     ->middleware('permission:registered-patient recap')
                     ->name('.recap');
+                Route::get('/laporan', \App\Livewire\RegisteredPatient\Report::class)
+                    ->middleware('permission:registered-patient report')
+                    ->name('.report');
             });
         Route::prefix('ranap')
             ->as('inpatient')
@@ -76,6 +79,12 @@ Route::middleware('auth')
                 Route::get('/rekap', \App\Livewire\Outpatient\Recap::class)
                     ->middleware('permission:outpatient recap')
                     ->name('.recap');
+            });
+        Route::prefix('jadwal-operasi')
+            ->as('operation-schedule')
+            ->group(function () {
+                Route::get('/', \App\Livewire\OperationSchedule\Index::class)
+                    ->middleware('permission:operation-schedule show');
             });
         Route::prefix('igd')
             ->as('emergency')
@@ -98,9 +107,16 @@ Route::middleware('auth')
         Route::get('/radiologi', \App\Livewire\Radiology\Index::class)
             ->middleware('permission:radiology show')
             ->name('radiology');
-        Route::get('/farmasi', \App\Livewire\Pharmacy\Index::class)
-            ->middleware('permission:pharmacy show')
-            ->name('pharmacy');
+        Route::prefix('farmasi')
+            ->as('pharmacy')
+            ->group(function () {
+                Route::get('/', \App\Livewire\Pharmacy\Index::class)
+                    ->middleware('permission:pharmacy show')
+                    ->name('');
+                Route::get('/rekap', \App\Livewire\Pharmacy\Recap::class)
+                    ->middleware('permission:pharmacy recap')
+                    ->name('.recap');
+            });
 
         // LAPORAN KEUANGAN
         Route::get('/laporan-keuangan', \App\Livewire\FinancialReport\Index::class)

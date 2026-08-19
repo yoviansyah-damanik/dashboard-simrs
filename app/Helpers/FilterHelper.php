@@ -2,6 +2,8 @@
 
 namespace App\Helpers;
 
+use App\Models\OperatingRoom;
+use App\Models\OperationSchedule;
 use App\Models\Patient;
 use App\Models\RegisteredPatient;
 use App\Repository\RoomRepository;
@@ -315,6 +317,39 @@ class FilterHelper
                         'value' => $type['kode_dokter'],
                     ];
                 })->toArray()
+        ];
+    }
+
+    public static function getOperationStatuses()
+    {
+        return [
+            [
+                'title' => 'Semua',
+                'value' => 'semua'
+            ],
+            ...collect(OperationSchedule::KELOMPOK_STATUS)
+                ->map(function ($status) {
+                    return [
+                        'title' => $status,
+                        'value' => $status,
+                    ];
+                })->toArray()
+        ];
+    }
+
+    public static function getOperatingRooms()
+    {
+        return [
+            [
+                'title' => 'Semua',
+                'value' => 'semua'
+            ],
+            ...OperatingRoom::orderBy(OperatingRoom::NAMA_RUANG_OK)
+                ->get()
+                ->map(fn($room) => [
+                    'title' => $room->{OperatingRoom::NAMA_RUANG_OK},
+                    'value' => $room->{OperatingRoom::KODE_RUANG_OK},
+                ])->toArray()
         ];
     }
 

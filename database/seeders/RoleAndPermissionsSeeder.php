@@ -21,6 +21,7 @@ class RoleAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'patient recap']);
         Permission::create(['name' => 'registered-patient show']);
         Permission::create(['name' => 'registered-patient recap']);
+        Permission::create(['name' => 'registered-patient report']);
         Permission::create(['name' => 'medical-personnel show']);
         Permission::create(['name' => 'medical-non-personnel show']);
         Permission::create(['name' => 'outpatient show']);
@@ -29,6 +30,7 @@ class RoleAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'inpatient recap']);
         Permission::create(['name' => 'emergency show']);
         Permission::create(['name' => 'emergency recap']);
+        Permission::create(['name' => 'operation-schedule show']);
         Permission::create(['name' => 'room show']);
         Permission::create(['name' => 'room recap']);
         Permission::create(['name' => 'polyclinic show']);

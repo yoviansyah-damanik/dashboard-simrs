@@ -2,6 +2,21 @@
 
 Dashboard manajemen rumah sakit internal yang dibangun menggunakan **Laravel 11** dan **Livewire 3**, menyediakan rekapitulasi, laporan, dan tampilan infografis di atas database SIMRS (Sistem Informasi Manajemen Rumah Sakit) yang sudah ada. Dashboard ini bersifat *read-oriented*: memvisualisasikan dan melaporkan data yang dicatat oleh SIMRS rumah sakit, tanpa menduplikasi alur kerja transaksional dari sistem tersebut.
 
+> **Penting:** Dashboard ini hanya dapat digunakan berdampingan dengan **SIMRS Khanza**. Seluruh model, kolom, dan relasi pada koneksi `simrs` dibangun mengikuti skema database SIMRS Khanza (mis. `pasien`, `reg_periksa`, `dokter`, `poliklinik`, `kamar`, `bangsal`, `penjab`, `booking_operasi`, dsb). Dashboard ini **tidak kompatibel** dengan SIMRS lain kecuali struktur tabel database tersebut disesuaikan terlebih dahulu agar sama persis dengan skema SIMRS Khanza.
+
+## Tentang SIMRS Khanza
+
+[SIMRS Khanza](https://khanzaid.com/) adalah aplikasi Sistem Informasi Manajemen Rumah Sakit (SIMRS) yang bersifat **open source**, dikembangkan dan dipelihara oleh komunitas **Khanza Open Source Community (KOSC)** di Indonesia. SIMRS Khanza digunakan secara luas oleh rumah sakit, klinik, dan puskesmas di seluruh Indonesia sebagai sistem pencatatan pelayanan kesehatan.
+
+Karakteristik utama SIMRS Khanza:
+
+- **Lisensi**: open source (bebas digunakan, dimodifikasi, dan dikembangkan oleh masing-masing instansi/vendor)
+- **Basis teknologi**: PHP dengan database **MySQL/MariaDB**
+- **Cakupan modul**: pendaftaran pasien (rawat jalan, rawat inap, IGD), rekam medis, farmasi/apotek, laboratorium, radiologi, gizi, kamar operasi, kasir/keuangan, hingga pelaporan ke BPJS Kesehatan (Bridging SEP/VClaim) dan SATUSEHAT Kemenkes
+- **Skema database**: nama tabel dan kolom berbahasa Indonesia yang khas, misalnya `pasien` (data pasien), `reg_periksa` (registrasi/kunjungan), `dokter`, `poliklinik`, `kamar`/`bangsal` (rawat inap), `penjab` (penanggung jawab/jenis pembayaran), `booking_operasi`/`operasi` (kamar operasi), `pasien_tni`/`pasien_polri` (data dinas TNI/POLRI)
+
+Dashboard ini dibangun sebagai lapisan pelaporan dan visualisasi tambahan (*read-only reporting layer*) yang membaca langsung dari skema database SIMRS Khanza milik rumah sakit, tanpa mengubah data operasional di dalamnya.
+
 ## Arsitektur
 
 Aplikasi ini terhubung ke **dua database**:

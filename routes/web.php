@@ -130,10 +130,10 @@ Route::middleware('auth')
             ->middleware('permission:icd recap')
             ->name('icd');
         Route::get('/icd/icd-10', \App\Livewire\Icd\Icd10::class)
-            ->middleware('permission:icd icd10 recap')
+            ->middleware('permission:icd icd10 show')
             ->name('icd.icd10');
         Route::get('/icd/icd-9', \App\Livewire\Icd\Icd9::class)
-            ->middleware('permission:icd icd9 recap')
+            ->middleware('permission:icd icd9 show')
             ->name('icd.icd9');
 
         Route::get('/kelahiran', \App\Livewire\Birth\Index::class)

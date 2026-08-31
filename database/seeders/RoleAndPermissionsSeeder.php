@@ -12,93 +12,71 @@ class RoleAndPermissionsSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     * Idempoten: aman dijalankan berulang kali tanpa error meskipun sebagian
+     * permission/role sudah ada di database.
      */
     public function run(): void
     {
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        Permission::create(['name' => 'patient show']);
-        Permission::create(['name' => 'patient recap']);
-        Permission::create(['name' => 'registered-patient show']);
-        Permission::create(['name' => 'registered-patient recap']);
-        Permission::create(['name' => 'registered-patient report']);
-        Permission::create(['name' => 'medical-personnel show']);
-        Permission::create(['name' => 'medical-non-personnel show']);
-        Permission::create(['name' => 'outpatient show']);
-        Permission::create(['name' => 'outpatient recap']);
-        Permission::create(['name' => 'inpatient show']);
-        Permission::create(['name' => 'inpatient recap']);
-        Permission::create(['name' => 'emergency show']);
-        Permission::create(['name' => 'emergency recap']);
-        Permission::create(['name' => 'operation-schedule show']);
-        Permission::create(['name' => 'room show']);
-        Permission::create(['name' => 'room recap']);
-        Permission::create(['name' => 'polyclinic show']);
-        Permission::create(['name' => 'polyclinic recap']);
-        Permission::create(['name' => 'laboratory show']);
-        Permission::create(['name' => 'laboratory recap']);
-        Permission::create(['name' => 'radiology show']);
-        Permission::create(['name' => 'radiology recap']);
-        Permission::create(['name' => 'pharmacy show']);
-        Permission::create(['name' => 'pharmacy recap']);
-        Permission::create(['name' => 'icd icd10 show']);
-        Permission::create(['name' => 'icd icd9 show']);
-        Permission::create(['name' => 'icd recap']);
-        Permission::create(['name' => 'nutrition show']);
-        Permission::create(['name' => 'financial-report show']);
-        Permission::create(['name' => 'patient-report show']);
-        Permission::create(['name' => 'human_resource medical_personnel show']);
-        Permission::create(['name' => 'human_resource nonmedica_personnel show']);
-        Permission::create(['name' => 'birth show']);
-        Permission::create(['name' => 'birth recap']);
-        Permission::create(['name' => 'death show']);
-        Permission::create(['name' => 'death recap']);
-        Permission::create(['name' => 'users']);
-        Permission::create(['name' => 'role_and_permissions']);
-        Permission::create(['name' => 'api']);
-        Permission::create(['name' => 'configuration']);
+        $permissionNames = [
+            'patient show',
+            'patient recap',
+            'registered-patient show',
+            'registered-patient recap',
+            'registered-patient report',
+            'medical-personnel show',
+            'medical-non-personnel show',
+            'outpatient show',
+            'outpatient recap',
+            'inpatient show',
+            'inpatient recap',
+            'emergency show',
+            'emergency recap',
+            'operation-schedule show',
+            'room show',
+            'room recap',
+            'polyclinic show',
+            'polyclinic recap',
+            'laboratory show',
+            'laboratory recap',
+            'radiology show',
+            'radiology recap',
+            'pharmacy show',
+            'pharmacy recap',
+            'icd icd10 show',
+            'icd icd9 show',
+            'icd recap',
+            'nutrition show',
+            'financial-report show',
+            'patient-report show',
+            'human_resource medical_personnel show',
+            'human_resource nonmedica_personnel show',
+            'birth show',
+            'birth recap',
+            'death show',
+            'death recap',
+            'users',
+            'role_and_permissions',
+            'api',
+            'configuration',
+        ];
 
-        Role::create(['name' => 'Puskesad'])
-            ->givePermissionTo(Permission::whereNotIn(
-                'name',
-                [
-                    'users',
-                    'configuration'
-                ]
-            )
-                ->get());
+        foreach ($permissionNames as $name) {
+            Permission::firstOrCreate(['name' => $name, 'guard_name' => 'web']);
+        }
 
-        Role::create(['name' => 'Staf'])
-            ->givePermissionTo(Permission::whereNotIn(
-                'name',
-                [
-                    'users',
-                    'configuration'
-                ]
-            )
-                ->get());
+        $allPermissions = Permission::where('guard_name', 'web')->get();
+        $exceptUsersAndConfiguration = $allPermissions->whereNotIn('name', ['users', 'configuration']);
 
-        Role::create(['name' => 'Manajemen'])
-            ->givePermissionTo(Permission::whereNotIn(
-                'name',
-                [
-                    'users',
-                    'configuration'
-                ]
-            )
-                ->get());
+        foreach (['Puskesad', 'Staf', 'Manajemen', 'Administrator'] as $roleName) {
+            $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
+            $role->givePermissionTo($exceptUsersAndConfiguration);
+        }
 
-        Role::create(['name' => 'Administrator'])
-            ->givePermissionTo(Permission::whereNotIn(
-                'name',
-                [
-                    'users',
-                    'configuration'
-                ]
-            )
-                ->get());
+        $superadmin = Role::firstOrCreate(['name' => 'Superadmin', 'guard_name' => 'web']);
+        $superadmin->givePermissionTo($allPermissions);
 
-        Role::create(['name' => 'Superadmin'])
-            ->givePermissionTo(Permission::all());
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
     }
 }

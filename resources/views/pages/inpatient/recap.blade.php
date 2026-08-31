@@ -412,8 +412,8 @@
                     </div>
                 </div>
 
-                <!-- Group 2: Performance Indicators (4 Cards) -->
-                <div class="lg:col-span-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <!-- Group 2: Performance Indicators (5 Cards) -->
+                <div class="lg:col-span-4 grid grid-cols-2 sm:grid-cols-5 gap-4">
                     <div
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-emerald-500 transition-all">
                         <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">BOR</span>
@@ -431,6 +431,12 @@
                         <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">BTO</span>
                         <h4 class="text-2xl font-black text-amber-600">{{ number_format($overall['bto'], 1) }}</h4>
                         <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Turnover</p>
+                    </div>
+                    <div
+                        class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-sky-500 transition-all">
+                        <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">TOI</span>
+                        <h4 class="text-2xl font-black text-sky-600">{{ number_format($overall['toi'], 1) }}</h4>
+                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Idle Days</p>
                     </div>
                     <div
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-red-500 transition-all">
@@ -491,12 +497,18 @@
                                         <th
                                             class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center bg-green-50 dark:bg-green-900/10">
                                             BOR (%)</th>
+                                        <th
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center bg-sky-50 dark:bg-sky-900/10">
+                                            TOI</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-stroke dark:divide-strokedark">
                                     @php $diffDays = \Carbon\Carbon::parse($startDate)->diffInDays(\Carbon\Carbon::parse($endDate)) + 1; @endphp
                                     @forelse($recapData as $item)
-                                        @php $bor = $item->kapasitas > 0 && $diffDays > 0 ? ($item->total_hp / ($item->kapasitas * $diffDays)) * 100 : 0; @endphp
+                                        @php
+                                            $bor = $item->kapasitas > 0 && $diffDays > 0 ? ($item->total_hp / ($item->kapasitas * $diffDays)) * 100 : 0;
+                                            $toi = $item->jumlah_pulang > 0 ? (($item->kapasitas * $diffDays) - $item->total_hp) / $item->jumlah_pulang : 0;
+                                        @endphp
                                         <tr
                                             class="hover:bg-gray-50 dark:hover:bg-meta-4/20 transition-colors text-base">
                                             <td class="px-4 py-4 font-bold text-gray-700 dark:text-gray-300">
@@ -531,10 +543,13 @@
                                             <td
                                                 class="px-3 py-4 text-center font-black bg-green-50/50 dark:bg-green-900/5 {{ $bor > 85 ? 'text-red-500' : ($bor < 60 ? 'text-orange-500' : 'text-emerald-600') }}">
                                                 {{ number_format($bor, 1) }}%</td>
+                                            <td
+                                                class="px-3 py-4 text-center font-black bg-sky-50/50 dark:bg-sky-900/5 text-sky-600">
+                                                {{ number_format($toi, 1) }}</td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="14" class="px-4 py-10 text-center text-gray-500">Tidak ada
+                                            <td colspan="15" class="px-4 py-10 text-center text-gray-500">Tidak ada
                                                 data rekapitulasi untuk periode ini.</td>
                                         </tr>
                                     @endforelse
@@ -594,6 +609,16 @@
                         <div class="h-96" wire:ignore wire:key="chart-recap-gdr"><x-chart
                                 chartId="mainChartGDR" chartType="bar" barType="x" :labels="$overall['charts']['wards_gdr']['labels']"
                                 :datasets="$overall['charts']['wards_gdr']['datasets']" /></div>
+                    </div>
+                    <div
+                        class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
+                        <h4
+                            class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
+                            <span class="icon-[solar--hourglass-bold-duotone] text-lg text-primary"></span>Turn Over Interval (TOI) per Bangsal
+                        </h4>
+                        <div class="h-96" wire:ignore wire:key="chart-recap-toi"><x-chart
+                                chartId="mainChartTOI" chartType="bar" barType="x" :labels="$overall['charts']['wards_toi']['labels']"
+                                :datasets="$overall['charts']['wards_toi']['datasets']" /></div>
                     </div>
                 @endif
             </div>
@@ -1061,6 +1086,10 @@
                 {
                     name: 'mainChartGDR',
                     prop: 'wards_gdr'
+                },
+                {
+                    name: 'mainChartTOI',
+                    prop: 'wards_toi'
                 },
                 {
                     name: 'chartTrendInOut',

@@ -443,7 +443,11 @@ class Recap extends Component
             'alos' => $totalPulang > 0 ? $totalHp / $totalPulang : 0,
             'bor' => ($totalKapasitas > 0 && $diffDays > 0) ? ($totalHp / ($totalKapasitas * $diffDays)) * 100 : 0,
             'bto' => $totalKapasitas > 0 ? $totalPulang / $totalKapasitas : 0,
-            'gdr' => $this->recapData->sum('total_pasien') > 0 ? ($this->recapData->sum('jumlah_meninggal') / $this->recapData->sum('total_pasien')) * 1000 : 0,
+            // TOI (Turn Over Interval): rata-rata jumlah hari tempat tidur kosong antara satu pasien keluar dengan pasien masuk berikutnya.
+            'toi' => $totalPulang > 0 ? (($totalKapasitas * $diffDays) - $totalHp) / $totalPulang : 0,
+            // GDR (Gross Death Rate) dihitung terhadap jumlah pasien KELUAR (hidup + mati) sesuai standar Depkes,
+            // bukan terhadap seluruh pasien yang tercatat pada periode (termasuk yang masih dirawat).
+            'gdr' => $totalPulang > 0 ? ($this->recapData->sum('jumlah_meninggal') / $totalPulang) * 1000 : 0,
             'charts' => [
                 'wards_patients' => [
                     'labels' => $this->recapData->pluck('nm_bangsal')->toArray(),
@@ -488,8 +492,20 @@ class Recap extends Component
                     'labels' => $this->recapData->pluck('nm_bangsal')->toArray(),
                     'datasets' => [[
                         'label' => 'GDR (Permil)',
-                        'data' => $this->recapData->map(fn($item) => $item->total_pasien > 0 ? round(($item->jumlah_meninggal / $item->total_pasien) * 1000, 1) : 0)->toArray(),
+                        'data' => $this->recapData->map(fn($item) => $item->jumlah_pulang > 0 ? round(($item->jumlah_meninggal / $item->jumlah_pulang) * 1000, 1) : 0)->toArray(),
                         'backgroundColor' => '#ef4444',
+                        'borderRadius' => 4
+                    ]]
+                ],
+                'wards_toi' => [
+                    'labels' => $this->recapData->pluck('nm_bangsal')->toArray(),
+                    'datasets' => [[
+                        'label' => 'TOI (Hari)',
+                        'data' => $this->recapData->map(function ($item) {
+                            $diffDays = Carbon::parse($this->startDate)->diffInDays(Carbon::parse($this->endDate)) + 1;
+                            return $item->jumlah_pulang > 0 ? round((($item->kapasitas * $diffDays) - $item->total_hp) / $item->jumlah_pulang, 1) : 0;
+                        })->toArray(),
+                        'backgroundColor' => '#0ea5e9',
                         'borderRadius' => 4
                     ]]
                 ],

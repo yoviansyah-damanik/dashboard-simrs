@@ -25,16 +25,6 @@ class UserSeeder extends Seeder
 
         User::create(
             [
-                'username' => 'yoviansyah25',
-                'name' => 'Yoviansyah Rizki Pratama, S.Kom',
-                'email' => 'yoviansyahrizkypratama@gmail.com',
-                'password' => bcrypt('password'),
-                'as' => 'IT'
-            ]
-        )->assignRole('Administrator');
-
-        User::create(
-            [
                 'username' => 'puskesad2024',
                 'name' => 'IT Puskesad',
                 'email' => 'puskesad@gmail.com',
@@ -42,25 +32,5 @@ class UserSeeder extends Seeder
                 'as' => 'IT Puskesad'
             ]
         )->assignRole('Puskesad');
-
-        User::create(
-            [
-                'username' => 'stafrumkit2024',
-                'name' => 'Staf Rumkit',
-                'email' => 'rumkittnipsp@gmail.com',
-                'password' => bcrypt('password'),
-                'as' => 'Staf Tuud'
-            ]
-        )->assignRole('Staf');
-
-        User::create(
-            [
-                'username' => 'rumkittnipsp2024',
-                'name' => 'dr. Rio Heryanto Gunawan, Sp. THT-KL',
-                'email' => 'heryantoriogunawan@gmail.com',
-                'password' => bcrypt('password'),
-                'as' => 'Kepala Rumah Sakit'
-            ]
-        )->assignRole('Manajemen');
     }
 }

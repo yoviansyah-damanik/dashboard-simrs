@@ -20,6 +20,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
+
+        // Percayakan header dari reverse proxy (mis. Nginx/Apache di depan PHP-FPM) agar Laravel
+        // mendeteksi skema (http/https) dan host yang benar. Tanpa ini, di belakang proxy HTTPS,
+        // deteksi HTTPS/host yang salah dapat membuat cookie sesi & CSRF tidak konsisten antar
+        // request sehingga muncul "Page Expired" (419) saat submit form seperti login.
+        $middleware->trustProxies(at: '*');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // Hak akses (permission/role) pada pengguna yang sedang login sudah tidak sinkron

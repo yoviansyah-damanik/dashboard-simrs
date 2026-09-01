@@ -7,12 +7,12 @@
             <div class="flex items-center gap-4">
                 <div class="flex p-1 bg-gray-100 dark:bg-meta-4 rounded-xl">
                     <button wire:click="$set('mainView', 'list')"
-                        class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-black uppercase tracking-widest transition-all {{ $mainView === 'list' ? 'bg-white dark:bg-boxdark shadow-sm text-primary' : 'text-gray-500' }}">
+                        class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-black uppercase tracking-widest transition-all {{ $mainView === 'list' ? 'bg-white dark:bg-boxdark shadow-sm text-primary-500' : 'text-gray-500' }}">
                         <span class="icon-[solar--list-bold-duotone] text-lg"></span>
                         List
                     </button>
                     <button wire:click="$set('mainView', 'chart')"
-                        class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-black uppercase tracking-widest transition-all {{ $mainView === 'chart' ? 'bg-white dark:bg-boxdark shadow-sm text-primary' : 'text-gray-500' }}">
+                        class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-black uppercase tracking-widest transition-all {{ $mainView === 'chart' ? 'bg-white dark:bg-boxdark shadow-sm text-primary-500' : 'text-gray-500' }}">
                         <span class="icon-[solar--chart-bold-duotone] text-lg"></span>
                         Grafik
                     </button>
@@ -21,7 +21,7 @@
                 <div class="relative min-w-[280px]">
                     <input type="text" wire:model.live.debounce.300ms="searchPackage"
                         placeholder="Cari Nama Paket Operasi..."
-                        class="w-full pl-10 pr-4 py-2.5 bg-white border border-stroke rounded-xl dark:bg-boxdark dark:border-strokedark text-sm focus:border-primary focus:ring-0 outline-none transition-all shadow-sm">
+                        class="w-full pl-10 pr-4 py-2.5 bg-white border border-stroke rounded-xl dark:bg-boxdark dark:border-strokedark text-sm focus:border-primary-500 focus:ring-0 outline-none transition-all shadow-sm">
                     <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                         <span class="icon-[solar--magnifer-bold-duotone] text-xl"></span>
                     </div>
@@ -31,7 +31,7 @@
             <div class="flex flex-wrap items-center gap-3">
                 <div class="relative">
                     <select wire:model.live="period"
-                        class="appearance-none pl-10 pr-10 py-2 bg-white border border-stroke rounded-lg dark:bg-boxdark dark:border-strokedark text-sm font-medium focus:border-primary focus:ring-0 cursor-pointer outline-none transition-all">
+                        class="appearance-none pl-10 pr-10 py-2 bg-white border border-stroke rounded-lg dark:bg-boxdark dark:border-strokedark text-sm font-medium focus:border-primary-500 focus:ring-0 cursor-pointer outline-none transition-all">
                         <option value="today">Hari Ini</option>
                         <option value="last_7_days">7 Hari Lalu</option>
                         <option value="last_30_days">30 Hari Lalu</option>
@@ -53,13 +53,13 @@
                 @if ($period === 'monthly')
                     <div class="flex items-center gap-2">
                         <select wire:model.live="selectedMonth"
-                            class="px-4 py-2 bg-white border border-stroke rounded-lg dark:bg-boxdark dark:border-strokedark text-sm font-medium focus:border-primary outline-none">
+                            class="px-4 py-2 bg-white border border-stroke rounded-lg dark:bg-boxdark dark:border-strokedark text-sm font-medium focus:border-primary-500 outline-none">
                             @foreach ($months as $index => $name)
                                 <option value="{{ $index }}">{{ $name }}</option>
                             @endforeach
                         </select>
                         <select wire:model.live="selectedYear"
-                            class="px-4 py-2 bg-white border border-stroke rounded-lg dark:bg-boxdark dark:border-strokedark text-sm font-medium focus:border-primary outline-none">
+                            class="px-4 py-2 bg-white border border-stroke rounded-lg dark:bg-boxdark dark:border-strokedark text-sm font-medium focus:border-primary-500 outline-none">
                             @foreach ($years as $y)
                                 <option value="{{ $y }}">{{ $y }}</option>
                             @endforeach
@@ -67,7 +67,7 @@
                     </div>
                 @elseif($period === 'yearly')
                     <select wire:model.live="selectedYear"
-                        class="px-4 py-2 bg-white border border-stroke rounded-lg dark:bg-boxdark dark:border-strokedark text-sm font-medium focus:border-primary outline-none">
+                        class="px-4 py-2 bg-white border border-stroke rounded-lg dark:bg-boxdark dark:border-strokedark text-sm font-medium focus:border-primary-500 outline-none">
                         @foreach ($years as $y)
                             <option value="{{ $y }}">{{ $y }}</option>
                         @endforeach
@@ -87,7 +87,7 @@
         <!-- Summary -->
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="p-3 bg-primary/10 text-primary rounded-xl">
+                <div class="p-3 bg-primary-500/10 text-primary-500 rounded-xl">
                     <span class="icon-[solar--folder-with-files-bold-duotone] text-2xl"></span>
                 </div>
                 <div>
@@ -96,7 +96,7 @@
                 </div>
             </div>
             <div class="text-right">
-                <span class="text-4xl font-black text-primary">{{ number_format($recapData->sum('jumlah_operasi')) }}</span>
+                <span class="text-4xl font-black text-primary-500">{{ number_format($recapData->sum('jumlah_operasi')) }}</span>
                 <span class="text-sm font-bold text-gray-400 block uppercase tracking-tighter">Total Operasi</span>
             </div>
         </div>
@@ -111,7 +111,7 @@
                                 <th class="px-4 py-4 text-sm font-black uppercase tracking-widest text-center">Kategori</th>
                                 <th class="px-4 py-4 text-sm font-black uppercase tracking-widest text-center bg-blue-50 dark:bg-blue-900/10">Jumlah Operasi</th>
                                 <th class="px-4 py-4 text-sm font-black uppercase tracking-widest text-center text-emerald-600">Selesai</th>
-                                <th class="px-4 py-4 text-sm font-black uppercase tracking-widest text-center text-primary">Proses</th>
+                                <th class="px-4 py-4 text-sm font-black uppercase tracking-widest text-center text-primary-500">Proses</th>
                                 <th class="px-4 py-4 text-sm font-black uppercase tracking-widest text-center text-amber-600">Menunggu</th>
                                 <th class="px-6 py-4 text-sm font-black uppercase tracking-widest text-center">Proporsi</th>
                             </tr>
@@ -122,7 +122,7 @@
                                 @php $percent = $total > 0 ? ($item->jumlah_operasi / $total) * 100 : 0; @endphp
                                 <tr class="hover:bg-gray-50 dark:hover:bg-meta-4/20 transition-colors group">
                                     <td class="px-6 py-4">
-                                        <span class="text-sm font-bold text-gray-800 dark:text-white group-hover:text-primary transition-colors">{{ $item->nama_paket }}</span>
+                                        <span class="text-sm font-bold text-gray-800 dark:text-white group-hover:text-primary-500 transition-colors">{{ $item->nama_paket }}</span>
                                     </td>
                                     <td class="px-4 py-4 text-center">
                                         <span class="px-2 py-1 bg-gray-100 dark:bg-meta-4 rounded text-sm font-black text-gray-600 dark:text-gray-300 uppercase">{{ $item->kategori ?: '-' }}</span>
@@ -131,14 +131,14 @@
                                         {{ number_format($item->jumlah_operasi) }}</td>
                                     <td class="px-4 py-4 text-center text-emerald-600 font-bold">
                                         {{ number_format($item->jumlah_selesai) }}</td>
-                                    <td class="px-4 py-4 text-center text-primary font-bold">
+                                    <td class="px-4 py-4 text-center text-primary-500 font-bold">
                                         {{ number_format($item->jumlah_proses) }}</td>
                                     <td class="px-4 py-4 text-center text-amber-600 font-bold">
                                         {{ number_format($item->jumlah_menunggu) }}</td>
                                     <td class="px-6 py-4">
                                         <div class="flex items-center gap-2">
                                             <div class="flex-1 min-w-0 bg-gray-100 dark:bg-meta-4 h-2 rounded-full overflow-hidden">
-                                                <div class="bg-primary h-full rounded-full" style="width: {{ $percent }}%"></div>
+                                                <div class="bg-primary-500 h-full rounded-full" style="width: {{ $percent }}%"></div>
                                             </div>
                                             <span class="shrink-0 whitespace-nowrap text-sm font-bold text-gray-500 dark:text-gray-400 w-14 text-right">{{ number_format($percent, 1) }}%</span>
                                         </div>
@@ -175,7 +175,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
                     <h4 class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
-                        <span class="icon-[solar--chart-square-bold-duotone] text-lg text-primary"></span>
+                        <span class="icon-[solar--chart-square-bold-duotone] text-lg text-primary-500"></span>
                         Top 10 Paket Operasi Terbanyak
                     </h4>
                     <div class="h-96" wire:ignore wire:key="chart-recap-packages">
@@ -184,7 +184,7 @@
                 </div>
                 <div class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
                     <h4 class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
-                        <span class="icon-[solar--pie-chart-bold-duotone] text-lg text-primary"></span>
+                        <span class="icon-[solar--pie-chart-bold-duotone] text-lg text-primary-500"></span>
                         Proporsi per Kategori
                     </h4>
                     <div class="h-96 flex items-center justify-center" wire:ignore wire:key="chart-recap-category">

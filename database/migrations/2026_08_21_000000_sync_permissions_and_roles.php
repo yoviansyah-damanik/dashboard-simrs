@@ -32,6 +32,7 @@ return new class extends Migration
             'emergency show',
             'emergency recap',
             'operation-schedule show',
+            'operation-schedule recap',
             'room show',
             'room recap',
             'polyclinic show',

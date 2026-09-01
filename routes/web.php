@@ -139,6 +139,102 @@ Route::middleware('auth')
             ->middleware('permission:icd icd9 show')
             ->name('icd.icd9');
 
+        // SIRS ONLINE
+        Route::prefix('sirs')
+            ->as('sirs.')
+            ->group(function () {
+                Route::get('/', \App\Livewire\Sirs\Index::class)
+                    ->middleware('permission:sirs.dashboard')
+                    ->name('index');
+                Route::get('/rl11', \App\Livewire\Sirs\Rl11::class)
+                    ->middleware('permission:sirs.rl1')
+                    ->name('rl11');
+                Route::get('/rl12', \App\Livewire\Sirs\Rl12::class)
+                    ->middleware('permission:sirs.rl1')
+                    ->name('rl12');
+                Route::get('/rl13', \App\Livewire\Sirs\Rl13::class)
+                    ->middleware('permission:sirs.rl1')
+                    ->name('rl13');
+                Route::get('/rl2', \App\Livewire\Sirs\Rl2::class)
+                    ->middleware('permission:sirs.rl2')
+                    ->name('rl2');
+                Route::get('/rl31', \App\Livewire\Sirs\Rl31::class)
+                    ->middleware('permission:sirs.rl3_bulanan')
+                    ->name('rl31');
+                Route::get('/rl32', \App\Livewire\Sirs\Rl32::class)
+                    ->middleware('permission:sirs.rl3_bulanan')
+                    ->name('rl32');
+                Route::get('/rl33', \App\Livewire\Sirs\Rl33::class)
+                    ->middleware('permission:sirs.rl3_bulanan')
+                    ->name('rl33');
+                Route::get('/rl34', \App\Livewire\Sirs\Rl34::class)
+                    ->middleware('permission:sirs.rl3_bulanan')
+                    ->name('rl34');
+                Route::get('/rl35', \App\Livewire\Sirs\Rl35::class)
+                    ->middleware('permission:sirs.rl3_bulanan')
+                    ->name('rl35');
+                Route::get('/rl36', \App\Livewire\Sirs\Rl36::class)
+                    ->middleware('permission:sirs.rl3_bulanan')
+                    ->name('rl36');
+                Route::get('/rl37', \App\Livewire\Sirs\Rl37::class)
+                    ->middleware('permission:sirs.rl3_bulanan')
+                    ->name('rl37');
+                Route::get('/rl38', \App\Livewire\Sirs\Rl38::class)
+                    ->middleware('permission:sirs.rl3_bulanan')
+                    ->name('rl38');
+                Route::get('/rl39', \App\Livewire\Sirs\Rl39::class)
+                    ->middleware('permission:sirs.rl3_bulanan')
+                    ->name('rl39');
+                Route::get('/rl310', \App\Livewire\Sirs\Rl310::class)
+                    ->middleware('permission:sirs.rl3_bulanan')
+                    ->name('rl310');
+                Route::get('/rl311', \App\Livewire\Sirs\Rl311::class)
+                    ->middleware('permission:sirs.rl3_tahunan')
+                    ->name('rl311');
+                Route::get('/rl312', \App\Livewire\Sirs\Rl312::class)
+                    ->middleware('permission:sirs.rl3_bulanan')
+                    ->name('rl312');
+                Route::get('/rl313', \App\Livewire\Sirs\Rl313::class)
+                    ->middleware('permission:sirs.rl3_tahunan')
+                    ->name('rl313');
+                Route::get('/rl314', \App\Livewire\Sirs\Rl314::class)
+                    ->middleware('permission:sirs.rl3_bulanan')
+                    ->name('rl314');
+                Route::get('/rl315', \App\Livewire\Sirs\Rl315::class)
+                    ->middleware('permission:sirs.rl3_tahunan')
+                    ->name('rl315');
+                Route::get('/rl316', \App\Livewire\Sirs\Rl316::class)
+                    ->middleware('permission:sirs.rl3_tahunan')
+                    ->name('rl316');
+                Route::get('/rl317', \App\Livewire\Sirs\Rl317::class)
+                    ->middleware('permission:sirs.rl3_tahunan')
+                    ->name('rl317');
+                Route::get('/rl318', \App\Livewire\Sirs\Rl318::class)
+                    ->middleware('permission:sirs.rl3_tahunan')
+                    ->name('rl318');
+                Route::get('/rl319', \App\Livewire\Sirs\Rl319::class)
+                    ->middleware('permission:sirs.rl3_tahunan')
+                    ->name('rl319');
+                Route::get('/rl41', \App\Livewire\Sirs\Rl41::class)
+                    ->middleware('permission:sirs.rl4')
+                    ->name('rl41');
+                Route::get('/rl42', \App\Livewire\Sirs\Rl42::class)
+                    ->middleware('permission:sirs.rl4')
+                    ->name('rl42');
+                Route::get('/rl43', \App\Livewire\Sirs\Rl43::class)
+                    ->middleware('permission:sirs.rl4')
+                    ->name('rl43');
+                Route::get('/rl51', \App\Livewire\Sirs\Rl51::class)
+                    ->middleware('permission:sirs.rl5')
+                    ->name('rl51');
+                Route::get('/rl52', \App\Livewire\Sirs\Rl52::class)
+                    ->middleware('permission:sirs.rl5')
+                    ->name('rl52');
+                Route::get('/rl53', \App\Livewire\Sirs\Rl53::class)
+                    ->middleware('permission:sirs.rl5')
+                    ->name('rl53');
+            });
+
         Route::get('/kelahiran', \App\Livewire\Birth\Index::class)
             ->middleware('permission:birth show')
             ->name('birth');

@@ -34,6 +34,7 @@ class RoleAndPermissionsSeeder extends Seeder
             'emergency show',
             'emergency recap',
             'operation-schedule show',
+            'operation-schedule recap',
             'room show',
             'room recap',
             'polyclinic show',

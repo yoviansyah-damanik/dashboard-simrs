@@ -139,6 +139,12 @@ class Sidebar extends Component
                                     'href' => route('operation-schedule'),
                                     'isActive' => request()->routeIs('operation-schedule'),
                                     'isShown' => auth()->user()->hasPermissionTo('operation-schedule show')
+                                ],
+                                [
+                                    'title' => 'Rekap Operasi',
+                                    'href' => route('operation-schedule.recap'),
+                                    'isActive' => request()->routeIs('operation-schedule.recap'),
+                                    'isShown' => auth()->user()->hasPermissionTo('operation-schedule recap')
                                 ]
                             ]
                         ],

@@ -135,28 +135,45 @@ class Home extends Component
     {
         $startOfMonth = Carbon::now()->startOfMonth();
         $today = Carbon::now();
-        $daysInMonth = $startOfMonth->diffInDays($today) + 1;
+        // Dihitung dari tanggal saja (tanpa jam), agar jumlah hari periode selalu bilangan bulat —
+        // Carbon::now() menyertakan jam saat ini sehingga diffInDays bisa menghasilkan pecahan hari.
+        $daysInMonth = $startOfMonth->copy()->startOfDay()->diffInDays($today->copy()->startOfDay()) + 1;
         
         $totalBed = DB::connection('simrs')
             ->table('kamar')
             ->where('kd_bangsal', '!=', 'TRANS')
             ->count();
         
-        // HP (Hari Perawatan) & LOS (Length of Stay)
-        // Filter out records where the room belongs to TRANS ward
+        // HP (Hari Perawatan) & pasien keluar bulan berjalan.
+        // Mengikutsertakan pasien yang sedang berada di ruangan pada periode ini (bukan hanya yang
+        // masuk pada periode ini), dan hanya menghitung "keluar" untuk baris yang benar-benar
+        // merupakan pemulangan (bukan "-" sedang dirawat atau "Pindah Kamar" pindah ruangan),
+        // konsisten dengan perhitungan pada halaman Rekap Rawat Inap.
         $inpatientData = DB::connection('simrs')
             ->table('kamar_inap')
             ->join('kamar', 'kamar_inap.kd_kamar', '=', 'kamar.kd_kamar')
             ->where('kamar.kd_bangsal', '!=', 'TRANS')
-            ->whereBetween('kamar_inap.tgl_masuk', [$startOfMonth, $today])
-            ->selectRaw('SUM(kamar_inap.lama) as total_hp, count(*) as total_keluar')
+            ->where('kamar_inap.tgl_masuk', '<=', $today->format('Y-m-d'))
+            ->where(function ($q) use ($startOfMonth) {
+                $q->where('kamar_inap.tgl_keluar', '>=', $startOfMonth->format('Y-m-d'))
+                    ->orWhere('kamar_inap.stts_pulang', '-');
+            })
+            ->selectRaw('
+                sum(case when lama = 0 then 1 else lama end) as total_hp,
+                sum(case when stts_pulang NOT IN ("-", "Pindah Kamar") then (case when lama = 0 then 1 else lama end) else 0 end) as total_hp_keluar,
+                sum(case when stts_pulang NOT IN ("-", "Pindah Kamar") then 1 else 0 end) as total_keluar
+            ')
             ->first();
 
         $hp = $inpatientData->total_hp ?? 0;
+        $hpKeluar = $inpatientData->total_hp_keluar ?? 0;
         $keluar = $inpatientData->total_keluar ?? 0;
 
         $bor = ($totalBed > 0) ? ($hp / ($totalBed * $daysInMonth)) * 100 : 0;
-        $alos = $keluar > 0 ? $hp / $keluar : 0;
+        // ALOS memakai hari rawat pasien yang benar-benar KELUAR saja (hpKeluar), bukan total_hp
+        // (semua pasien termasuk yang masih dirawat) — kalau memakai total_hp, ALOS bisa meledak tidak
+        // wajar saat jumlah pasien keluar sangat sedikit (mis. awal bulan).
+        $alos = $keluar > 0 ? $hpKeluar / $keluar : 0;
         $toi = $keluar > 0 ? ((($totalBed * $daysInMonth) - $hp) / $keluar) : 0;
         $bto = $totalBed > 0 ? $keluar / $totalBed : 0;
 

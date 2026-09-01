@@ -85,6 +85,9 @@ Route::middleware('auth')
             ->group(function () {
                 Route::get('/', \App\Livewire\OperationSchedule\Index::class)
                     ->middleware('permission:operation-schedule show');
+                Route::get('/rekap', \App\Livewire\OperationSchedule\Recap::class)
+                    ->middleware('permission:operation-schedule recap')
+                    ->name('.recap');
             });
         Route::prefix('igd')
             ->as('emergency')

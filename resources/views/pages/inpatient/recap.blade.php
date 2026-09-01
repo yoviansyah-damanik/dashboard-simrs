@@ -226,6 +226,18 @@
                                 </tr>
                             @endforelse
                         </tbody>
+                        @if ($currentPatients->isNotEmpty())
+                            <tfoot>
+                                <tr class="bg-gray-100 dark:bg-meta-4 border-t-2 border-stroke dark:border-strokedark">
+                                    <td class="px-6 py-4 font-black text-gray-800 dark:text-white" colspan="5">
+                                        TOTAL / RATA-RATA</td>
+                                    <td class="px-4 py-4 text-center font-black text-gray-700 dark:text-gray-200">
+                                        {{ number_format($currentPatients->count()) }} Pasien</td>
+                                    <td class="px-6 py-4 text-center font-black text-primary">
+                                        {{ number_format($currentPatients->avg('lama_inap'), 1) }} Hari</td>
+                                </tr>
+                            </tfoot>
+                        @endif
                     </table>
                 </div>
             </div>
@@ -441,7 +453,7 @@
                     <div
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-red-500 transition-all">
                         <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">GDR</span>
-                        <h4 class="text-2xl font-black text-red-600">{{ number_format($overall['gdr'], 1) }}</h4>
+                        <h4 class="text-2xl font-black text-red-600">{{ number_format($overall['gdr'], 1) }}%</h4>
                         <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Death Rate</p>
                     </div>
                 </div>
@@ -554,6 +566,43 @@
                                         </tr>
                                     @endforelse
                                 </tbody>
+                                @if ($recapData->isNotEmpty())
+                                    <tfoot>
+                                        <tr class="bg-gray-100 dark:bg-meta-4 border-t-2 border-stroke dark:border-strokedark text-base">
+                                            <td class="px-4 py-4 font-black text-gray-800 dark:text-white" colspan="2">
+                                                TOTAL / RATA-RATA</td>
+                                            <td class="px-3 py-4 text-center font-black bg-gray-200 dark:bg-meta-4/70">
+                                                {{ number_format($recapData->sum('kapasitas')) }}</td>
+                                            <td class="px-3 py-4 text-center text-indigo-700 font-black">
+                                                {{ number_format($recapData->sum('terisi')) }}</td>
+                                            <td class="px-3 py-4 text-center bg-blue-100 dark:bg-blue-900/20 font-black">
+                                                {{ number_format($recapData->sum('total_pasien')) }}</td>
+                                            <td class="px-3 py-4 text-center text-blue-600 font-black">
+                                                {{ number_format($recapData->sum('total_laki')) }}</td>
+                                            <td class="px-3 py-4 text-center text-pink-600 font-black">
+                                                {{ number_format($recapData->sum('total_perempuan')) }}</td>
+                                            <td class="px-3 py-4 text-center text-emerald-700 font-black">
+                                                {{ number_format($recapData->sum('jumlah_pulang')) }}</td>
+                                            <td class="px-3 py-4 text-center text-amber-700 font-black">
+                                                {{ number_format($recapData->sum('jumlah_dirujuk')) }}</td>
+                                            <td class="px-3 py-4 text-center text-gray-600 font-black">
+                                                {{ number_format($recapData->sum('jumlah_aps')) }}</td>
+                                            <td class="px-3 py-4 text-center text-red-700 font-black">
+                                                {{ number_format($recapData->sum('jumlah_meninggal')) }}</td>
+                                            <td class="px-3 py-4 text-center font-black text-gray-600">
+                                                {{ number_format($recapData->sum('total_hp')) }}</td>
+                                            <td
+                                                class="px-3 py-4 text-center font-black bg-purple-100 dark:bg-purple-900/20 text-purple-700">
+                                                {{ number_format($overall['alos'], 1) }}</td>
+                                            <td
+                                                class="px-3 py-4 text-center font-black bg-green-100 dark:bg-green-900/20 text-emerald-700">
+                                                {{ number_format($overall['bor'], 1) }}%</td>
+                                            <td
+                                                class="px-3 py-4 text-center font-black bg-sky-100 dark:bg-sky-900/20 text-sky-700">
+                                                {{ number_format($overall['toi'], 1) }}</td>
+                                        </tr>
+                                    </tfoot>
+                                @endif
                             </table>
                         </div>
                     </div>

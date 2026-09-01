@@ -323,6 +323,17 @@ class Recap extends Component
             ->join('reg_periksa', 'kamar_inap.no_rawat', '=', 'reg_periksa.no_rawat')
             ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
             ->join('kamar', 'kamar_inap.kd_kamar', '=', 'kamar.kd_kamar')
+            // Pasien dianggap meninggal jika status pulang ruangan = "Meninggal" ATAU tercatat pada
+            // registri kematian (pasien_mati), dicocokkan dengan tanggal kematian yang jatuh di dalam
+            // rentang rawatan tersebut (agar tidak salah kaitkan dengan rawatan lain milik pasien yang sama).
+            ->leftJoin('pasien_mati', function ($join) {
+                $join->on('pasien_mati.no_rkm_medis', '=', 'reg_periksa.no_rkm_medis')
+                    ->whereColumn('pasien_mati.tanggal', '>=', 'kamar_inap.tgl_masuk')
+                    ->where(function ($q) {
+                        $q->whereColumn('pasien_mati.tanggal', '<=', 'kamar_inap.tgl_keluar')
+                            ->orWhereNull('kamar_inap.tgl_keluar');
+                    });
+            })
             ->where('kamar_inap.tgl_masuk', '<=', $this->endDate)
             ->where(function ($q) {
                 $q->where('kamar_inap.tgl_keluar', '>=', $this->startDate)
@@ -339,9 +350,23 @@ class Recap extends Component
                 DB::raw('sum(case when stts_pulang = "-" then 1 else 0 end) as jumlah_dirawat'),
                 DB::raw('sum(case when stts_pulang = "Rujuk" then 1 else 0 end) as jumlah_dirujuk'),
                 DB::raw('sum(case when stts_pulang IN ("APS", "Atas Permintaan Sendiri", "Pulang Paksa") then 1 else 0 end) as jumlah_aps'),
-                DB::raw('sum(case when stts_pulang = "Meninggal" then 1 else 0 end) as jumlah_meninggal'),
+                // Dibatasi hanya baris yang juga terhitung sebagai "keluar" (jumlah_pulang), agar jumlah_meninggal
+                // selalu menjadi bagian (subset) dari jumlah_pulang sesuai definisi rumus GDR. Tanpa batasan ini,
+                // baris riwayat "Pindah Kamar" yang tanggal keluarnya kebetulan sama dengan tanggal di pasien_mati
+                // bisa ikut terhitung meninggal padahal bukan baris pemulangan final pasien tersebut.
+                DB::raw('sum(case when stts_pulang NOT IN ("-", "Pindah Kamar") and (stts_pulang = "Meninggal" or pasien_mati.no_rkm_medis is not null) then 1 else 0 end) as jumlah_meninggal'),
+                // total_hp: seluruh hari rawat pasien pada periode ini (termasuk yang masih dirawat),
+                // dipakai untuk BOR & TOI sesuai standar Depkes ("hari perawatan RS").
                 DB::raw('sum(case when lama = 0 then 1 else lama end) as total_hp'),
-                DB::raw('avg(case when stts_pulang NOT IN ("-", "Pindah Kamar") then lama else null end) as rata_lama_hari')
+                // total_hp_keluar: HANYA hari rawat pasien yang benar-benar KELUAR (hidup/mati) pada
+                // periode ini. Ini pembilang yang benar untuk ALOS — jika memakai total_hp (semua pasien,
+                // termasuk yang masih dirawat lama), ALOS bisa meledak tidak wajar saat jumlah pasien
+                // keluar sangat sedikit (mis. awal bulan) karena ikut menjumlah hari rawat pasien yang
+                // belum pulang sama sekali.
+                DB::raw('sum(case when stts_pulang NOT IN ("-", "Pindah Kamar") then (case when lama = 0 then 1 else lama end) else 0 end) as total_hp_keluar'),
+                // Memakai numerator yang sama (total_hp_keluar) untuk konsistensi antara rata-rata per
+                // bangsal dan ALOS keseluruhan (total_hp_keluar / jumlah_pulang).
+                DB::raw('avg(case when stts_pulang NOT IN ("-", "Pindah Kamar") then (case when lama = 0 then 1 else lama end) else null end) as rata_lama_hari')
             )
             ->groupBy('kamar.kd_bangsal', 'kamar.kelas');
 
@@ -416,6 +441,7 @@ class Recap extends Component
     {
         $diffDays = Carbon::parse($this->startDate)->diffInDays(Carbon::parse($this->endDate)) + 1;
         $totalHp = $this->recapData->sum('total_hp');
+        $totalHpKeluar = $this->recapData->sum('total_hp_keluar');
         $totalKapasitas = $this->recapData->sum('kapasitas');
         $totalPulang = $this->recapData->sum('jumlah_pulang');
 
@@ -440,14 +466,17 @@ class Recap extends Component
             ->get();
 
         return [
-            'alos' => $totalPulang > 0 ? $totalHp / $totalPulang : 0,
+            // ALOS memakai total_hp_keluar (hari rawat pasien yang benar-benar KELUAR saja), bukan total_hp
+            // (semua pasien termasuk yang masih dirawat) — kalau memakai total_hp, ALOS bisa meledak tidak
+            // wajar saat jumlah pasien keluar sangat sedikit (mis. awal periode/bulan).
+            'alos' => $totalPulang > 0 ? $totalHpKeluar / $totalPulang : 0,
             'bor' => ($totalKapasitas > 0 && $diffDays > 0) ? ($totalHp / ($totalKapasitas * $diffDays)) * 100 : 0,
             'bto' => $totalKapasitas > 0 ? $totalPulang / $totalKapasitas : 0,
             // TOI (Turn Over Interval): rata-rata jumlah hari tempat tidur kosong antara satu pasien keluar dengan pasien masuk berikutnya.
             'toi' => $totalPulang > 0 ? (($totalKapasitas * $diffDays) - $totalHp) / $totalPulang : 0,
             // GDR (Gross Death Rate) dihitung terhadap jumlah pasien KELUAR (hidup + mati) sesuai standar Depkes,
             // bukan terhadap seluruh pasien yang tercatat pada periode (termasuk yang masih dirawat).
-            'gdr' => $totalPulang > 0 ? ($this->recapData->sum('jumlah_meninggal') / $totalPulang) * 1000 : 0,
+            'gdr' => $totalPulang > 0 ? ($this->recapData->sum('jumlah_meninggal') / $totalPulang) * 100 : 0,
             'charts' => [
                 'wards_patients' => [
                     'labels' => $this->recapData->pluck('nm_bangsal')->toArray(),
@@ -491,8 +520,8 @@ class Recap extends Component
                 'wards_gdr' => [
                     'labels' => $this->recapData->pluck('nm_bangsal')->toArray(),
                     'datasets' => [[
-                        'label' => 'GDR (Permil)',
-                        'data' => $this->recapData->map(fn($item) => $item->jumlah_pulang > 0 ? round(($item->jumlah_meninggal / $item->jumlah_pulang) * 1000, 1) : 0)->toArray(),
+                        'label' => 'GDR (%)',
+                        'data' => $this->recapData->map(fn($item) => $item->jumlah_pulang > 0 ? round(($item->jumlah_meninggal / $item->jumlah_pulang) * 100, 1) : 0)->toArray(),
                         'backgroundColor' => '#ef4444',
                         'borderRadius' => 4
                     ]]

@@ -153,12 +153,12 @@ class Home extends Component
             ->first();
 
         $hp = $inpatientData->total_hp ?? 0;
-        $keluar = $inpatientData->total_keluar ?? 1; // Avoid division by zero
+        $keluar = $inpatientData->total_keluar ?? 0;
 
         $bor = ($totalBed > 0) ? ($hp / ($totalBed * $daysInMonth)) * 100 : 0;
-        $alos = $hp / $keluar;
-        $toi = (($totalBed * $daysInMonth) - $hp) / $keluar;
-        $bto = $keluar / ($totalBed ?: 1);
+        $alos = $keluar > 0 ? $hp / $keluar : 0;
+        $toi = $keluar > 0 ? ((($totalBed * $daysInMonth) - $hp) / $keluar) : 0;
+        $bto = $totalBed > 0 ? $keluar / $totalBed : 0;
 
         return [
             'bor' => round($bor, 2),

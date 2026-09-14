@@ -3,6 +3,7 @@
 namespace App\Livewire\Patient;
 
 use App\Models\Patient;
+use App\Helpers\SirsHelper;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -168,20 +169,18 @@ class Recap extends Component
 
         $ageGroups = (clone $this->baseQuery())
             ->selectRaw(
-                'case '
-                    . 'when TIMESTAMPDIFF(year, tgl_lahir, now()) < 5 then "' . Patient::KELOMPOK_UMUR['balita'] . '" '
-                    . 'when TIMESTAMPDIFF(year, tgl_lahir, now()) between 5 and 11 then "' . Patient::KELOMPOK_UMUR['anak'] . '" '
-                    . 'when TIMESTAMPDIFF(year, tgl_lahir, now()) between 12 and 25 then "' . Patient::KELOMPOK_UMUR['remaja'] . '" '
-                    . 'when TIMESTAMPDIFF(year, tgl_lahir, now()) between 26 and 45 then "' . Patient::KELOMPOK_UMUR['dewasa'] . '" '
-                    . 'when TIMESTAMPDIFF(year, tgl_lahir, now()) between 46 and 65 then "' . Patient::KELOMPOK_UMUR['lansia'] . '" '
-                    . 'else "' . Patient::KELOMPOK_UMUR['lainnya'] . '" end as kelompok, '
+                SirsHelper::ageGroupCategoryCaseSql('tgl_lahir') . ' as kelompok_kode, '
                     . 'count(*) as total, '
                     . 'sum(case when jk = "L" then 1 else 0 end) as laki, '
                     . 'sum(case when jk = "P" then 1 else 0 end) as perempuan'
             )
-            ->groupBy('kelompok')
+            ->groupBy('kelompok_kode')
             ->get()
-            ->sortBy(fn($item) => array_search($item->kelompok, Patient::KELOMPOK_UMUR))
+            ->map(function ($item) {
+                $item->kelompok = SirsHelper::ageGroupCategoryLabels()[$item->kelompok_kode] ?? $item->kelompok_kode;
+                return $item;
+            })
+            ->sortBy(fn($item) => array_search($item->kelompok_kode, array_keys(SirsHelper::getAgeGroupCategories())))
             ->values();
 
         $regionStats = (clone $this->baseQuery())

@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Helpers\SirsHelper;
+use App\Services\HospitalIndicatorService;
 use Illuminate\Support\Facades\DB;
 
 interface SirsFacilityInterface
@@ -60,6 +61,38 @@ class SirsFacilityRepository implements SirsFacilityInterface
             $totalTt += $row->jumlah_tt;
         }
 
+        return self::computeIndicatorsForPeriod($startDate, $endDate, $jumlahHari, $totalTt);
+    }
+
+    /**
+     * Matriks indikator pelayanan rawat inap (BOR/ALOS/BTO/TOI/NDR/GDR) per bulan untuk satu tahun,
+     * seluruh RS. Key 1-12 = bulan, key 'tahun' = angka tahunan penuh (sama dengan getRL12()).
+     */
+    public static function getYearlyIndicatorMatrix(int $tahun): array
+    {
+        $totalTt = 0;
+        foreach (SirsHelper::getBedsPerWard(excludeTr: true) as $row) {
+            $totalTt += $row->jumlah_tt;
+        }
+
+        $months = [];
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            $range = SirsHelper::getDateRange($tahun, $bulan);
+            $months[$bulan] = self::computeIndicatorsForPeriod($range['start'], $range['end'], $range['jumlah_hari'], $totalTt);
+        }
+
+        $months['tahun'] = self::getRL12($tahun);
+
+        return $months;
+    }
+
+    /**
+     * Hitung BOR/ALOS/BTO/TOI/NDR/GDR seluruh RS untuk satu rentang tanggal (dipakai bersama oleh
+     * getRL12() dan getYearlyIndicatorMatrix() agar query hari-perawatan & pasien-keluar tidak
+     * diduplikasi).
+     */
+    private static function computeIndicatorsForPeriod(string $startDate, string $endDate, int $jumlahHari, int $totalTt): array
+    {
         $hariPerawatan = DB::connection(self::KONEKSI)->selectOne("
             SELECT SUM(ki.lama) as total
             FROM kamar_inap ki
@@ -91,18 +124,15 @@ class SirsFacilityRepository implements SirsFacilityInterface
         $mati = $pasienKeluar->mati ?? 0;
         $matiKurang48 = $pasienKeluar->mati_kurang48 ?? 0;
 
-        $result = ['bor' => 0, 'alos' => 0, 'bto' => 0, 'toi' => 0, 'ndr' => 0, 'gdr' => 0];
-
-        if ($totalTt > 0 && $totalKeluar > 0) {
-            $result['bor'] = round(($totalHp / ($totalTt * $jumlahHari)) * 100, 2);
-            $result['alos'] = round($totalLama / $totalKeluar, 2);
-            $result['bto'] = round($totalKeluar / $totalTt, 2);
-            $result['toi'] = round((($totalTt * $jumlahHari) - $totalHp) / $totalKeluar, 2);
-            $result['ndr'] = round($matiKurang48 / $totalKeluar, 4) * 1000;
-            $result['gdr'] = round($mati / $totalKeluar, 4) * 1000;
-        }
-
-        return $result;
+        return HospitalIndicatorService::calculate(
+            hariPerawatan: $totalHp,
+            totalTempatTidur: $totalTt,
+            jumlahHari: $jumlahHari,
+            pasienKeluarHidup: max(0, $totalKeluar - $mati),
+            pasienKeluarMati: $mati,
+            totalLamaDirawatKeluar: $totalLama,
+            pasienKeluarMatiKurang48: $matiKurang48,
+        );
     }
 
     /** RL 1.3 - Fasilitas Tempat Tidur Rawat Inap (kondisi terkini, per kelas perawatan) */

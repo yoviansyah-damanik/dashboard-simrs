@@ -5,6 +5,7 @@ namespace App\Livewire\Outpatient;
 use Livewire\Component;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Helpers\SirsHelper;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 
@@ -173,20 +174,17 @@ class Recap extends Component
             ->whereBetween('tgl_registrasi', [$this->startDate, $this->endDate])
             ->where('stts', '!=', 'Batal')
             ->select(
-                DB::raw('case 
-                    when pasien.tgl_lahir > date_sub(now(), interval 1 year) then "Bayi"
-                    when pasien.tgl_lahir > date_sub(now(), interval 5 year) then "Balita"
-                    when pasien.tgl_lahir > date_sub(now(), interval 12 year) then "Anak"
-                    when pasien.tgl_lahir > date_sub(now(), interval 18 year) then "Remaja"
-                    when pasien.tgl_lahir > date_sub(now(), interval 45 year) then "Dewasa"
-                    when pasien.tgl_lahir > date_sub(now(), interval 65 year) then "Lansia"
-                    else "Manula" end as kelompok'),
+                DB::raw(SirsHelper::ageGroupCategoryCaseSql('pasien.tgl_lahir') . ' as kelompok_kode'),
                 DB::raw('count(*) as total'),
                 DB::raw('sum(case when jk = "L" then 1 else 0 end) as laki'),
                 DB::raw('sum(case when jk = "P" then 1 else 0 end) as perempuan')
             )
-            ->groupBy('kelompok')
-            ->get();
+            ->groupBy('kelompok_kode')
+            ->get()
+            ->map(function ($item) {
+                $item->kelompok = SirsHelper::ageGroupCategoryLabels()[$item->kelompok_kode] ?? $item->kelompok_kode;
+                return $item;
+            });
 
         // Insurance breakdown for KPI cards
         $insuranceStats = DB::connection('simrs')

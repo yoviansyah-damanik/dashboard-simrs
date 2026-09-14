@@ -6,6 +6,8 @@ use Livewire\Component;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Carbon\Carbon;
+use App\Helpers\SirsHelper;
+use App\Services\HospitalIndicatorService;
 
 class Home extends Component
 {
@@ -138,12 +140,9 @@ class Home extends Component
         // Dihitung dari tanggal saja (tanpa jam), agar jumlah hari periode selalu bilangan bulat —
         // Carbon::now() menyertakan jam saat ini sehingga diffInDays bisa menghasilkan pecahan hari.
         $daysInMonth = $startOfMonth->copy()->startOfDay()->diffInDays($today->copy()->startOfDay()) + 1;
-        
-        $totalBed = DB::connection('simrs')
-            ->table('kamar')
-            ->where('kd_bangsal', '!=', 'TRANS')
-            ->count();
-        
+
+        $totalBed = SirsHelper::getActiveBedCount();
+
         // HP (Hari Perawatan) & pasien keluar bulan berjalan.
         // Mengikutsertakan pasien yang sedang berada di ruangan pada periode ini (bukan hanya yang
         // masuk pada periode ini), dan hanya menghitung "keluar" untuk baris yang benar-benar
@@ -169,19 +168,22 @@ class Home extends Component
         $hpKeluar = $inpatientData->total_hp_keluar ?? 0;
         $keluar = $inpatientData->total_keluar ?? 0;
 
-        $bor = ($totalBed > 0) ? ($hp / ($totalBed * $daysInMonth)) * 100 : 0;
-        // ALOS memakai hari rawat pasien yang benar-benar KELUAR saja (hpKeluar), bukan total_hp
-        // (semua pasien termasuk yang masih dirawat) — kalau memakai total_hp, ALOS bisa meledak tidak
-        // wajar saat jumlah pasien keluar sangat sedikit (mis. awal bulan).
-        $alos = $keluar > 0 ? $hpKeluar / $keluar : 0;
-        $toi = $keluar > 0 ? ((($totalBed * $daysInMonth) - $hp) / $keluar) : 0;
-        $bto = $totalBed > 0 ? $keluar / $totalBed : 0;
+        // Home tidak memisahkan hidup/mati (GDR tidak ditampilkan di dashboard), jadi seluruh
+        // "keluar" dianggap pasienKeluarHidup — BOR/ALOS/BTO/TOI hanya bergantung pada totalnya.
+        $indicators = HospitalIndicatorService::calculate(
+            hariPerawatan: $hp,
+            totalTempatTidur: $totalBed,
+            jumlahHari: $daysInMonth,
+            pasienKeluarHidup: $keluar,
+            pasienKeluarMati: 0,
+            totalLamaDirawatKeluar: $hpKeluar,
+        );
 
         return [
-            'bor' => round($bor, 2),
-            'alos' => round($alos, 2),
-            'toi' => round($toi, 2),
-            'bto' => round($bto, 2),
+            'bor' => $indicators['bor'],
+            'alos' => $indicators['alos'],
+            'toi' => $indicators['toi'],
+            'bto' => $indicators['bto'],
             'beds' => $totalBed
         ];
     }

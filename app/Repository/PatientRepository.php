@@ -17,6 +17,7 @@ use App\Models\TniGroup;
 use App\Models\Disability;
 use App\Models\PolriGroup;
 use App\Helpers\DateHelper;
+use App\Helpers\SirsHelper;
 use App\Models\PersonResponsibility;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -248,7 +249,7 @@ class PatientRepository implements PatientInterface
 
     /**
      * Fungsi ini untuk memanggil data pasien
-     * @param string $ageCategory null, 'balita' | 'anak-anak' | 'remaja' | 'dewasa' | 'lansia' | 'lainnya'
+     * @param string $ageCategory null, kode kelompok umur dari simrs.kelompok_umur (NEO|BAY|BAL|ANK|RMJ|DWS|PRL|LNS)
      * @param string $gender Hanya 'L' | 'P' atau kosongkan jika semua
      * @return array
      */
@@ -267,15 +268,8 @@ class PatientRepository implements PatientInterface
             ...collect((new static)->relations())->keys()->toArray()
         ])
             ->when(
-                $ageCategory,
-                fn($q) =>
-                $q
-                    ->when($ageCategory == 'balita', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) < 5'))
-                    ->when($ageCategory == 'anak', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 5 and 11'))
-                    ->when($ageCategory == 'remaja', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 12 and 25'))
-                    ->when($ageCategory == 'dewasa', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 26 and 45'))
-                    ->when($ageCategory == 'lansia', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 46 and 65'))
-                    ->when($ageCategory == 'lainnya', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) > 65'))
+                $ageCategory && array_key_exists($ageCategory, SirsHelper::getAgeGroupCategories()),
+                fn($q) => $q->whereRaw(SirsHelper::ageGroupCategoryWhereRaw($ageCategory, Patient::TANGGAL_LAHIR))
             )
 
             ->when(
@@ -356,14 +350,11 @@ class PatientRepository implements PatientInterface
                 ->when(
                     $type,
                     fn($q) => $q->when($type == 'ageGroup', function ($r) {
-                        $r->selectRaw(
-                            'IFNULL(SUM(CASE WHEN TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) < 5 THEN 1 ELSE 0 END),0) AS \'balita\','
-                                . 'IFNULL(SUM(CASE WHEN TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 5 THEN 1 ELSE 0 END),0) AS \'anak\','
-                                . 'IFNULL(SUM(CASE WHEN TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 12 THEN 1 ELSE 0 END),0) AS \'remaja\','
-                                . 'IFNULL(SUM(CASE WHEN TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 26 THEN 1 ELSE 0 END),0) AS \'dewasa\','
-                                . 'IFNULL(SUM(CASE WHEN TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 46 THEN 1 ELSE 0 END),0) AS \'lansia\','
-                                . 'IFNULL(SUM(CASE WHEN TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) > 65 THEN 1 ELSE 0 END),0) AS \'lainnya\''
-                        );
+                        $selects = collect(SirsHelper::getAgeGroupCategories())
+                            ->map(fn($group, $kode) => 'IFNULL(SUM(CASE WHEN ' . SirsHelper::ageGroupCategoryWhereRaw($kode, Patient::TANGGAL_LAHIR) . ' THEN 1 ELSE 0 END),0) AS \'' . $kode . '\'')
+                            ->implode(',');
+
+                        $r->selectRaw($selects);
                     })->when($type == 'genderGroup', function ($r) {
                         $condition = '';
 

@@ -128,6 +128,9 @@ Route::middleware('auth')
         Route::get('/laporan-pasien', \App\Livewire\PatientReport\Index::class)
             ->middleware('permission:patient-report show')
             ->name('patient-report');
+        Route::get('/laporan-indikator', \App\Livewire\IndicatorMatrix\Index::class)
+            ->middleware('permission:indicator-matrix show')
+            ->name('indicator-matrix');
 
         Route::get('/icd', \App\Livewire\Icd\Recap::class)
             ->middleware('permission:icd recap')

@@ -51,6 +51,7 @@ class RoleAndPermissionsSeeder extends Seeder
             'nutrition show',
             'financial-report show',
             'patient-report show',
+            'indicator-matrix show',
             'human_resource medical_personnel show',
             'human_resource nonmedica_personnel show',
             'birth show',

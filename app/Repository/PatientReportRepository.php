@@ -11,55 +11,90 @@ class PatientReportRepository implements PatientReportInterface
 {
     const KONEKSI = 'simrs';
 
-    // Mapping golongan_tni (id) dari tabel golongan_tni di database SIMRS
-    const GOLONGAN_AD_MIL = [3];        // TNI AD
-    const GOLONGAN_AD_PNS = [8];        // PNS TNI AD
-    const GOLONGAN_AD_KEL = [5];        // Keluarga TNI AD
-    const GOLONGAN_AL_MIL = [1, 2];     // TNI AU (1), TNI AL (2)
-    const GOLONGAN_AL_PNS = [9, 10];    // PNS TNI AU (9), PNS TNI AL (10)
-    const GOLONGAN_AL_KEL = [6, 7];     // Keluarga TNI AL (6), Keluarga TNI AU (7)
-    const GOLONGAN_PURN   = [4];        // Purnawirawan
+    /**
+     * Mapping golongan_tni (id) per angkatan, dari tabel golongan_tni di database SIMRS.
+     * Setiap angkatan memiliki 4 rincian: Militer, ASN, Keluarga, Purnawirawan.
+     */
+    const TNI_GROUPS = [
+        'ad' => ['nama' => 'Angkatan Darat',  'mil' => 3, 'asn' => 8,  'kel' => 5, 'purn' => 4],
+        'al' => ['nama' => 'Angkatan Laut',   'mil' => 2, 'asn' => 10, 'kel' => 6, 'purn' => 11],
+        'au' => ['nama' => 'Angkatan Udara',  'mil' => 1, 'asn' => 9,  'kel' => 7, 'purn' => 12],
+    ];
+
+    // Label rincian TNI, urut sesuai tampilan tabel (a, b, c, d)
+    const TNI_RINCIAN_LABEL = [
+        'mil'  => 'Militer',
+        'asn'  => 'ASN',
+        'kel'  => 'Keluarga',
+        'purn' => 'Purnawirawan',
+    ];
 
     /**
-     * Menyusun ekspresi CASE WHEN untuk COUNT pengunjung (DISTINCT no_rkm_medis) per golongan.
+     * Mapping golongan_polri (id), dari tabel golongan_polri di database SIMRS.
      */
-    private static function caseDistinct(string $alias, array $golongan, string $rp): string
+    const POLRI_GROUPS = [
+        'anggota'      => 1,
+        'asn'          => 2,
+        'keluarga'     => 3,
+        'purnawirawan' => 4,
+    ];
+
+    const POLRI_RINCIAN_LABEL = [
+        'anggota'      => 'Anggota',
+        'asn'          => 'ASN',
+        'keluarga'     => 'Keluarga',
+        'purnawirawan' => 'Purnawirawan',
+    ];
+
+    /**
+     * Menyusun 5 ekspresi metrik (Pengunjung, Rawat Jalan, Rawat Inap, Rujukan, Meninggal)
+     * untuk satu kondisi kelompok pasien.
+     */
+    private static function metrikGolongan(string $prefix, string $kondisi, string $rp, string $stts, string $statusLanjut): array
     {
-        $ids = implode(',', $golongan);
-        return "COUNT(DISTINCT CASE WHEN pt.golongan_tni IN ({$ids}) THEN {$rp}.no_rkm_medis END) AS {$alias}";
+        return [
+            "COUNT(DISTINCT CASE WHEN {$kondisi} THEN {$rp}.no_rkm_medis END) AS {$prefix}_p",
+            "COUNT(CASE WHEN {$kondisi} AND {$statusLanjut} = 'Ralan' THEN 1 END) AS {$prefix}_rj",
+            "COUNT(CASE WHEN {$kondisi} AND {$statusLanjut} = 'Ranap' THEN 1 END) AS {$prefix}_ri",
+            "COUNT(CASE WHEN {$kondisi} AND {$stts} = 'Dirujuk' THEN 1 END) AS {$prefix}_ruj",
+            "COUNT(CASE WHEN {$kondisi} AND {$stts} = 'Meninggal' THEN 1 END) AS {$prefix}_men",
+        ];
     }
 
     /**
-     * Menyusun ekspresi CASE WHEN untuk COUNT kunjungan (semua baris) per golongan.
+     * Mengambil 5 metrik yang sudah dihitung dari hasil query berdasarkan prefix alias.
      */
-    private static function caseCount(string $alias, array $golongan): string
+    private static function ambilMetrik(array $d, string $prefix): array
     {
-        $ids = implode(',', $golongan);
-        return "COUNT(CASE WHEN pt.golongan_tni IN ({$ids}) THEN 1 END) AS {$alias}";
+        return [
+            'pengunjung'  => (int) $d["{$prefix}_p"],
+            'rawat_jalan' => (int) $d["{$prefix}_rj"],
+            'rawat_inap'  => (int) $d["{$prefix}_ri"],
+            'rujukan'     => (int) $d["{$prefix}_ruj"],
+            'meninggal'   => (int) $d["{$prefix}_men"],
+        ];
     }
 
     /**
-     * COUNT rujukan per golongan: stts = 'Dirujuk' AND golongan IN (...).
+     * Menjumlahkan beberapa hasil ambilMetrik() (boleh disisipi key 'label') menjadi satu total.
      */
-    private static function caseRujukan(string $alias, array $golongan, string $stts): string
+    private static function jumlahkanMetrik(array $daftarMetrik): array
     {
-        $ids = implode(',', $golongan);
-        return "COUNT(CASE WHEN pt.golongan_tni IN ({$ids}) AND {$stts} = 'Dirujuk' THEN 1 END) AS {$alias}";
+        $total = ['pengunjung' => 0, 'rawat_jalan' => 0, 'rawat_inap' => 0, 'rujukan' => 0, 'meninggal' => 0];
+        foreach ($daftarMetrik as $metrik) {
+            foreach ($total as $key => $_) {
+                $total[$key] += $metrik[$key];
+            }
+        }
+        return $total;
     }
 
     /**
-     * COUNT per golongan berdasarkan nilai status_lanjut ('Ranap' atau 'Ralan').
-     */
-    private static function caseStatusLanjut(string $alias, array $golongan, string $statusLanjut, string $nilai): string
-    {
-        $ids = implode(',', $golongan);
-        return "COUNT(CASE WHEN pt.golongan_tni IN ({$ids}) AND {$statusLanjut} = '{$nilai}' THEN 1 END) AS {$alias}";
-    }
-
-    /**
-     * Merekap data kunjungan pasien per kelompok (Angkatan Darat, Angkatan Lain, Purnawirawan, Umum)
-     * dengan dua metrik: Pengunjung (distinct pasien) dan Kunjungan (total baris).
-     * Juga menghitung rujukan (stts = 'Dirujuk') dan rawat inap (status_lanjut = 'Ranap').
+     * Merekap data kunjungan pasien per kelompok: TNI (per angkatan: Darat, Laut, Udara,
+     * masing-masing dirinci Militer/ASN/Keluarga/Purnawirawan), POLRI (Anggota/ASN/Keluarga/
+     * Purnawirawan), dan Pasien Umum. Metrik yang dihitung: Pengunjung (distinct pasien),
+     * Kunjungan (Rawat Jalan & Rawat Inap), Rujukan (stts = 'Dirujuk'), dan Meninggal
+     * (stts = 'Meninggal').
      *
      * @param string|null $startDate Tanggal mulai (Y-m-d)
      * @param string|null $endDate   Tanggal akhir (Y-m-d)
@@ -69,117 +104,89 @@ class PatientReportRepository implements PatientReportInterface
     {
         $rp = RegisteredPatient::getTableName();
         $tgl = RegisteredPatient::TGL_REGISTRASI;
-        $stts = RegisteredPatient::STATUS_PELAYANAN;
-        $statusLanjut = RegisteredPatient::STATUS_LANJUT;
+        $stts = "{$rp}." . RegisteredPatient::STATUS_PELAYANAN;
+        $statusLanjut = "{$rp}." . RegisteredPatient::STATUS_LANJUT;
+
+        // Susun kondisi SQL per kelompok: TNI per rincian angkatan, POLRI per golongan, dan Umum.
+        $kondisi = [];
+        foreach (self::TNI_GROUPS as $angkatanKey => $angkatan) {
+            foreach (self::TNI_RINCIAN_LABEL as $rincianKey => $label) {
+                $id = $angkatan[$rincianKey];
+                $kondisi["tni_{$angkatanKey}_{$rincianKey}"] = "pt.golongan_tni = {$id}";
+            }
+        }
+        foreach (self::POLRI_GROUPS as $rincianKey => $id) {
+            $kondisi["polri_{$rincianKey}"] = "pt.no_rkm_medis IS NULL AND pp.golongan_polri = {$id}";
+        }
+        $kondisi['umum'] = "pt.no_rkm_medis IS NULL AND pp.no_rkm_medis IS NULL";
+
+        $selects = [
+            "COUNT(DISTINCT {$rp}.no_rkm_medis) AS total_p",
+            "COUNT({$rp}.no_rawat) AS total_k",
+            "COUNT(CASE WHEN {$statusLanjut} = 'Ralan' THEN 1 END) AS total_rj",
+            "COUNT(CASE WHEN {$statusLanjut} = 'Ranap' THEN 1 END) AS total_ri",
+            "COUNT(CASE WHEN {$stts} = 'Dirujuk' THEN 1 END) AS total_ruj",
+            "COUNT(CASE WHEN {$stts} = 'Meninggal' THEN 1 END) AS total_men",
+        ];
+        foreach ($kondisi as $prefix => $syarat) {
+            array_push($selects, ...self::metrikGolongan($prefix, $syarat, $rp, $stts, $statusLanjut));
+        }
 
         $row = DB::connection(self::KONEKSI)
             ->table($rp)
             ->leftJoin('pasien_tni as pt', "pt.no_rkm_medis", '=', "{$rp}.no_rkm_medis")
-            ->where("{$rp}.{$stts}", '!=', 'Batal')
+            ->leftJoin('pasien_polri as pp', "pp.no_rkm_medis", '=', "{$rp}.no_rkm_medis")
+            ->where($stts, '!=', 'Batal')
             ->when($startDate, fn($q) => $q->where("{$rp}.{$tgl}", '>=', $startDate))
             ->when($endDate,   fn($q) => $q->where("{$rp}.{$tgl}", '<=', $endDate))
-            ->selectRaw(implode(', ', [
-                // --- PENGUNJUNG (distinct no_rkm_medis) ---
-                self::caseDistinct('p_ad_mil', self::GOLONGAN_AD_MIL, $rp),
-                self::caseDistinct('p_ad_pns', self::GOLONGAN_AD_PNS, $rp),
-                self::caseDistinct('p_ad_kel', self::GOLONGAN_AD_KEL, $rp),
-                self::caseDistinct('p_al_mil', self::GOLONGAN_AL_MIL, $rp),
-                self::caseDistinct('p_al_pns', self::GOLONGAN_AL_PNS, $rp),
-                self::caseDistinct('p_al_kel', self::GOLONGAN_AL_KEL, $rp),
-                self::caseDistinct('p_purn',   self::GOLONGAN_PURN,   $rp),
-                "COUNT(DISTINCT CASE WHEN pt.no_rkm_medis IS NULL THEN {$rp}.no_rkm_medis END) AS p_umum",
-                "COUNT(DISTINCT {$rp}.no_rkm_medis) AS p_total",
-
-                // --- KUNJUNGAN (semua baris) ---
-                self::caseCount('k_ad_mil', self::GOLONGAN_AD_MIL),
-                self::caseCount('k_ad_pns', self::GOLONGAN_AD_PNS),
-                self::caseCount('k_ad_kel', self::GOLONGAN_AD_KEL),
-                self::caseCount('k_al_mil', self::GOLONGAN_AL_MIL),
-                self::caseCount('k_al_pns', self::GOLONGAN_AL_PNS),
-                self::caseCount('k_al_kel', self::GOLONGAN_AL_KEL),
-                self::caseCount('k_purn',   self::GOLONGAN_PURN),
-                "COUNT(CASE WHEN pt.no_rkm_medis IS NULL THEN 1 END) AS k_umum",
-                "COUNT({$rp}.no_rawat) AS k_total",
-
-                // --- RUJUKAN per kelompok ---
-                self::caseRujukan('r_ad',   array_merge(self::GOLONGAN_AD_MIL, self::GOLONGAN_AD_PNS, self::GOLONGAN_AD_KEL), "{$rp}.{$stts}"),
-                self::caseRujukan('r_al',   array_merge(self::GOLONGAN_AL_MIL, self::GOLONGAN_AL_PNS, self::GOLONGAN_AL_KEL), "{$rp}.{$stts}"),
-                self::caseRujukan('r_purn', self::GOLONGAN_PURN, "{$rp}.{$stts}"),
-                "COUNT(CASE WHEN pt.no_rkm_medis IS NULL AND {$rp}.{$stts} = 'Dirujuk' THEN 1 END) AS r_umum",
-                "COUNT(CASE WHEN {$rp}.{$stts} = 'Dirujuk' THEN 1 END) AS rujukan",
-
-                // --- RAWAT INAP (Ranap) per kelompok ---
-                self::caseStatusLanjut('ri_ad',   array_merge(self::GOLONGAN_AD_MIL, self::GOLONGAN_AD_PNS, self::GOLONGAN_AD_KEL), "{$rp}.{$statusLanjut}", 'Ranap'),
-                self::caseStatusLanjut('ri_al',   array_merge(self::GOLONGAN_AL_MIL, self::GOLONGAN_AL_PNS, self::GOLONGAN_AL_KEL), "{$rp}.{$statusLanjut}", 'Ranap'),
-                self::caseStatusLanjut('ri_purn', self::GOLONGAN_PURN, "{$rp}.{$statusLanjut}", 'Ranap'),
-                "COUNT(CASE WHEN pt.no_rkm_medis IS NULL AND {$rp}.{$statusLanjut} = 'Ranap' THEN 1 END) AS ri_umum",
-                "COUNT(CASE WHEN {$rp}.{$statusLanjut} = 'Ranap' THEN 1 END) AS rawat_inap",
-
-                // --- RAWAT JALAN (Ralan) per kelompok ---
-                self::caseStatusLanjut('rj_ad',   array_merge(self::GOLONGAN_AD_MIL, self::GOLONGAN_AD_PNS, self::GOLONGAN_AD_KEL), "{$rp}.{$statusLanjut}", 'Ralan'),
-                self::caseStatusLanjut('rj_al',   array_merge(self::GOLONGAN_AL_MIL, self::GOLONGAN_AL_PNS, self::GOLONGAN_AL_KEL), "{$rp}.{$statusLanjut}", 'Ralan'),
-                self::caseStatusLanjut('rj_purn', self::GOLONGAN_PURN, "{$rp}.{$statusLanjut}", 'Ralan'),
-                "COUNT(CASE WHEN pt.no_rkm_medis IS NULL AND {$rp}.{$statusLanjut} = 'Ralan' THEN 1 END) AS rj_umum",
-                "COUNT(CASE WHEN {$rp}.{$statusLanjut} = 'Ralan' THEN 1 END) AS rawat_jalan",
-            ]))
+            ->selectRaw(implode(', ', $selects))
             ->first();
 
         $d = (array) $row;
 
+        // --- Susun rincian & total per angkatan TNI ---
+        $tni = [];
+        foreach (self::TNI_GROUPS as $angkatanKey => $angkatan) {
+            $rincian = [];
+            foreach (self::TNI_RINCIAN_LABEL as $rincianKey => $label) {
+                $rincian[$rincianKey] = [
+                    'label' => $label,
+                    ...self::ambilMetrik($d, "tni_{$angkatanKey}_{$rincianKey}"),
+                ];
+            }
+            $tni[$angkatanKey] = [
+                'nama'    => $angkatan['nama'],
+                'rincian' => $rincian,
+                'total'   => self::jumlahkanMetrik($rincian),
+            ];
+        }
+
+        // --- Susun rincian & total POLRI ---
+        $polriRincian = [];
+        foreach (self::POLRI_GROUPS as $rincianKey => $id) {
+            $polriRincian[$rincianKey] = [
+                'label' => self::POLRI_RINCIAN_LABEL[$rincianKey],
+                ...self::ambilMetrik($d, "polri_{$rincianKey}"),
+            ];
+        }
+
         return [
-            'angkatan_darat' => [
-                'pengunjung' => [
-                    'mil'   => (int) $d['p_ad_mil'],
-                    'pns'   => (int) $d['p_ad_pns'],
-                    'kel'   => (int) $d['p_ad_kel'],
-                    'total' => (int) $d['p_ad_mil'] + (int) $d['p_ad_pns'] + (int) $d['p_ad_kel'],
-                ],
-                'kunjungan' => [
-                    'mil'   => (int) $d['k_ad_mil'],
-                    'pns'   => (int) $d['k_ad_pns'],
-                    'kel'   => (int) $d['k_ad_kel'],
-                    'total' => (int) $d['k_ad_mil'] + (int) $d['k_ad_pns'] + (int) $d['k_ad_kel'],
-                ],
-                'rujukan'     => (int) $d['r_ad'],
-                'rawat_inap'  => (int) $d['ri_ad'],
-                'rawat_jalan' => (int) $d['rj_ad'],
+            'tni' => [
+                'angkatan' => $tni,
+                'total'    => self::jumlahkanMetrik(array_column($tni, 'total')),
             ],
-            'angkatan_lain' => [
-                'pengunjung' => [
-                    'mil'   => (int) $d['p_al_mil'],
-                    'pns'   => (int) $d['p_al_pns'],
-                    'kel'   => (int) $d['p_al_kel'],
-                    'total' => (int) $d['p_al_mil'] + (int) $d['p_al_pns'] + (int) $d['p_al_kel'],
-                ],
-                'kunjungan' => [
-                    'mil'   => (int) $d['k_al_mil'],
-                    'pns'   => (int) $d['k_al_pns'],
-                    'kel'   => (int) $d['k_al_kel'],
-                    'total' => (int) $d['k_al_mil'] + (int) $d['k_al_pns'] + (int) $d['k_al_kel'],
-                ],
-                'rujukan'     => (int) $d['r_al'],
-                'rawat_inap'  => (int) $d['ri_al'],
-                'rawat_jalan' => (int) $d['rj_al'],
+            'polri' => [
+                'rincian' => $polriRincian,
+                'total'   => self::jumlahkanMetrik($polriRincian),
             ],
-            'purnawirawan' => [
-                'pengunjung'  => (int) $d['p_purn'],
-                'kunjungan'   => (int) $d['k_purn'],
-                'rujukan'     => (int) $d['r_purn'],
-                'rawat_inap'  => (int) $d['ri_purn'],
-                'rawat_jalan' => (int) $d['rj_purn'],
-            ],
-            'umum' => [
-                'pengunjung'  => (int) $d['p_umum'],
-                'kunjungan'   => (int) $d['k_umum'],
-                'rujukan'     => (int) $d['r_umum'],
-                'rawat_inap'  => (int) $d['ri_umum'],
-                'rawat_jalan' => (int) $d['rj_umum'],
-            ],
-            'total_pengunjung' => (int) $d['p_total'],
-            'total_kunjungan'  => (int) $d['k_total'],
-            'rujukan'          => (int) $d['rujukan'],
-            'rawat_inap'       => (int) $d['rawat_inap'],
-            'rawat_jalan'      => (int) $d['rawat_jalan'],
+            'umum' => self::ambilMetrik($d, 'umum'),
+
+            'total_pengunjung' => (int) $d['total_p'],
+            'total_kunjungan'  => (int) $d['total_k'],
+            'rawat_jalan'      => (int) $d['total_rj'],
+            'rawat_inap'       => (int) $d['total_ri'],
+            'rujukan'          => (int) $d['total_ruj'],
+            'meninggal'        => (int) $d['total_men'],
         ];
     }
 }

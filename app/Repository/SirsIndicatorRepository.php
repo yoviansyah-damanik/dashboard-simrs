@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Helpers\SirsHelper;
+use App\Services\HospitalIndicatorService;
 use Illuminate\Support\Facades\DB;
 
 interface SirsIndicatorInterface
@@ -97,14 +98,15 @@ class SirsIndicatorRepository implements SirsIndicatorInterface
         foreach ($kategori as $id => $data) {
             $row = ['nama' => $data['nama'], 'bor' => 0, 'alos' => 0, 'bto' => 0, 'toi' => 0, 'ndr' => 0, 'gdr' => 0];
 
-            if ($data['tt'] > 0 && $data['pasien_keluar_total'] > 0) {
-                $row['bor'] = round(($data['hari_perawatan'] / ($data['tt'] * $jumlahHari)) * 100, 2);
-                $row['alos'] = round($data['total_lama_dirawat'] / $data['pasien_keluar_total'], 2);
-                $row['bto'] = round($data['pasien_keluar_total'] / $data['tt'], 2);
-                $row['toi'] = round((($data['tt'] * $jumlahHari) - $data['hari_perawatan']) / $data['pasien_keluar_total'], 2);
-                $row['ndr'] = round(($data['pasien_keluar_mati_kurang48'] / $data['pasien_keluar_total']), 2);
-                $row['gdr'] = round(($data['pasien_keluar_mati'] / $data['pasien_keluar_total']), 2);
-            }
+            $row = array_merge($row, HospitalIndicatorService::calculate(
+                hariPerawatan: $data['hari_perawatan'],
+                totalTempatTidur: $data['tt'],
+                jumlahHari: $jumlahHari,
+                pasienKeluarHidup: $data['pasien_keluar_hidup'],
+                pasienKeluarMati: $data['pasien_keluar_mati'],
+                totalLamaDirawatKeluar: $data['total_lama_dirawat'],
+                pasienKeluarMatiKurang48: $data['pasien_keluar_mati_kurang48'],
+            ));
 
             $result[$id] = $row;
         }

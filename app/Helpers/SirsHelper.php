@@ -8,6 +8,133 @@ class SirsHelper
 {
     const KONEKSI = 'simrs';
 
+    /** Cache in-memory (per request) untuk master kelompok umur dari tabel simrs.kelompok_umur. */
+    private static ?array $ageGroupCache = null;
+
+    /**
+     * Master kelompok umur (kode => ['kode','nama','umur_min','umur_max','urut']) dari tabel
+     * simrs.kelompok_umur, diurutkan sesuai kolom urut. Ini SATU-SATUNYA sumber definisi rentang
+     * kelompok umur administratif RS (bukan untuk RL 4.1/RL 5.1 yang punya 19-bracket resmi
+     * Kemenkes tersendiri via getAgeGroup()/getAgeGroupLabels() di bawah).
+     */
+    public static function getAgeGroupCategories(): array
+    {
+        if (self::$ageGroupCache === null) {
+            self::$ageGroupCache = DB::connection(self::KONEKSI)
+                ->table('kelompok_umur')
+                ->orderBy('urut')
+                ->get()
+                ->keyBy('kode')
+                ->map(fn($row) => (array) $row)
+                ->toArray();
+        }
+
+        return self::$ageGroupCache;
+    }
+
+    /** Label kelompok umur (kode => nama), untuk dropdown filter / legend chart. */
+    public static function ageGroupCategoryLabels(): array
+    {
+        return collect(self::getAgeGroupCategories())->pluck('nama', 'kode')->toArray();
+    }
+
+    /**
+     * Kondisi SQL (dalam hari, via DATEDIFF terhadap tanggal lahir) untuk satu kode kelompok umur.
+     * Dipakai untuk filter WHERE maupun agregasi SUM(CASE WHEN ...).
+     */
+    public static function ageGroupCategoryWhereRaw(string $kode, string $birthDateColumn, string $referenceDateExpr = 'NOW()'): string
+    {
+        $groups = self::getAgeGroupCategories();
+        if (!isset($groups[$kode])) {
+            return '1 = 0';
+        }
+
+        $umurHari = "DATEDIFF({$referenceDateExpr}, {$birthDateColumn})";
+        $condition = "{$umurHari} >= " . (int) $groups[$kode]['umur_min'];
+        if ($groups[$kode]['umur_max'] !== null) {
+            $condition .= " AND {$umurHari} <= " . (int) $groups[$kode]['umur_max'];
+        }
+
+        return $condition;
+    }
+
+    /** CASE SQL lengkap (semua kelompok sekaligus) berdasarkan tanggal lahir, mengembalikan kode kelompok umur. */
+    public static function ageGroupCategoryCaseSql(string $birthDateColumn, string $referenceDateExpr = 'NOW()'): string
+    {
+        $cases = '';
+        foreach (array_keys(self::getAgeGroupCategories()) as $kode) {
+            $cases .= 'WHEN ' . self::ageGroupCategoryWhereRaw($kode, $birthDateColumn, $referenceDateExpr) . " THEN '{$kode}' ";
+        }
+
+        return "CASE {$cases}END";
+    }
+
+    /**
+     * Kondisi SQL untuk satu kode kelompok umur dari kolom umur yang sudah dihitung SIMRS sendiri
+     * (mis. reg_periksa.umurdaftar + sttsumur bernilai 'Th'/'Bl'/'Hr'), dikonversi kasar ke hari
+     * (1 Th = 365 hari, 1 Bl = 30 hari, 1 Hr = 1 hari) agar sebanding dengan rentang umur_min/umur_max
+     * pada tabel kelompok_umur. Dipakai di tabel yang tidak menyimpan tanggal lahir langsung.
+     */
+    public static function ageGroupCategoryWhereRawFromUmurDaftar(string $kode, string $umurColumn, string $sttsColumn): string
+    {
+        $groups = self::getAgeGroupCategories();
+        if (!isset($groups[$kode])) {
+            return '1 = 0';
+        }
+
+        $umurHari = "(CASE {$sttsColumn} WHEN 'Th' THEN {$umurColumn} * 365 WHEN 'Bl' THEN {$umurColumn} * 30 ELSE {$umurColumn} END)";
+        $condition = "{$umurHari} >= " . (int) $groups[$kode]['umur_min'];
+        if ($groups[$kode]['umur_max'] !== null) {
+            $condition .= " AND {$umurHari} <= " . (int) $groups[$kode]['umur_max'];
+        }
+
+        return $condition;
+    }
+
+    /** CASE SQL lengkap (semua kelompok sekaligus) dari kolom umurdaftar/sttsumur, mengembalikan kode kelompok umur. */
+    public static function ageGroupCategoryCaseSqlFromUmurDaftar(string $umurColumn, string $sttsColumn): string
+    {
+        $cases = '';
+        foreach (array_keys(self::getAgeGroupCategories()) as $kode) {
+            $cases .= 'WHEN ' . self::ageGroupCategoryWhereRawFromUmurDaftar($kode, $umurColumn, $sttsColumn) . " THEN '{$kode}' ";
+        }
+
+        return "CASE {$cases}END";
+    }
+
+    /** Cache in-memory (per request) untuk peta kd_bangsal => nama_group dari tabel simrs.bangsal_group. */
+    private static ?array $wardGroupCache = null;
+
+    /**
+     * Peta kd_bangsal => nama_group, dari simrs.detail_bangsal_group dijoin ke simrs.bangsal_group
+     * (hanya grup berstatus aktif). Ini SATU-SATUNYA sumber pengelompokan bangsal secara fisik
+     * (mis. beberapa kd_bangsal seperti "HRY-PW1-1", "HRY-PW1-2" yang nm_bangsal-nya berbeda tapi
+     * satu gedung/grup "Haruaya") — menggantikan pengelompokan ad-hoc berdasar string nm_bangsal.
+     */
+    public static function getWardGroupMap(): array
+    {
+        if (self::$wardGroupCache === null) {
+            self::$wardGroupCache = DB::connection(self::KONEKSI)
+                ->table('detail_bangsal_group')
+                ->join('bangsal_group', 'bangsal_group.id_group', '=', 'detail_bangsal_group.id_group')
+                ->where('bangsal_group.status', 1)
+                ->pluck('bangsal_group.nama_group', 'detail_bangsal_group.kd_bangsal')
+                ->toArray();
+        }
+
+        return self::$wardGroupCache;
+    }
+
+    /**
+     * Nama grup bangsal untuk satu kd_bangsal. Bangsal yang belum terpetakan di bangsal_group
+     * (mis. data baru yang belum diinput admin SIMRS) jatuh ke $fallbackName (biasanya nm_bangsal
+     * bangsal itu sendiri) supaya tetap tampil sebagai grup tersendiri, bukan hilang dari rekap.
+     */
+    public static function wardGroupName(string $kdBangsal, string $fallbackName): string
+    {
+        return self::getWardGroupMap()[$kdBangsal] ?? $fallbackName;
+    }
+
     /** Nama bulan dalam bahasa Indonesia */
     public static function getMonthName(int $bulan): string
     {
@@ -312,6 +439,12 @@ class SirsHelper
             WHERE b.status = '1' AND k.statusdata = '1' {$filterTr}
             GROUP BY b.nm_bangsal
         ");
+    }
+
+    /** Total tempat tidur aktif di seluruh RS (dipakai untuk BOR/ALOS/BTO/TOI di luar laporan SIRS). */
+    public static function getActiveBedCount(bool $excludeTr = true): int
+    {
+        return array_sum(array_column(self::getBedsPerWard($excludeTr), 'jumlah_tt'));
     }
 
     /** Konversi nilai jenis kelamin (L/P) ke key array (l/p) */

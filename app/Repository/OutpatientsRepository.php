@@ -8,6 +8,7 @@ use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Polyclinic;
 use App\Helpers\DateHelper;
+use App\Helpers\SirsHelper;
 use App\Models\RegisteredPatient;
 use App\Models\PersonResponsibility;
 use App\Repository\PolyclinicRepository;
@@ -131,7 +132,7 @@ class OutpatientsRepository implements OutpatientsInterface
      * @param string $startDate Variabel untuk menentukan tanggal mulai
      * @param string $endDate Variabel untuk menentukan tanggal akhir
      * @param string $gender Hanya 'L' | 'P' atau kosongkan jika semua
-     * @param string $ageCategory null, 'balita' | 'anak-anak' | 'remaja' | 'dewasa' | 'lansia' | 'lainnya' atau kosongkan jika semua
+     * @param string $ageCategory null, kode kelompok umur dari simrs.kelompok_umur (NEO|BAY|BAL|ANK|RMJ|DWS|PRL|LNS) atau kosongkan jika semua
      * @param string $status Sudah | Belum | Batal | Dirujuk | Berkas Diterima | Dirawat | Meninggal | Pulang Paksa atau kosongkan jika semua
      * @return LengthAwarePaginator | array
      */
@@ -190,27 +191,8 @@ class OutpatientsRepository implements OutpatientsInterface
                 $q->whereAny([RegisteredPatient::NO_REKAM_MEDIS, Patient::NAMA_PASIEN, Patient::NIK, Patient::NOKA], 'like', $search . "%");
             });
 
-        switch ($ageCategory) {
-            case 'balita':
-                $result = $result->whereRaw('((' . RegisteredPatient::UMUR_MENDAFTAR . ' < 5 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\') or ' . RegisteredPatient::STATUS_UMUR . ' = \'Bl\')');
-                break;
-            case 'anak':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 5 and 11 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            case 'remaja':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 12 and 25 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            case 'dewasa':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 26 and 45 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            case 'lansia':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 46 and 65 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            case 'lainnya':
-                $result = $result->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' > 65 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\'');
-                break;
-            default:
-                break;
+        if ($ageCategory && array_key_exists($ageCategory, SirsHelper::getAgeGroupCategories())) {
+            $result = $result->whereRaw(SirsHelper::ageGroupCategoryWhereRawFromUmurDaftar($ageCategory, RegisteredPatient::UMUR_MENDAFTAR, RegisteredPatient::STATUS_UMUR));
         }
 
         if (!is_null($doctor) && $doctor != 'semua') {
@@ -296,15 +278,12 @@ class OutpatientsRepository implements OutpatientsInterface
 
         switch ($type) {
             case 'ageGroup':
+                $selects = collect(SirsHelper::getAgeGroupCategories())
+                    ->map(fn($group, $kode) => 'IFNULL(SUM(CASE WHEN ' . SirsHelper::ageGroupCategoryWhereRawFromUmurDaftar($kode, RegisteredPatient::UMUR_MENDAFTAR, RegisteredPatient::STATUS_UMUR) . ' THEN 1 ELSE 0 END),0) AS \'' . $kode . '\'')
+                    ->implode(',');
+
                 $result = $result
-                    ->selectRaw(
-                        'IFNULL(SUM(CASE WHEN ((' . RegisteredPatient::UMUR_MENDAFTAR . ' < 5 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\') or ' . RegisteredPatient::STATUS_UMUR . ' = \'Bl\') THEN 1 ELSE 0 END),0) AS \'balita\','
-                            . 'IFNULL(SUM(CASE WHEN ' . RegisteredPatient::UMUR_MENDAFTAR . ' between 5 and 11 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\' THEN 1 ELSE 0 END),0) AS \'anak\','
-                            . 'IFNULL(SUM(CASE WHEN ' . RegisteredPatient::UMUR_MENDAFTAR . ' between 12 and 25 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\' THEN 1 ELSE 0 END),0) AS \'remaja\','
-                            . 'IFNULL(SUM(CASE WHEN ' . RegisteredPatient::UMUR_MENDAFTAR . ' between 26 and 45 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\' THEN 1 ELSE 0 END),0) AS \'dewasa\','
-                            . 'IFNULL(SUM(CASE WHEN ' . RegisteredPatient::UMUR_MENDAFTAR . ' between 46 and 65 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\' THEN 1 ELSE 0 END),0) AS \'lansia\','
-                            . 'IFNULL(SUM(CASE WHEN ' . RegisteredPatient::UMUR_MENDAFTAR . ' > 65 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\' THEN 1 ELSE 0 END),0) AS \'lainnya\''
-                    )
+                    ->selectRaw($selects)
                     ->first()
                     ->toArray();
                 break;

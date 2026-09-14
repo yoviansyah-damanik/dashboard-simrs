@@ -5,6 +5,8 @@ namespace App\Livewire\Inpatient;
 use Livewire\Component;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Services\HospitalIndicatorService;
+use App\Helpers\SirsHelper;
 
 class Recap extends Component
 {
@@ -39,7 +41,7 @@ class Recap extends Component
             $this->dispatch('refresh-all-charts', charts: $this->patientDemographics['charts']);
             $this->dispatch('refresh-main-charts', charts: $this->overallStats['charts']);
         }
-        
+
         if ($this->mainTab === 'snapshot' && $this->snapshotView === 'chart') {
             $this->dispatch('refresh-snapshot-charts', charts: $this->snapshotCharts);
         }
@@ -221,24 +223,19 @@ class Recap extends Component
             ->get();
 
         $age = (clone $baseQuery)
-            ->select(DB::raw("
-                CASE 
-                    WHEN reg_periksa.umurdaftar < 1 AND reg_periksa.sttsumur = 'Hr' THEN 'Bayi (<1 th)'
-                    WHEN reg_periksa.umurdaftar < 1 AND reg_periksa.sttsumur = 'Bl' THEN 'Bayi (<1 th)'
-                    WHEN reg_periksa.umurdaftar <= 5 AND reg_periksa.sttsumur = 'Th' THEN 'Balita (1-5 th)'
-                    WHEN reg_periksa.umurdaftar <= 12 AND reg_periksa.sttsumur = 'Th' THEN 'Anak (6-12 th)'
-                    WHEN reg_periksa.umurdaftar <= 18 AND reg_periksa.sttsumur = 'Th' THEN 'Remaja (13-18 th)'
-                    WHEN reg_periksa.umurdaftar <= 60 AND reg_periksa.sttsumur = 'Th' THEN 'Dewasa (19-60 th)'
-                    ELSE 'Lansia (>60 th)'
-                END as kelompok_umur
-            "), 
-            DB::raw('count(*) as total'),
-            DB::raw('sum(case when pasien.jk = "L" then 1 else 0 end) as laki'),
-            DB::raw('sum(case when pasien.jk = "P" then 1 else 0 end) as perempuan')
+            ->select(
+                DB::raw(SirsHelper::ageGroupCategoryCaseSqlFromUmurDaftar('reg_periksa.umurdaftar', 'reg_periksa.sttsumur') . ' as kelompok_umur_kode'),
+                DB::raw('count(*) as total'),
+                DB::raw('sum(case when pasien.jk = "L" then 1 else 0 end) as laki'),
+                DB::raw('sum(case when pasien.jk = "P" then 1 else 0 end) as perempuan')
             )
-            ->groupBy('kelompok_umur')
+            ->groupBy('kelompok_umur_kode')
             ->orderBy('total', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($item) {
+                $item->kelompok_umur = SirsHelper::ageGroupCategoryLabels()[$item->kelompok_umur_kode] ?? $item->kelompok_umur_kode;
+                return $item;
+            });
 
         $discharge = (clone $baseQuery)
             ->select('kamar_inap.stts_pulang', DB::raw('count(*) as total'))
@@ -257,37 +254,45 @@ class Recap extends Component
             'charts' => [
                 'gender' => [
                     'labels' => $gender->map(fn($g) => $g->jk == 'L' ? 'Laki-laki' : 'Perempuan')->toArray(),
-                    'datasets' => [[
-                        'data' => $gender->pluck('total')->toArray(),
-                        'backgroundColor' => ['#2563eb', '#db2777'],
-                        'borderWidth' => 0
-                    ]]
+                    'datasets' => [
+                        [
+                            'data' => $gender->pluck('total')->toArray(),
+                            'backgroundColor' => ['#2563eb', '#db2777'],
+                            'borderWidth' => 0
+                        ]
+                    ]
                 ],
                 'age' => [
                     'labels' => $age->pluck('kelompok_umur')->toArray(),
-                    'datasets' => [[
-                        'label' => 'Jumlah Pasien',
-                        'data' => $age->pluck('total')->toArray(),
-                        'backgroundColor' => '#4f46e5',
-                        'borderRadius' => 6
-                    ]]
+                    'datasets' => [
+                        [
+                            'label' => 'Jumlah Pasien',
+                            'data' => $age->pluck('total')->toArray(),
+                            'backgroundColor' => '#4f46e5',
+                            'borderRadius' => 6
+                        ]
+                    ]
                 ],
                 'insurance' => [
                     'labels' => $insurance->take(10)->pluck('png_jawab')->toArray(),
-                    'datasets' => [[
-                        'label' => 'Jumlah Pasien',
-                        'data' => $insurance->take(10)->pluck('total')->toArray(),
-                        'backgroundColor' => '#10b981',
-                        'borderRadius' => 4
-                    ]]
+                    'datasets' => [
+                        [
+                            'label' => 'Jumlah Pasien',
+                            'data' => $insurance->take(10)->pluck('total')->toArray(),
+                            'backgroundColor' => '#10b981',
+                            'borderRadius' => 4
+                        ]
+                    ]
                 ],
                 'discharge' => [
                     'labels' => $discharge->pluck('stts_pulang')->toArray(),
-                    'datasets' => [[
-                        'data' => $discharge->pluck('total')->toArray(),
-                        'backgroundColor' => ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#6366f1', '#a855f7'],
-                        'borderWidth' => 0
-                    ]]
+                    'datasets' => [
+                        [
+                            'data' => $discharge->pluck('total')->toArray(),
+                            'backgroundColor' => ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#6366f1', '#a855f7'],
+                            'borderWidth' => 0
+                        ]
+                    ]
                 ]
             ]
         ];
@@ -304,9 +309,12 @@ class Recap extends Component
             ->groupBy('bangsal.nm_bangsal', 'kamar.kelas', 'kamar.kd_bangsal');
 
         // 2. Subquery for real-time bed status (current occupancy)
+        // kapasitas dibatasi hanya TT aktif (statusdata='1'), konsisten dengan definisi kapasitas
+        // yang dipakai laporan resmi SIRS (SirsHelper::getBedsPerWard()).
         $bedStatus = DB::connection('simrs')
             ->table('kamar')
             ->where('kd_bangsal', '!=', 'TRANS')
+            ->where('statusdata', '1')
             ->select(
                 'kd_bangsal',
                 'kelas',
@@ -384,6 +392,7 @@ class Recap extends Component
             })
             ->select(
                 'w.nm_bangsal',
+                'w.kd_bangsal',
                 'w.kelas',
                 DB::raw('IFNULL(bed.kapasitas, 0) as kapasitas'),
                 DB::raw('IFNULL(bed.terisi, 0) as terisi'),
@@ -397,6 +406,7 @@ class Recap extends Component
                 DB::raw('IFNULL(p.jumlah_aps, 0) as jumlah_aps'),
                 DB::raw('IFNULL(p.jumlah_meninggal, 0) as jumlah_meninggal'),
                 DB::raw('IFNULL(p.total_hp, 0) as total_hp'),
+                DB::raw('IFNULL(p.total_hp_keluar, 0) as total_hp_keluar'),
                 DB::raw('IFNULL(p.rata_lama_hari, 0) as rata_lama_hari')
             )
             ->orderBy('w.nm_bangsal')
@@ -437,6 +447,80 @@ class Recap extends Component
             ->get();
     }
 
+    /**
+     * Indikator BOR/ALOS/BTO/TOI/GDR per bangsal, dihitung sekali lewat HospitalIndicatorService
+     * dan dipakai ulang oleh semua chart per-bangsal serta tabel di view (menggantikan rumus
+     * yang sebelumnya diduplikasi di tiap closure chart dan di recap.blade.php).
+     */
+    public function getWardIndicatorsProperty()
+    {
+        $diffDays = Carbon::parse($this->startDate)->diffInDays(Carbon::parse($this->endDate)) + 1;
+
+        return $this->recapData->map(function ($item) use ($diffDays) {
+            $jumlahMeninggal = $item->jumlah_meninggal ?? 0;
+            $jumlahHidup = max(0, $item->jumlah_pulang - $jumlahMeninggal);
+
+            $indicators = HospitalIndicatorService::calculate(
+                hariPerawatan: $item->total_hp,
+                totalTempatTidur: $item->kapasitas,
+                jumlahHari: $diffDays,
+                pasienKeluarHidup: $jumlahHidup,
+                pasienKeluarMati: $jumlahMeninggal,
+                totalLamaDirawatKeluar: $item->total_hp_keluar,
+            );
+
+            return array_merge((array) $item, $indicators);
+        });
+    }
+
+    /**
+     * ward_indicators dikelompokkan berdasarkan grup fisik bangsal dari simrs.bangsal_group /
+     * detail_bangsal_group (mis. "HRY-PW1-1" dan "HRY-PW1-2" yang nm_bangsal-nya beda tapi satu
+     * gedung "Haruaya" digabung jadi satu grup), bukan berdasarkan string nm_bangsal mentah —
+     * dengan indikator BOR/ALOS/BTO/TOI/GDR level grup dihitung ulang dari angka gabungan lewat
+     * service yang sama. Dipakai untuk tabel Rekap yang ditampilkan per grup bangsal.
+     */
+    public function getWardGroupsProperty()
+    {
+        $diffDays = Carbon::parse($this->startDate)->diffInDays(Carbon::parse($this->endDate)) + 1;
+
+        return $this->wardIndicators
+            ->groupBy(fn($item) => SirsHelper::wardGroupName($item['kd_bangsal'], $item['nm_bangsal']))
+            ->map(function ($rows, $namaGroup) use ($diffDays) {
+                $kapasitas = $rows->sum('kapasitas');
+                $totalHp = $rows->sum('total_hp');
+                $totalHpKeluar = $rows->sum('total_hp_keluar');
+                $jumlahPulang = $rows->sum('jumlah_pulang');
+                $jumlahMeninggal = $rows->sum('jumlah_meninggal');
+
+                $summary = HospitalIndicatorService::calculate(
+                    hariPerawatan: $totalHp,
+                    totalTempatTidur: $kapasitas,
+                    jumlahHari: $diffDays,
+                    pasienKeluarHidup: max(0, $jumlahPulang - $jumlahMeninggal),
+                    pasienKeluarMati: $jumlahMeninggal,
+                    totalLamaDirawatKeluar: $totalHpKeluar,
+                );
+
+                return array_merge([
+                    'nm_bangsal' => $namaGroup,
+                    'kapasitas' => $kapasitas,
+                    'terisi' => $rows->sum('terisi'),
+                    'total_pasien' => $rows->sum('total_pasien'),
+                    'total_laki' => $rows->sum('total_laki'),
+                    'total_perempuan' => $rows->sum('total_perempuan'),
+                    'jumlah_pulang' => $jumlahPulang,
+                    'jumlah_dirujuk' => $rows->sum('jumlah_dirujuk'),
+                    'jumlah_aps' => $rows->sum('jumlah_aps'),
+                    'jumlah_meninggal' => $jumlahMeninggal,
+                    'total_hp' => $totalHp,
+                    'rows' => $rows->values(),
+                ], $summary);
+            })
+            ->sortBy('nm_bangsal')
+            ->values();
+    }
+
     public function getOverallStatsProperty()
     {
         $diffDays = Carbon::parse($this->startDate)->diffInDays(Carbon::parse($this->endDate)) + 1;
@@ -444,6 +528,17 @@ class Recap extends Component
         $totalHpKeluar = $this->recapData->sum('total_hp_keluar');
         $totalKapasitas = $this->recapData->sum('kapasitas');
         $totalPulang = $this->recapData->sum('jumlah_pulang');
+        $totalMeninggal = $this->recapData->sum('jumlah_meninggal');
+        $wardIndicators = $this->wardIndicators;
+
+        $overall = HospitalIndicatorService::calculate(
+            hariPerawatan: $totalHp,
+            totalTempatTidur: $totalKapasitas,
+            jumlahHari: $diffDays,
+            pasienKeluarHidup: max(0, $totalPulang - $totalMeninggal),
+            pasienKeluarMati: $totalMeninggal,
+            totalLamaDirawatKeluar: $totalHpKeluar,
+        );
 
         // Trend Data (In/Out)
         $trendAdmissions = DB::connection('simrs')
@@ -466,77 +561,80 @@ class Recap extends Component
             ->get();
 
         return [
-            // ALOS memakai total_hp_keluar (hari rawat pasien yang benar-benar KELUAR saja), bukan total_hp
-            // (semua pasien termasuk yang masih dirawat) — kalau memakai total_hp, ALOS bisa meledak tidak
-            // wajar saat jumlah pasien keluar sangat sedikit (mis. awal periode/bulan).
-            'alos' => $totalPulang > 0 ? $totalHpKeluar / $totalPulang : 0,
-            'bor' => ($totalKapasitas > 0 && $diffDays > 0) ? ($totalHp / ($totalKapasitas * $diffDays)) * 100 : 0,
-            'bto' => $totalKapasitas > 0 ? $totalPulang / $totalKapasitas : 0,
-            // TOI (Turn Over Interval): rata-rata jumlah hari tempat tidur kosong antara satu pasien keluar dengan pasien masuk berikutnya.
-            'toi' => $totalPulang > 0 ? (($totalKapasitas * $diffDays) - $totalHp) / $totalPulang : 0,
-            // GDR (Gross Death Rate) dihitung terhadap jumlah pasien KELUAR (hidup + mati) sesuai standar Depkes,
-            // bukan terhadap seluruh pasien yang tercatat pada periode (termasuk yang masih dirawat).
-            'gdr' => $totalPulang > 0 ? ($this->recapData->sum('jumlah_meninggal') / $totalPulang) * 100 : 0,
+            'alos' => $overall['alos'],
+            'bor' => $overall['bor'],
+            'bto' => $overall['bto'],
+            'toi' => $overall['toi'],
+            'gdr' => $overall['gdr'],
+            'ndr' => $overall['ndr'],
+            'ward_indicators' => $wardIndicators,
+            'ward_groups' => $this->wardGroups,
             'charts' => [
                 'wards_patients' => [
                     'labels' => $this->recapData->pluck('nm_bangsal')->toArray(),
-                    'datasets' => [[
-                        'label' => 'Total Pasien',
-                        'data' => $this->recapData->pluck('total_pasien')->toArray(),
-                        'backgroundColor' => '#4f46e5',
-                        'borderRadius' => 4
-                    ]]
+                    'datasets' => [
+                        [
+                            'label' => 'Total Pasien',
+                            'data' => $this->recapData->pluck('total_pasien')->toArray(),
+                            'backgroundColor' => '#4f46e5',
+                            'borderRadius' => 4
+                        ]
+                    ]
                 ],
                 'wards_bor' => [
                     'labels' => $this->recapData->pluck('nm_bangsal')->toArray(),
-                    'datasets' => [[
-                        'label' => 'BOR (%)',
-                        'data' => $this->recapData->map(function ($item) {
-                            $diffDays = Carbon::parse($this->startDate)->diffInDays(Carbon::parse($this->endDate)) + 1;
-                            return ($item->kapasitas > 0 && $diffDays > 0) ? round(($item->total_hp / ($item->kapasitas * $diffDays)) * 100, 1) : 0;
-                        })->toArray(),
-                        'backgroundColor' => '#10b981',
-                        'borderRadius' => 4
-                    ]]
+                    'datasets' => [
+                        [
+                            'label' => 'BOR (%)',
+                            'data' => $wardIndicators->pluck('bor')->toArray(),
+                            'backgroundColor' => '#10b981',
+                            'borderRadius' => 4
+                        ]
+                    ]
                 ],
                 'wards_alos' => [
                     'labels' => $this->recapData->pluck('nm_bangsal')->toArray(),
-                    'datasets' => [[
-                        'label' => 'ALOS (Hari)',
-                        'data' => $this->recapData->pluck('rata_lama_hari')->toArray(),
-                        'backgroundColor' => '#8b5cf6',
-                        'borderRadius' => 4
-                    ]]
+                    'datasets' => [
+                        [
+                            'label' => 'ALOS (Hari)',
+                            'data' => $wardIndicators->pluck('alos')->toArray(),
+                            'backgroundColor' => '#8b5cf6',
+                            'borderRadius' => 4
+                        ]
+                    ]
                 ],
                 'wards_bto' => [
                     'labels' => $this->recapData->pluck('nm_bangsal')->toArray(),
-                    'datasets' => [[
-                        'label' => 'BTO (Kali)',
-                        'data' => $this->recapData->map(fn($item) => $item->kapasitas > 0 ? round($item->jumlah_pulang / $item->kapasitas, 2) : 0)->toArray(),
-                        'backgroundColor' => '#f59e0b',
-                        'borderRadius' => 4
-                    ]]
+                    'datasets' => [
+                        [
+                            'label' => 'BTO (Kali)',
+                            'data' => $wardIndicators->pluck('bto')->toArray(),
+                            'backgroundColor' => '#f59e0b',
+                            'borderRadius' => 4
+                        ]
+                    ]
                 ],
                 'wards_gdr' => [
                     'labels' => $this->recapData->pluck('nm_bangsal')->toArray(),
-                    'datasets' => [[
-                        'label' => 'GDR (%)',
-                        'data' => $this->recapData->map(fn($item) => $item->jumlah_pulang > 0 ? round(($item->jumlah_meninggal / $item->jumlah_pulang) * 100, 1) : 0)->toArray(),
-                        'backgroundColor' => '#ef4444',
-                        'borderRadius' => 4
-                    ]]
+                    'datasets' => [
+                        [
+                            'label' => 'GDR (‰)',
+                            'data' => $wardIndicators->pluck('gdr')->toArray(),
+                            'backgroundColor' => '#ef4444',
+                            'borderRadius' => 4
+                        ]
+                    ]
                 ],
                 'wards_toi' => [
                     'labels' => $this->recapData->pluck('nm_bangsal')->toArray(),
-                    'datasets' => [[
-                        'label' => 'TOI (Hari)',
-                        'data' => $this->recapData->map(function ($item) {
-                            $diffDays = Carbon::parse($this->startDate)->diffInDays(Carbon::parse($this->endDate)) + 1;
-                            return $item->jumlah_pulang > 0 ? round((($item->kapasitas * $diffDays) - $item->total_hp) / $item->jumlah_pulang, 1) : 0;
-                        })->toArray(),
-                        'backgroundColor' => '#0ea5e9',
-                        'borderRadius' => 4
-                    ]]
+                    'datasets' => [
+                        [
+                            'label' => 'TOI (Hari)',
+                            'data' => $wardIndicators->pluck('toi')->toArray(),
+                            'backgroundColor' => '#0ea5e9',
+                            'borderRadius' => 4
+                        ]
+                    ]
                 ],
                 'trend' => [
                     'labels' => $trendAdmissions->pluck('date')->map(fn($d) => date('d/m', strtotime($d)))->toArray(),
@@ -587,12 +685,14 @@ class Recap extends Component
             ],
             'ward_occupancy' => [
                 'labels' => $allWards->pluck('nm_bangsal')->toArray(),
-                'datasets' => [[
-                    'label' => 'Persentase Terisi (%)',
-                    'data' => $allWards->map(fn($w) => $w->kapasitas > 0 ? round(($w->terisi / $w->kapasitas) * 100, 1) : 0)->toArray(),
-                    'backgroundColor' => '#10b981',
-                    'borderRadius' => 4
-                ]]
+                'datasets' => [
+                    [
+                        'label' => 'Persentase Terisi (%)',
+                        'data' => $allWards->map(fn($w) => $w->kapasitas > 0 ? round(($w->terisi / $w->kapasitas) * 100, 1) : 0)->toArray(),
+                        'backgroundColor' => '#10b981',
+                        'borderRadius' => 4
+                    ]
+                ]
             ]
         ];
     }

@@ -4,6 +4,7 @@ namespace App\Livewire\RegisteredPatient;
 
 use Carbon\Carbon;
 use App\Models\Patient;
+use App\Helpers\SirsHelper;
 use Livewire\Component;
 use Livewire\Attributes\Url;
 use App\Models\RegisteredPatient;
@@ -174,11 +175,11 @@ class Recap extends Component
             endDate: $endDate,
             type: 'ageGroup'
         );
-        $this->ageGroup = collect(Patient::KELOMPOK_UMUR)
-            ->map(function ($age, $key) use ($ageGroupData) {
+        $this->ageGroup = collect(SirsHelper::ageGroupCategoryLabels())
+            ->map(function ($nama, $kode) use ($ageGroupData) {
                 return [
-                    'title' => $age,
-                    'value' => $ageGroupData[$key],
+                    'title' => $nama,
+                    'value' => $ageGroupData[$kode] ?? 0,
                 ];
             })->toArray();
 

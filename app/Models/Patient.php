@@ -25,15 +25,6 @@ class Patient extends Model
         'polri' => 'POLRI',
         'tni' => 'TNI'
     ];
-    const KELOMPOK_UMUR = [
-        'balita' => 'Balita (<5 Tahun)',
-        'anak' => 'Anak-anak (5-11 Tahun)',
-        'remaja' => 'Remaja (12-25 Tahun)',
-        'dewasa' => 'Dewasa (26-45 Tahun)',
-        'lansia' => 'Lansia (46-65 Tahun)',
-        'lainnya' => 'Lainnya (>65 Tahun)'
-    ];
-
     const NO_REKAM_MEDIS = 'no_rkm_medis';
     const NAMA_PASIEN = 'nm_pasien';
     const NIK = 'no_ktp';

@@ -293,11 +293,11 @@ class FilterHelper
                 'value' => 'semua',
                 'title' => 'Semua'
             ],
-            ...collect(Patient::KELOMPOK_UMUR)
-                ->map(function ($age, $key) {
+            ...collect(SirsHelper::ageGroupCategoryLabels())
+                ->map(function ($nama, $kode) {
                     return [
-                        'title' => $age,
-                        'value' => $key,
+                        'title' => $nama,
+                        'value' => $kode,
                     ];
                 })->toArray()
         ];

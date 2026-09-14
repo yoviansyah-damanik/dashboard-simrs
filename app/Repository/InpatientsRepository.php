@@ -9,6 +9,7 @@ use App\Models\Patient;
 use App\Models\Polyclinic;
 use App\Helpers\DateHelper;
 use App\Helpers\GeneralHelper;
+use App\Helpers\SirsHelper;
 use App\Models\Inpatient;
 use App\Models\RegisteredPatient;
 use App\Models\PersonResponsibility;
@@ -149,7 +150,7 @@ class InpatientsRepository implements InpatientsInterface
      * @param string $startDate Variabel untuk menentukan tanggal mulai
      * @param string $endDate Variabel untuk menentukan tanggal akhir
      * @param string $gender Hanya 'L' | 'P' atau kosongkan jika semua
-     * @param string $ageCategory null, 'balita' | 'anak-anak' | 'remaja' | 'dewasa' | 'lansia' | 'lainnya' atau kosongkan jika semua
+     * @param string $ageCategory null, kode kelompok umur dari simrs.kelompok_umur (NEO|BAY|BAL|ANK|RMJ|DWS|PRL|LNS) atau kosongkan jika semua
      * @param string $status Sudah | Belum | Batal | Dirujuk | Berkas Diterima | Dirawat | Meninggal | Pulang Paksa atau kosongkan jika semua
      * @return LengthAwarePaginator | array
      */
@@ -209,14 +210,8 @@ class InpatientsRepository implements InpatientsInterface
             })
             ->whereHas('pasien', function ($q) use ($search, $type, $gender, $ageCategory) {
                 $q->when(
-                    $ageCategory && $ageCategory != 'semua',
-                    fn($r) => $r
-                        ->when($ageCategory == 'balita', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) < 5'))
-                        ->when($ageCategory == 'anak', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 5 and 11'))
-                        ->when($ageCategory == 'remaja', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 12 and 25'))
-                        ->when($ageCategory == 'dewasa', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 26 and 45'))
-                        ->when($ageCategory == 'lansia', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 46 and 65'))
-                        ->when($ageCategory == 'lainnya', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) > 65'))
+                    $ageCategory && array_key_exists($ageCategory, SirsHelper::getAgeGroupCategories()),
+                    fn($r) => $r->whereRaw(SirsHelper::ageGroupCategoryWhereRaw($ageCategory, Patient::TANGGAL_LAHIR))
                 )
 
                     ->when(in_array($gender, collect(Patient::KELOMPOK_JENIS_KELAMIN)->keys()->toArray()), fn($r) => $r->where(Patient::JENIS_KELAMIN, $gender))

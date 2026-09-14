@@ -430,31 +430,31 @@
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-emerald-500 transition-all">
                         <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">BOR</span>
                         <h4 class="text-2xl font-black text-emerald-600">{{ number_format($overall['bor'], 1) }}%</h4>
-                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Occupancy</p>
+                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Tingkat Hunian</p>
                     </div>
                     <div
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-indigo-500 transition-all">
                         <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">ALOS</span>
                         <h4 class="text-2xl font-black text-indigo-600">{{ number_format($overall['alos'], 1) }}</h4>
-                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Avg Stay</p>
+                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Rata-rata Rawat</p>
                     </div>
                     <div
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-amber-500 transition-all">
                         <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">BTO</span>
                         <h4 class="text-2xl font-black text-amber-600">{{ number_format($overall['bto'], 1) }}</h4>
-                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Turnover</p>
+                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Perputaran TT</p>
                     </div>
                     <div
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-sky-500 transition-all">
                         <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">TOI</span>
                         <h4 class="text-2xl font-black text-sky-600">{{ number_format($overall['toi'], 1) }}</h4>
-                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Idle Days</p>
+                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Hari Kosong TT</p>
                     </div>
                     <div
                         class="bg-white dark:bg-boxdark p-5 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col items-center text-center group hover:border-red-500 transition-all">
                         <span class="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">GDR</span>
-                        <h4 class="text-2xl font-black text-red-600">{{ number_format($overall['gdr'], 1) }}%</h4>
-                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Death Rate</p>
+                        <h4 class="text-2xl font-black text-red-600">{{ number_format($overall['gdr'], 1) }}‰</h4>
+                        <p class="text-sm font-bold text-gray-400 mt-1 uppercase">Angka Kematian</p>
                     </div>
                 </div>
             </div>
@@ -512,56 +512,102 @@
                                         <th
                                             class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center bg-sky-50 dark:bg-sky-900/10">
                                             TOI</th>
+                                        <th
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center bg-rose-50 dark:bg-rose-900/10">
+                                            GDR (‰)</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-stroke dark:divide-strokedark">
-                                    @php $diffDays = \Carbon\Carbon::parse($startDate)->diffInDays(\Carbon\Carbon::parse($endDate)) + 1; @endphp
-                                    @forelse($recapData as $item)
-                                        @php
-                                            $bor = $item->kapasitas > 0 && $diffDays > 0 ? ($item->total_hp / ($item->kapasitas * $diffDays)) * 100 : 0;
-                                            $toi = $item->jumlah_pulang > 0 ? (($item->kapasitas * $diffDays) - $item->total_hp) / $item->jumlah_pulang : 0;
-                                        @endphp
-                                        <tr
-                                            class="hover:bg-gray-50 dark:hover:bg-meta-4/20 transition-colors text-base">
-                                            <td class="px-4 py-4 font-bold text-gray-700 dark:text-gray-300">
-                                                {{ $item->nm_bangsal }}</td>
-                                            <td class="px-3 py-4 text-center"><span
-                                                    class="px-2 py-0.5 text-sm font-black rounded-md bg-gray-100 dark:bg-meta-4 text-gray-600 dark:text-gray-400">{{ $item->kelas }}</span>
+                                    @forelse($overall['ward_groups'] as $group)
+                                        {{-- Baris grup: total gabungan per bangsal (semua kelas) --}}
+                                        <tr class="bg-gray-50 dark:bg-meta-4/40 text-base">
+                                            <td class="px-4 py-3 font-black text-gray-800 dark:text-white"
+                                                colspan="2">
+                                                {{ $group['nm_bangsal'] }}
+                                                <span class="ml-1 text-sm font-bold text-gray-400 uppercase tracking-widest">(Total / Rata-rata)</span>
                                             </td>
-                                            <td class="px-3 py-4 text-center font-black bg-gray-50 dark:bg-meta-4/30">
-                                                {{ number_format($item->kapasitas) }}</td>
-                                            <td class="px-3 py-4 text-center text-indigo-600 font-black">
-                                                {{ number_format($item->terisi) }}</td>
+                                            <td class="px-3 py-3 text-center font-black bg-gray-100 dark:bg-meta-4/70">
+                                                {{ number_format($group['kapasitas']) }}</td>
+                                            <td class="px-3 py-3 text-center text-indigo-700 font-black">
+                                                {{ number_format($group['terisi']) }}</td>
                                             <td
-                                                class="px-3 py-4 text-center bg-blue-50/30 dark:bg-blue-900/5 font-black">
-                                                {{ number_format($item->total_pasien) }}</td>
-                                            <td class="px-3 py-4 text-center text-blue-500 font-bold">
-                                                {{ number_format($item->total_laki) }}</td>
-                                            <td class="px-3 py-4 text-center text-pink-500 font-bold">
-                                                {{ number_format($item->total_perempuan) }}</td>
-                                            <td class="px-3 py-4 text-center text-emerald-600 font-bold">
-                                                {{ number_format($item->jumlah_pulang) }}</td>
-                                            <td class="px-3 py-4 text-center text-amber-600 font-bold">
-                                                {{ number_format($item->jumlah_dirujuk) }}</td>
-                                            <td class="px-3 py-4 text-center text-gray-500 font-bold">
-                                                {{ number_format($item->jumlah_aps) }}</td>
-                                            <td class="px-3 py-4 text-center text-red-600 font-bold">
-                                                {{ number_format($item->jumlah_meninggal) }}</td>
-                                            <td class="px-3 py-4 text-center font-bold text-gray-400">
-                                                {{ number_format($item->total_hp) }}</td>
+                                                class="px-3 py-3 text-center bg-blue-100/50 dark:bg-blue-900/10 font-black">
+                                                {{ number_format($group['total_pasien']) }}</td>
+                                            <td class="px-3 py-3 text-center text-blue-600 font-black">
+                                                {{ number_format($group['total_laki']) }}</td>
+                                            <td class="px-3 py-3 text-center text-pink-600 font-black">
+                                                {{ number_format($group['total_perempuan']) }}</td>
+                                            <td class="px-3 py-3 text-center text-emerald-700 font-black">
+                                                {{ number_format($group['jumlah_pulang']) }}</td>
+                                            <td class="px-3 py-3 text-center text-amber-700 font-black">
+                                                {{ number_format($group['jumlah_dirujuk']) }}</td>
+                                            <td class="px-3 py-3 text-center text-gray-600 font-black">
+                                                {{ number_format($group['jumlah_aps']) }}</td>
+                                            <td class="px-3 py-3 text-center text-red-700 font-black">
+                                                {{ number_format($group['jumlah_meninggal']) }}</td>
+                                            <td class="px-3 py-3 text-center font-black text-gray-600">
+                                                {{ number_format($group['total_hp']) }}</td>
                                             <td
-                                                class="px-3 py-4 text-center font-black bg-purple-50/50 dark:bg-purple-900/5 text-purple-600">
-                                                {{ number_format($item->rata_lama_hari, 1) }}</td>
+                                                class="px-3 py-3 text-center font-black bg-purple-100/50 dark:bg-purple-900/10 text-purple-700">
+                                                {{ number_format($group['alos'], 1) }}</td>
                                             <td
-                                                class="px-3 py-4 text-center font-black bg-green-50/50 dark:bg-green-900/5 {{ $bor > 85 ? 'text-red-500' : ($bor < 60 ? 'text-orange-500' : 'text-emerald-600') }}">
-                                                {{ number_format($bor, 1) }}%</td>
+                                                class="px-3 py-3 text-center font-black bg-green-100/50 dark:bg-green-900/10 {{ \App\Services\HospitalIndicatorService::isWithinRange('bor', $group['bor']) ? 'text-emerald-700' : ($group['bor'] > \App\Services\HospitalIndicatorService::RANGES['bor']['max'] ? 'text-red-600' : 'text-orange-600') }}">
+                                                {{ number_format($group['bor'], 1) }}%</td>
                                             <td
-                                                class="px-3 py-4 text-center font-black bg-sky-50/50 dark:bg-sky-900/5 text-sky-600">
-                                                {{ number_format($toi, 1) }}</td>
+                                                class="px-3 py-3 text-center font-black bg-sky-100/50 dark:bg-sky-900/10 text-sky-700">
+                                                {{ number_format($group['toi'], 1) }}</td>
+                                            <td
+                                                class="px-3 py-3 text-center font-black bg-rose-100/50 dark:bg-rose-900/10 text-rose-700">
+                                                {{ number_format($group['gdr'], 1) }}</td>
                                         </tr>
+                                        {{-- Baris detail: rincian per kelas di dalam bangsal ini --}}
+                                        @foreach ($group['rows'] as $item)
+                                            <tr
+                                                class="hover:bg-gray-50 dark:hover:bg-meta-4/20 transition-colors text-base">
+                                                <td class="px-4 py-4 pl-8 text-sm text-gray-500 dark:text-gray-400">
+                                                    {{ $item['nm_bangsal'] }}</td>
+                                                <td class="px-3 py-4 text-center"><span
+                                                        class="px-2 py-0.5 text-sm font-black rounded-md bg-gray-100 dark:bg-meta-4 text-gray-600 dark:text-gray-400">{{ $item['kelas'] }}</span>
+                                                </td>
+                                                <td
+                                                    class="px-3 py-4 text-center font-black bg-gray-50 dark:bg-meta-4/30">
+                                                    {{ number_format($item['kapasitas']) }}</td>
+                                                <td class="px-3 py-4 text-center text-indigo-600 font-black">
+                                                    {{ number_format($item['terisi']) }}</td>
+                                                <td
+                                                    class="px-3 py-4 text-center bg-blue-50/30 dark:bg-blue-900/5 font-black">
+                                                    {{ number_format($item['total_pasien']) }}</td>
+                                                <td class="px-3 py-4 text-center text-blue-500 font-bold">
+                                                    {{ number_format($item['total_laki']) }}</td>
+                                                <td class="px-3 py-4 text-center text-pink-500 font-bold">
+                                                    {{ number_format($item['total_perempuan']) }}</td>
+                                                <td class="px-3 py-4 text-center text-emerald-600 font-bold">
+                                                    {{ number_format($item['jumlah_pulang']) }}</td>
+                                                <td class="px-3 py-4 text-center text-amber-600 font-bold">
+                                                    {{ number_format($item['jumlah_dirujuk']) }}</td>
+                                                <td class="px-3 py-4 text-center text-gray-500 font-bold">
+                                                    {{ number_format($item['jumlah_aps']) }}</td>
+                                                <td class="px-3 py-4 text-center text-red-600 font-bold">
+                                                    {{ number_format($item['jumlah_meninggal']) }}</td>
+                                                <td class="px-3 py-4 text-center font-bold text-gray-400">
+                                                    {{ number_format($item['total_hp']) }}</td>
+                                                <td
+                                                    class="px-3 py-4 text-center font-black bg-purple-50/50 dark:bg-purple-900/5 text-purple-600">
+                                                    {{ number_format($item['alos'], 1) }}</td>
+                                                <td
+                                                    class="px-3 py-4 text-center font-black bg-green-50/50 dark:bg-green-900/5 {{ \App\Services\HospitalIndicatorService::isWithinRange('bor', $item['bor']) ? 'text-emerald-600' : ($item['bor'] > \App\Services\HospitalIndicatorService::RANGES['bor']['max'] ? 'text-red-500' : 'text-orange-500') }}">
+                                                    {{ number_format($item['bor'], 1) }}%</td>
+                                                <td
+                                                    class="px-3 py-4 text-center font-black bg-sky-50/50 dark:bg-sky-900/5 text-sky-600">
+                                                    {{ number_format($item['toi'], 1) }}</td>
+                                                <td
+                                                    class="px-3 py-4 text-center font-black bg-rose-50/50 dark:bg-rose-900/5 text-rose-600">
+                                                    {{ number_format($item['gdr'], 1) }}</td>
+                                            </tr>
+                                        @endforeach
                                     @empty
                                         <tr>
-                                            <td colspan="15" class="px-4 py-10 text-center text-gray-500">Tidak ada
+                                            <td colspan="16" class="px-4 py-10 text-center text-gray-500">Tidak ada
                                                 data rekapitulasi untuk periode ini.</td>
                                         </tr>
                                     @endforelse
@@ -600,6 +646,9 @@
                                             <td
                                                 class="px-3 py-4 text-center font-black bg-sky-100 dark:bg-sky-900/20 text-sky-700">
                                                 {{ number_format($overall['toi'], 1) }}</td>
+                                            <td
+                                                class="px-3 py-4 text-center font-black bg-rose-100 dark:bg-rose-900/20 text-rose-700">
+                                                {{ number_format($overall['gdr'], 1) }}</td>
                                         </tr>
                                     </tfoot>
                                 @endif
@@ -643,7 +692,7 @@
                         class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
                         <h4
                             class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
-                            <span class="icon-[solar--refresh-bold-duotone] text-lg text-primary"></span>Bed Turn Over (BTO) per Bangsal
+                            <span class="icon-[solar--refresh-bold-duotone] text-lg text-primary"></span>Angka Perputaran Tempat Tidur (BTO) per Bangsal
                         </h4>
                         <div class="h-96" wire:ignore wire:key="chart-recap-bto"><x-chart
                                 chartId="mainChartBTO" chartType="bar" barType="x" :labels="$overall['charts']['wards_bto']['labels']"
@@ -653,7 +702,7 @@
                         class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
                         <h4
                             class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
-                            <span class="icon-[solar--danger-bold-duotone] text-lg text-primary"></span>Gross Death Rate (GDR) per Bangsal
+                            <span class="icon-[solar--danger-bold-duotone] text-lg text-primary"></span>Angka Kematian Kasar (GDR) per Bangsal
                         </h4>
                         <div class="h-96" wire:ignore wire:key="chart-recap-gdr"><x-chart
                                 chartId="mainChartGDR" chartType="bar" barType="x" :labels="$overall['charts']['wards_gdr']['labels']"
@@ -663,7 +712,7 @@
                         class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
                         <h4
                             class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 flex items-center gap-2">
-                            <span class="icon-[solar--hourglass-bold-duotone] text-lg text-primary"></span>Turn Over Interval (TOI) per Bangsal
+                            <span class="icon-[solar--hourglass-bold-duotone] text-lg text-primary"></span>Interval Perputaran Tempat Tidur (TOI) per Bangsal
                         </h4>
                         <div class="h-96" wire:ignore wire:key="chart-recap-toi"><x-chart
                                 chartId="mainChartTOI" chartType="bar" barType="x" :labels="$overall['charts']['wards_toi']['labels']"

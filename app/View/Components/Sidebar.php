@@ -259,15 +259,29 @@ class Sidebar extends Component
                     ]
             ],
             [
-                'title' => 'Layanan Khusus',
+                'title' => 'Laporan',
                 'items' => [
                     [
-                        'title' => 'Laporan Data Pasien',
+                        'title' => 'Kunjungan & Pengunjung',
                         'href' => route('patient-report'),
                         'icon' => 'i-ph-clipboard-text',
                         'isActive' => request()->routeIs('patient-report'),
                         'isShown' => auth()->user()->hasPermissionTo('patient-report show')
                     ],
+                    [
+                        'title' => 'Matriks Indikator Tahunan',
+                        'href' => route('indicator-matrix'),
+                        'icon' => 'i-ph-chart-line',
+                        'isActive' => request()->routeIs('indicator-matrix'),
+                        'isShown' => auth()->user()->hasPermissionTo('indicator-matrix show')
+                    ],
+                    [
+                        'title' => 'Pendapatan',
+                        'icon' => 'i-ph-wallet',
+                        'href' => route('financial-report'),
+                        'isActive' => request()->routeIs('financial-report'),
+                        'isShown' => auth()->user()->hasPermissionTo('financial-report show')
+                    ]
                 ]
             ],
             [
@@ -286,18 +300,6 @@ class Sidebar extends Component
                         'href' => route('medical-non-personnel'),
                         'isActive' => request()->routeIs('medical-non-personnel'),
                         'isShown' => auth()->user()->hasPermissionTo('medical-non-personnel show')
-                    ]
-                ]
-            ],
-            [
-                'title' => 'Laporan Keuangan',
-                'items' => [
-                    [
-                        'title' => 'Pendapatan',
-                        'icon' => 'i-ph-wallet',
-                        'href' => route('financial-report'),
-                        'isActive' => request()->routeIs('financial-report'),
-                        'isShown' => auth()->user()->hasPermissionTo('financial-report show')
                     ]
                 ]
             ],

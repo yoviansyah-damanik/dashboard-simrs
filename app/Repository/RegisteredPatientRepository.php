@@ -9,6 +9,7 @@ use App\Models\Patient;
 use App\Models\MobileJkn;
 use App\Models\Polyclinic;
 use App\Helpers\DateHelper;
+use App\Helpers\SirsHelper;
 use App\Models\RegisteredPatient;
 use App\Helpers\ConfigurationHelper;
 use App\Models\PersonResponsibility;
@@ -133,7 +134,7 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
      * @param string $startDate Variabel untuk menentukan tanggal mulai
      * @param string $endDate Variabel untuk menentukan tanggal akhir
      * @param string $gender Hanya 'L' | 'P' atau kosongkan jika semua
-     * @param string $ageCategory null, 'balita' | 'anak-anak' | 'remaja' | 'dewasa' | 'lansia' | 'lainnya' atau kosongkan jika semua
+     * @param string $ageCategory null, kode kelompok umur dari simrs.kelompok_umur (NEO|BAY|BAL|ANK|RMJ|DWS|PRL|LNS) atau kosongkan jika semua
      * @param string $status Sudah | Belum | Batal | Dirujuk | Berkas Diterima | Dirawat | Meninggal | Pulang Paksa atau kosongkan jika semua
      * @return LengthAwarePaginator | array
      */
@@ -219,25 +220,11 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
                     ->whereAny([RegisteredPatient::NO_REKAM_MEDIS, Patient::NAMA_PASIEN, Patient::NIK, Patient::NOKA], 'like', $search . "%");
             })
             ->when(
-                $ageCategory,
+                $ageCategory && array_key_exists($ageCategory, SirsHelper::getAgeGroupCategories()),
                 fn($q) => $q->whereHas(
                     'pasien',
-                    fn($r) =>
-                    $r
-                        ->when($ageCategory == 'balita', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) < 5'))
-                        ->when($ageCategory == 'anak', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 5 and 11'))
-                        ->when($ageCategory == 'remaja', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 12 and 25'))
-                        ->when($ageCategory == 'dewasa', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 26 and 45'))
-                        ->when($ageCategory == 'lansia', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) between 46 and 65'))
-                        ->when($ageCategory == 'lainnya', fn($r) => $r->whereRaw('TIMESTAMPDIFF(year, ' . Patient::TANGGAL_LAHIR . ', now()) > 65'))
+                    fn($r) => $r->whereRaw(SirsHelper::ageGroupCategoryWhereRaw($ageCategory, Patient::TANGGAL_LAHIR))
                 )
-
-                //    ->when($ageCategory == 'balita', fn($r) => $r->whereRaw('((' . RegisteredPatient::UMUR_MENDAFTAR . ' < 5 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\') or ' . RegisteredPatient::STATUS_UMUR . ' = \'Bl\')'))
-                //         ->when($ageCategory == 'anak', fn($r) => $r->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 5 and 11 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\''))
-                //         ->when($ageCategory == 'remaja', fn($r) => $r->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 12 and 25 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\''))
-                //         ->when($ageCategory == 'dewasa', fn($r) => $r->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 26 and 45 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\''))
-                //         ->when($ageCategory == 'lansia', fn($r) => $r->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' between 46 and 65 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\''))
-                //         ->when($ageCategory == 'lainnya', fn($r) => $r->whereRaw(RegisteredPatient::UMUR_MENDAFTAR . ' > 65 and ' . RegisteredPatient::STATUS_UMUR . ' = \'Th\''))
             )
             ->when(!is_null($doctor) && $doctor != 'semua', fn($q) => $q->where(RegisteredPatient::KODE_DOKTER, $doctor))
             ->when(in_array($serviceStatus, RegisteredPatient::KELOMPOK_STATUS_PELAYANAN), fn($q) => $q->where(RegisteredPatient::STATUS_PELAYANAN, $serviceStatus))
@@ -299,14 +286,14 @@ class RegisteredPatientRepository implements RegisteredPatientInterface
         )->when(
             $type,
             fn($q) => $q->when($type == 'ageGroup', function ($r) {
-                $r->selectRaw(
-                    'IFNULL(SUM(CASE WHEN (SELECT COUNT(' .  Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ') FROM ' . Patient::getTableName() . ' WHERE TIMESTAMPDIFF(year, ' . Patient::getTableName() . '.' . Patient::TANGGAL_LAHIR . ', now()) < 5 AND ' . Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ' = ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS . ')  THEN 1 ELSE 0 END),0) AS \'balita\','
-                        . 'IFNULL(SUM(CASE WHEN (SELECT COUNT(' .  Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ') FROM ' . Patient::getTableName() . ' WHERE TIMESTAMPDIFF(year, ' . Patient::getTableName() . '.' . Patient::TANGGAL_LAHIR . ', now()) between 5 and 11 AND ' . Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ' = ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS . ') THEN 1 ELSE 0 END),0) AS \'anak\','
-                        . 'IFNULL(SUM(CASE WHEN (SELECT COUNT(' .  Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ') FROM ' . Patient::getTableName() . ' WHERE TIMESTAMPDIFF(year, ' . Patient::getTableName() . '.' . Patient::TANGGAL_LAHIR . ', now()) between 12 and 25 AND ' . Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ' = ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS . ') THEN 1 ELSE 0 END),0) AS \'remaja\','
-                        . 'IFNULL(SUM(CASE WHEN (SELECT COUNT(' .  Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ') FROM ' . Patient::getTableName() . ' WHERE TIMESTAMPDIFF(year, ' . Patient::getTableName() . '.' . Patient::TANGGAL_LAHIR . ', now()) between 26 and 45 AND ' . Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ' = ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS . ') THEN 1 ELSE 0 END),0) AS \'dewasa\','
-                        . 'IFNULL(SUM(CASE WHEN (SELECT COUNT(' .  Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ') FROM ' . Patient::getTableName() . ' WHERE TIMESTAMPDIFF(year, ' . Patient::getTableName() . '.' . Patient::TANGGAL_LAHIR . ', now()) between 46 and 65 AND ' . Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ' = ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS . ') THEN 1 ELSE 0 END),0) AS \'lansia\','
-                        . 'IFNULL(SUM(CASE WHEN (SELECT COUNT(' .  Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ') FROM ' . Patient::getTableName() . ' WHERE TIMESTAMPDIFF(year, ' . Patient::getTableName() . '.' . Patient::TANGGAL_LAHIR . ', now()) > 65 AND ' . Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS . ' = ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS . ')  THEN 1 ELSE 0 END),0) AS \'lainnya\''
-                );
+                $birthDateColumn = Patient::getTableName() . '.' . Patient::TANGGAL_LAHIR;
+
+                $selects = collect(SirsHelper::getAgeGroupCategories())
+                    ->map(fn($group, $kode) => 'IFNULL(SUM(CASE WHEN ' . SirsHelper::ageGroupCategoryWhereRaw($kode, $birthDateColumn) . ' THEN 1 ELSE 0 END),0) AS \'' . $kode . '\'')
+                    ->implode(',');
+
+                $r->join(Patient::getTableName(), Patient::getTableName() . '.' . Patient::NO_REKAM_MEDIS, '=', RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_REKAM_MEDIS)
+                    ->selectRaw($selects);
             })->when($type == 'mobileJknGroup', function ($r) {
                 $r->selectRaw(
                     'IFNULL(SUM(CASE WHEN (select count(' . RegisteredPatient::NO_RAWAT . ') from ' . MobileJkn::getTableName() . ' where ' . RegisteredPatient::getTableName() . '.' . RegisteredPatient::NO_RAWAT . ' = ' . MobileJkn::getTableName() . '.' . MobileJkn::NO_RAWAT . ') > 0 THEN 1 ELSE 0 END),0) AS \'Mobile JKN\','

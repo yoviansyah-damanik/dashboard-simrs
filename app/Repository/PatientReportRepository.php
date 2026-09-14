@@ -48,12 +48,12 @@ class PatientReportRepository implements PatientReportInterface
     }
 
     /**
-     * COUNT rawat inap per golongan: status_lanjut = 'Ranap' AND golongan IN (...).
+     * COUNT per golongan berdasarkan nilai status_lanjut ('Ranap' atau 'Ralan').
      */
-    private static function caseRanap(string $alias, array $golongan, string $statusLanjut): string
+    private static function caseStatusLanjut(string $alias, array $golongan, string $statusLanjut, string $nilai): string
     {
         $ids = implode(',', $golongan);
-        return "COUNT(CASE WHEN pt.golongan_tni IN ({$ids}) AND {$statusLanjut} = 'Ranap' THEN 1 END) AS {$alias}";
+        return "COUNT(CASE WHEN pt.golongan_tni IN ({$ids}) AND {$statusLanjut} = '{$nilai}' THEN 1 END) AS {$alias}";
     }
 
     /**
@@ -108,12 +108,19 @@ class PatientReportRepository implements PatientReportInterface
                 "COUNT(CASE WHEN pt.no_rkm_medis IS NULL AND {$rp}.{$stts} = 'Dirujuk' THEN 1 END) AS r_umum",
                 "COUNT(CASE WHEN {$rp}.{$stts} = 'Dirujuk' THEN 1 END) AS rujukan",
 
-                // --- RAWAT INAP per kelompok ---
-                self::caseRanap('ri_ad',   array_merge(self::GOLONGAN_AD_MIL, self::GOLONGAN_AD_PNS, self::GOLONGAN_AD_KEL), "{$rp}.{$statusLanjut}"),
-                self::caseRanap('ri_al',   array_merge(self::GOLONGAN_AL_MIL, self::GOLONGAN_AL_PNS, self::GOLONGAN_AL_KEL), "{$rp}.{$statusLanjut}"),
-                self::caseRanap('ri_purn', self::GOLONGAN_PURN, "{$rp}.{$statusLanjut}"),
+                // --- RAWAT INAP (Ranap) per kelompok ---
+                self::caseStatusLanjut('ri_ad',   array_merge(self::GOLONGAN_AD_MIL, self::GOLONGAN_AD_PNS, self::GOLONGAN_AD_KEL), "{$rp}.{$statusLanjut}", 'Ranap'),
+                self::caseStatusLanjut('ri_al',   array_merge(self::GOLONGAN_AL_MIL, self::GOLONGAN_AL_PNS, self::GOLONGAN_AL_KEL), "{$rp}.{$statusLanjut}", 'Ranap'),
+                self::caseStatusLanjut('ri_purn', self::GOLONGAN_PURN, "{$rp}.{$statusLanjut}", 'Ranap'),
                 "COUNT(CASE WHEN pt.no_rkm_medis IS NULL AND {$rp}.{$statusLanjut} = 'Ranap' THEN 1 END) AS ri_umum",
                 "COUNT(CASE WHEN {$rp}.{$statusLanjut} = 'Ranap' THEN 1 END) AS rawat_inap",
+
+                // --- RAWAT JALAN (Ralan) per kelompok ---
+                self::caseStatusLanjut('rj_ad',   array_merge(self::GOLONGAN_AD_MIL, self::GOLONGAN_AD_PNS, self::GOLONGAN_AD_KEL), "{$rp}.{$statusLanjut}", 'Ralan'),
+                self::caseStatusLanjut('rj_al',   array_merge(self::GOLONGAN_AL_MIL, self::GOLONGAN_AL_PNS, self::GOLONGAN_AL_KEL), "{$rp}.{$statusLanjut}", 'Ralan'),
+                self::caseStatusLanjut('rj_purn', self::GOLONGAN_PURN, "{$rp}.{$statusLanjut}", 'Ralan'),
+                "COUNT(CASE WHEN pt.no_rkm_medis IS NULL AND {$rp}.{$statusLanjut} = 'Ralan' THEN 1 END) AS rj_umum",
+                "COUNT(CASE WHEN {$rp}.{$statusLanjut} = 'Ralan' THEN 1 END) AS rawat_jalan",
             ]))
             ->first();
 
@@ -133,8 +140,9 @@ class PatientReportRepository implements PatientReportInterface
                     'kel'   => (int) $d['k_ad_kel'],
                     'total' => (int) $d['k_ad_mil'] + (int) $d['k_ad_pns'] + (int) $d['k_ad_kel'],
                 ],
-                'rujukan'    => (int) $d['r_ad'],
-                'rawat_inap' => (int) $d['ri_ad'],
+                'rujukan'     => (int) $d['r_ad'],
+                'rawat_inap'  => (int) $d['ri_ad'],
+                'rawat_jalan' => (int) $d['rj_ad'],
             ],
             'angkatan_lain' => [
                 'pengunjung' => [
@@ -149,25 +157,29 @@ class PatientReportRepository implements PatientReportInterface
                     'kel'   => (int) $d['k_al_kel'],
                     'total' => (int) $d['k_al_mil'] + (int) $d['k_al_pns'] + (int) $d['k_al_kel'],
                 ],
-                'rujukan'    => (int) $d['r_al'],
-                'rawat_inap' => (int) $d['ri_al'],
+                'rujukan'     => (int) $d['r_al'],
+                'rawat_inap'  => (int) $d['ri_al'],
+                'rawat_jalan' => (int) $d['rj_al'],
             ],
             'purnawirawan' => [
-                'pengunjung' => (int) $d['p_purn'],
-                'kunjungan'  => (int) $d['k_purn'],
-                'rujukan'    => (int) $d['r_purn'],
-                'rawat_inap' => (int) $d['ri_purn'],
+                'pengunjung'  => (int) $d['p_purn'],
+                'kunjungan'   => (int) $d['k_purn'],
+                'rujukan'     => (int) $d['r_purn'],
+                'rawat_inap'  => (int) $d['ri_purn'],
+                'rawat_jalan' => (int) $d['rj_purn'],
             ],
             'umum' => [
-                'pengunjung' => (int) $d['p_umum'],
-                'kunjungan'  => (int) $d['k_umum'],
-                'rujukan'    => (int) $d['r_umum'],
-                'rawat_inap' => (int) $d['ri_umum'],
+                'pengunjung'  => (int) $d['p_umum'],
+                'kunjungan'   => (int) $d['k_umum'],
+                'rujukan'     => (int) $d['r_umum'],
+                'rawat_inap'  => (int) $d['ri_umum'],
+                'rawat_jalan' => (int) $d['rj_umum'],
             ],
             'total_pengunjung' => (int) $d['p_total'],
             'total_kunjungan'  => (int) $d['k_total'],
             'rujukan'          => (int) $d['rujukan'],
             'rawat_inap'       => (int) $d['rawat_inap'],
+            'rawat_jalan'      => (int) $d['rawat_jalan'],
         ];
     }
 }

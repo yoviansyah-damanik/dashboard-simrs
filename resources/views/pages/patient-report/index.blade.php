@@ -65,12 +65,13 @@
     @php $s = $this->summary; @endphp
 
     {{-- Ringkasan Cepat --}}
-    <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         @php
             $stats = [
                 ['label' => 'Total Pengunjung', 'value' => $s['total_pengunjung'], 'icon' => 'icon-[solar--users-group-rounded-bold-duotone]', 'color' => 'text-primary bg-primary/10'],
                 ['label' => 'Total Kunjungan',  'value' => $s['total_kunjungan'],  'icon' => 'icon-[solar--clipboard-list-bold-duotone]',       'color' => 'text-cyan-600 bg-cyan-500/10'],
                 ['label' => 'Dirujuk',           'value' => $s['rujukan'],          'icon' => 'icon-[solar--map-arrow-right-bold-duotone]',        'color' => 'text-amber-600 bg-amber-500/10'],
+                ['label' => 'Rawat Jalan',       'value' => $s['rawat_jalan'],      'icon' => 'icon-[solar--walking-round-bold-duotone]',          'color' => 'text-cyan-600 bg-cyan-500/10'],
                 ['label' => 'Rawat Inap',        'value' => $s['rawat_inap'],       'icon' => 'icon-[solar--bed-bold-duotone]',                    'color' => 'text-violet-600 bg-violet-500/10'],
             ];
         @endphp
@@ -108,15 +109,17 @@
                         <th class="px-5 py-3 text-left w-1/3">Kelompok Pasien</th>
                         <th class="px-4 py-3 text-right">Pengunjung</th>
                         <th class="px-4 py-3 text-right">Kunjungan</th>
-                        <th class="px-4 py-3 text-right">Rujukan</th>
+                        <th class="px-4 py-3 text-right border-l border-stroke dark:border-strokedark">Rujukan</th>
+                        <th class="px-4 py-3 text-right">Rawat Jalan</th>
                         <th class="px-4 py-3 text-right">Rawat Inap</th>
+                        <th class="px-4 py-3 text-right border-l border-stroke dark:border-strokedark">Total Ralan + Ranap</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-stroke dark:divide-strokedark">
 
                     {{-- ===== ANGKATAN DARAT ===== --}}
                     <tr class="bg-primary/5 dark:bg-primary/10">
-                        <td colspan="5" class="px-5 py-2 text-xs font-black text-primary uppercase tracking-widest">
+                        <td colspan="7" class="px-5 py-2 text-xs font-black text-primary uppercase tracking-widest">
                             Angkatan Darat
                         </td>
                     </tr>
@@ -132,21 +135,25 @@
                             <td class="px-5 py-3 pl-10 text-gray-600 dark:text-gray-400 text-sm">{{ $row['label'] }}</td>
                             <td class="px-4 py-3 text-right font-bold text-gray-800 dark:text-white">{{ number_format($row['p'], 0, ',', '.') }}</td>
                             <td class="px-4 py-3 text-right font-bold text-gray-800 dark:text-white">{{ number_format($row['k'], 0, ',', '.') }}</td>
+                            <td class="px-4 py-3 text-right text-gray-400 border-l border-stroke dark:border-strokedark">—</td>
                             <td class="px-4 py-3 text-right text-gray-400">—</td>
                             <td class="px-4 py-3 text-right text-gray-400">—</td>
+                            <td class="px-4 py-3 text-right text-gray-400 border-l border-stroke dark:border-strokedark">—</td>
                         </tr>
                     @endforeach
                     <tr class="bg-gray-50 dark:bg-meta-4 font-black">
                         <td class="px-5 py-3 pl-10 text-gray-700 dark:text-white text-sm">Jumlah Angkatan Darat</td>
                         <td class="px-4 py-3 text-right text-gray-800 dark:text-white">{{ number_format($s['angkatan_darat']['pengunjung']['total'], 0, ',', '.') }}</td>
                         <td class="px-4 py-3 text-right text-gray-800 dark:text-white">{{ number_format($s['angkatan_darat']['kunjungan']['total'], 0, ',', '.') }}</td>
-                        <td class="px-4 py-3 text-right text-amber-600">{{ number_format($s['angkatan_darat']['rujukan'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 text-right text-amber-600 border-l border-stroke dark:border-strokedark">{{ number_format($s['angkatan_darat']['rujukan'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 text-right text-cyan-600">{{ number_format($s['angkatan_darat']['rawat_jalan'], 0, ',', '.') }}</td>
                         <td class="px-4 py-3 text-right text-violet-600">{{ number_format($s['angkatan_darat']['rawat_inap'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 text-right text-gray-800 dark:text-white border-l border-stroke dark:border-strokedark">{{ number_format($s['angkatan_darat']['rawat_jalan'] + $s['angkatan_darat']['rawat_inap'], 0, ',', '.') }}</td>
                     </tr>
 
                     {{-- ===== ANGKATAN LAIN ===== --}}
                     <tr class="bg-cyan-500/5 dark:bg-cyan-500/10">
-                        <td colspan="5" class="px-5 py-2 text-xs font-black text-cyan-600 uppercase tracking-widest">
+                        <td colspan="7" class="px-5 py-2 text-xs font-black text-cyan-600 uppercase tracking-widest">
                             Angkatan Lain (TNI AU, TNI AL)
                         </td>
                     </tr>
@@ -162,16 +169,20 @@
                             <td class="px-5 py-3 pl-10 text-gray-600 dark:text-gray-400 text-sm">{{ $row['label'] }}</td>
                             <td class="px-4 py-3 text-right font-bold text-gray-800 dark:text-white">{{ number_format($row['p'], 0, ',', '.') }}</td>
                             <td class="px-4 py-3 text-right font-bold text-gray-800 dark:text-white">{{ number_format($row['k'], 0, ',', '.') }}</td>
+                            <td class="px-4 py-3 text-right text-gray-400 border-l border-stroke dark:border-strokedark">—</td>
                             <td class="px-4 py-3 text-right text-gray-400">—</td>
                             <td class="px-4 py-3 text-right text-gray-400">—</td>
+                            <td class="px-4 py-3 text-right text-gray-400 border-l border-stroke dark:border-strokedark">—</td>
                         </tr>
                     @endforeach
                     <tr class="bg-gray-50 dark:bg-meta-4 font-black">
                         <td class="px-5 py-3 pl-10 text-gray-700 dark:text-white text-sm">Jumlah Angkatan Lain</td>
                         <td class="px-4 py-3 text-right text-gray-800 dark:text-white">{{ number_format($s['angkatan_lain']['pengunjung']['total'], 0, ',', '.') }}</td>
                         <td class="px-4 py-3 text-right text-gray-800 dark:text-white">{{ number_format($s['angkatan_lain']['kunjungan']['total'], 0, ',', '.') }}</td>
-                        <td class="px-4 py-3 text-right text-amber-600">{{ number_format($s['angkatan_lain']['rujukan'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 text-right text-amber-600 border-l border-stroke dark:border-strokedark">{{ number_format($s['angkatan_lain']['rujukan'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 text-right text-cyan-600">{{ number_format($s['angkatan_lain']['rawat_jalan'], 0, ',', '.') }}</td>
                         <td class="px-4 py-3 text-right text-violet-600">{{ number_format($s['angkatan_lain']['rawat_inap'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 text-right text-gray-800 dark:text-white border-l border-stroke dark:border-strokedark">{{ number_format($s['angkatan_lain']['rawat_jalan'] + $s['angkatan_lain']['rawat_inap'], 0, ',', '.') }}</td>
                     </tr>
 
                     {{-- ===== PURNAWIRAWAN ===== --}}
@@ -179,8 +190,10 @@
                         <td class="px-5 py-3 font-bold text-gray-700 dark:text-white">Purnawirawan (PURN)</td>
                         <td class="px-4 py-3 text-right font-bold text-gray-800 dark:text-white">{{ number_format($s['purnawirawan']['pengunjung'], 0, ',', '.') }}</td>
                         <td class="px-4 py-3 text-right font-bold text-gray-800 dark:text-white">{{ number_format($s['purnawirawan']['kunjungan'], 0, ',', '.') }}</td>
-                        <td class="px-4 py-3 text-right font-bold text-amber-600">{{ number_format($s['purnawirawan']['rujukan'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 text-right font-bold text-amber-600 border-l border-stroke dark:border-strokedark">{{ number_format($s['purnawirawan']['rujukan'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 text-right font-bold text-cyan-600">{{ number_format($s['purnawirawan']['rawat_jalan'], 0, ',', '.') }}</td>
                         <td class="px-4 py-3 text-right font-bold text-violet-600">{{ number_format($s['purnawirawan']['rawat_inap'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 text-right font-bold text-gray-800 dark:text-white border-l border-stroke dark:border-strokedark">{{ number_format($s['purnawirawan']['rawat_jalan'] + $s['purnawirawan']['rawat_inap'], 0, ',', '.') }}</td>
                     </tr>
 
                     {{-- ===== PASIEN UMUM ===== --}}
@@ -188,8 +201,10 @@
                         <td class="px-5 py-3 font-bold text-gray-700 dark:text-white">Pasien Umum</td>
                         <td class="px-4 py-3 text-right font-bold text-gray-800 dark:text-white">{{ number_format($s['umum']['pengunjung'], 0, ',', '.') }}</td>
                         <td class="px-4 py-3 text-right font-bold text-gray-800 dark:text-white">{{ number_format($s['umum']['kunjungan'], 0, ',', '.') }}</td>
-                        <td class="px-4 py-3 text-right font-bold text-amber-600">{{ number_format($s['umum']['rujukan'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 text-right font-bold text-amber-600 border-l border-stroke dark:border-strokedark">{{ number_format($s['umum']['rujukan'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 text-right font-bold text-cyan-600">{{ number_format($s['umum']['rawat_jalan'], 0, ',', '.') }}</td>
                         <td class="px-4 py-3 text-right font-bold text-violet-600">{{ number_format($s['umum']['rawat_inap'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-3 text-right font-bold text-gray-800 dark:text-white border-l border-stroke dark:border-strokedark">{{ number_format($s['umum']['rawat_jalan'] + $s['umum']['rawat_inap'], 0, ',', '.') }}</td>
                     </tr>
 
                     {{-- ===== TOTAL ===== --}}
@@ -197,8 +212,10 @@
                         <td class="px-5 py-4 text-primary uppercase tracking-widest text-xs">Total Keseluruhan</td>
                         <td class="px-4 py-4 text-right text-primary text-base">{{ number_format($s['total_pengunjung'], 0, ',', '.') }}</td>
                         <td class="px-4 py-4 text-right text-primary text-base">{{ number_format($s['total_kunjungan'], 0, ',', '.') }}</td>
-                        <td class="px-4 py-4 text-right text-amber-600 text-base">{{ number_format($s['rujukan'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-4 text-right text-amber-600 text-base border-l border-primary/30">{{ number_format($s['rujukan'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-4 text-right text-cyan-600 text-base">{{ number_format($s['rawat_jalan'], 0, ',', '.') }}</td>
                         <td class="px-4 py-4 text-right text-violet-600 text-base">{{ number_format($s['rawat_inap'], 0, ',', '.') }}</td>
+                        <td class="px-4 py-4 text-right text-primary text-base border-l border-primary/30">{{ number_format($s['rawat_jalan'] + $s['rawat_inap'], 0, ',', '.') }}</td>
                     </tr>
 
                 </tbody>

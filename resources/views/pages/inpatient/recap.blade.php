@@ -507,6 +507,9 @@
                                             class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center bg-purple-50 dark:bg-purple-900/10">
                                             ALOS</th>
                                         <th
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center bg-amber-50 dark:bg-amber-900/10">
+                                            BTO</th>
+                                        <th
                                             class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center bg-green-50 dark:bg-green-900/10">
                                             BOR (%)</th>
                                         <th
@@ -515,6 +518,9 @@
                                         <th
                                             class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center bg-rose-50 dark:bg-rose-900/10">
                                             GDR (‰)</th>
+                                        <th
+                                            class="px-3 py-4 text-sm font-black uppercase tracking-widest text-center bg-red-50 dark:bg-red-900/10">
+                                            NDR (‰)</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-stroke dark:divide-strokedark">
@@ -551,6 +557,9 @@
                                                 class="px-3 py-3 text-center font-black bg-purple-100/50 dark:bg-purple-900/10 text-purple-700">
                                                 {{ number_format($group['alos'], 1) }}</td>
                                             <td
+                                                class="px-3 py-3 text-center font-black bg-amber-100/50 dark:bg-amber-900/10 text-amber-700">
+                                                {{ number_format($group['bto'], 1) }}</td>
+                                            <td
                                                 class="px-3 py-3 text-center font-black bg-green-100/50 dark:bg-green-900/10 {{ \App\Services\HospitalIndicatorService::isWithinRange('bor', $group['bor']) ? 'text-emerald-700' : ($group['bor'] > \App\Services\HospitalIndicatorService::RANGES['bor']['max'] ? 'text-red-600' : 'text-orange-600') }}">
                                                 {{ number_format($group['bor'], 1) }}%</td>
                                             <td
@@ -559,6 +568,9 @@
                                             <td
                                                 class="px-3 py-3 text-center font-black bg-rose-100/50 dark:bg-rose-900/10 text-rose-700">
                                                 {{ number_format($group['gdr'], 1) }}</td>
+                                            <td
+                                                class="px-3 py-3 text-center font-black bg-red-100/50 dark:bg-red-900/10 text-red-700">
+                                                {{ number_format($group['ndr'], 1) }}</td>
                                         </tr>
                                         {{-- Baris detail: rincian per kelas di dalam bangsal ini --}}
                                         @foreach ($group['rows'] as $item)
@@ -595,6 +607,9 @@
                                                     class="px-3 py-4 text-center font-black bg-purple-50/50 dark:bg-purple-900/5 text-purple-600">
                                                     {{ number_format($item['alos'], 1) }}</td>
                                                 <td
+                                                    class="px-3 py-4 text-center font-black bg-amber-50/50 dark:bg-amber-900/5 text-amber-600">
+                                                    {{ number_format($item['bto'], 1) }}</td>
+                                                <td
                                                     class="px-3 py-4 text-center font-black bg-green-50/50 dark:bg-green-900/5 {{ \App\Services\HospitalIndicatorService::isWithinRange('bor', $item['bor']) ? 'text-emerald-600' : ($item['bor'] > \App\Services\HospitalIndicatorService::RANGES['bor']['max'] ? 'text-red-500' : 'text-orange-500') }}">
                                                     {{ number_format($item['bor'], 1) }}%</td>
                                                 <td
@@ -603,11 +618,14 @@
                                                 <td
                                                     class="px-3 py-4 text-center font-black bg-rose-50/50 dark:bg-rose-900/5 text-rose-600">
                                                     {{ number_format($item['gdr'], 1) }}</td>
+                                                <td
+                                                    class="px-3 py-4 text-center font-black bg-red-50/50 dark:bg-red-900/5 text-red-600">
+                                                    {{ number_format($item['ndr'], 1) }}</td>
                                             </tr>
                                         @endforeach
                                     @empty
                                         <tr>
-                                            <td colspan="16" class="px-4 py-10 text-center text-gray-500">Tidak ada
+                                            <td colspan="18" class="px-4 py-10 text-center text-gray-500">Tidak ada
                                                 data rekapitulasi untuk periode ini.</td>
                                         </tr>
                                     @endforelse
@@ -641,6 +659,9 @@
                                                 class="px-3 py-4 text-center font-black bg-purple-100 dark:bg-purple-900/20 text-purple-700">
                                                 {{ number_format($overall['alos'], 1) }}</td>
                                             <td
+                                                class="px-3 py-4 text-center font-black bg-amber-100 dark:bg-amber-900/20 text-amber-700">
+                                                {{ number_format($overall['bto'], 1) }}</td>
+                                            <td
                                                 class="px-3 py-4 text-center font-black bg-green-100 dark:bg-green-900/20 text-emerald-700">
                                                 {{ number_format($overall['bor'], 1) }}%</td>
                                             <td
@@ -649,6 +670,9 @@
                                             <td
                                                 class="px-3 py-4 text-center font-black bg-rose-100 dark:bg-rose-900/20 text-rose-700">
                                                 {{ number_format($overall['gdr'], 1) }}</td>
+                                            <td
+                                                class="px-3 py-4 text-center font-black bg-red-100 dark:bg-red-900/20 text-red-700">
+                                                {{ number_format($overall['ndr'], 1) }}</td>
                                         </tr>
                                     </tfoot>
                                 @endif

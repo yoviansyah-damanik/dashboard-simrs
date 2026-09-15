@@ -348,34 +348,44 @@ class Recap extends Component
                     ->orWhere('kamar_inap.stts_pulang', '-');
             })
             ->where('kamar.kd_bangsal', '!=', 'TRANS')
-            ->select(
-                'kamar.kd_bangsal',
-                'kamar.kelas',
-                DB::raw('count(*) as total_pasien'),
-                DB::raw('sum(case when pasien.jk = "L" then 1 else 0 end) as total_laki'),
-                DB::raw('sum(case when pasien.jk = "P" then 1 else 0 end) as total_perempuan'),
-                DB::raw('sum(case when stts_pulang NOT IN ("-", "Pindah Kamar") then 1 else 0 end) as jumlah_pulang'),
-                DB::raw('sum(case when stts_pulang = "-" then 1 else 0 end) as jumlah_dirawat'),
-                DB::raw('sum(case when stts_pulang = "Rujuk" then 1 else 0 end) as jumlah_dirujuk'),
-                DB::raw('sum(case when stts_pulang IN ("APS", "Atas Permintaan Sendiri", "Pulang Paksa") then 1 else 0 end) as jumlah_aps'),
-                // Dibatasi hanya baris yang juga terhitung sebagai "keluar" (jumlah_pulang), agar jumlah_meninggal
-                // selalu menjadi bagian (subset) dari jumlah_pulang sesuai definisi rumus GDR. Tanpa batasan ini,
-                // baris riwayat "Pindah Kamar" yang tanggal keluarnya kebetulan sama dengan tanggal di pasien_mati
-                // bisa ikut terhitung meninggal padahal bukan baris pemulangan final pasien tersebut.
-                DB::raw('sum(case when stts_pulang NOT IN ("-", "Pindah Kamar") and (stts_pulang = "Meninggal" or pasien_mati.no_rkm_medis is not null) then 1 else 0 end) as jumlah_meninggal'),
-                // total_hp: seluruh hari rawat pasien pada periode ini (termasuk yang masih dirawat),
-                // dipakai untuk BOR & TOI sesuai standar Depkes ("hari perawatan RS").
-                DB::raw('sum(case when lama = 0 then 1 else lama end) as total_hp'),
-                // total_hp_keluar: HANYA hari rawat pasien yang benar-benar KELUAR (hidup/mati) pada
-                // periode ini. Ini pembilang yang benar untuk ALOS — jika memakai total_hp (semua pasien,
-                // termasuk yang masih dirawat lama), ALOS bisa meledak tidak wajar saat jumlah pasien
-                // keluar sangat sedikit (mis. awal bulan) karena ikut menjumlah hari rawat pasien yang
-                // belum pulang sama sekali.
-                DB::raw('sum(case when stts_pulang NOT IN ("-", "Pindah Kamar") then (case when lama = 0 then 1 else lama end) else 0 end) as total_hp_keluar'),
-                // Memakai numerator yang sama (total_hp_keluar) untuk konsistensi antara rata-rata per
-                // bangsal dan ALOS keseluruhan (total_hp_keluar / jumlah_pulang).
-                DB::raw('avg(case when stts_pulang NOT IN ("-", "Pindah Kamar") then (case when lama = 0 then 1 else lama end) else null end) as rata_lama_hari')
-            )
+            ->select('kamar.kd_bangsal', 'kamar.kelas')
+            ->selectRaw('count(*) as total_pasien')
+            ->selectRaw('sum(case when pasien.jk = "L" then 1 else 0 end) as total_laki')
+            ->selectRaw('sum(case when pasien.jk = "P" then 1 else 0 end) as total_perempuan')
+            // "Keluar pada periode ini" (jumlah_pulang, jumlah_dirujuk, jumlah_aps, jumlah_meninggal,
+            // total_hp_keluar, rata_lama_hari) SEMUANYA disyaratkan tgl_keluar benar-benar jatuh di
+            // dalam [startDate, endDate] — bukan cuma ">= startDate" tanpa batas atas — supaya
+            // sinkron dengan definisi "pasien keluar" di laporan SIRS (RL 1.2/RL 3.1) yang memakai
+            // `tgl_keluar BETWEEN`. Tanpa batas atas ini, pasien yang masuk di periode berjalan tapi
+            // baru keluar di periode BERIKUTNYA ikut salah terhitung sebagai "keluar" periode ini.
+            ->selectRaw('sum(case when stts_pulang NOT IN ("-", "Pindah Kamar") and kamar_inap.tgl_keluar BETWEEN ? AND ? then 1 else 0 end) as jumlah_pulang', [$this->startDate, $this->endDate])
+            ->selectRaw('sum(case when stts_pulang = "-" then 1 else 0 end) as jumlah_dirawat')
+            ->selectRaw('sum(case when stts_pulang = "Rujuk" and kamar_inap.tgl_keluar BETWEEN ? AND ? then 1 else 0 end) as jumlah_dirujuk', [$this->startDate, $this->endDate])
+            ->selectRaw('sum(case when stts_pulang IN ("APS", "Atas Permintaan Sendiri", "Pulang Paksa") and kamar_inap.tgl_keluar BETWEEN ? AND ? then 1 else 0 end) as jumlah_aps', [$this->startDate, $this->endDate])
+            // Dibatasi hanya baris yang juga terhitung sebagai "keluar" (jumlah_pulang), agar jumlah_meninggal
+            // selalu menjadi bagian (subset) dari jumlah_pulang sesuai definisi rumus GDR. Tanpa batasan ini,
+            // baris riwayat "Pindah Kamar" yang tanggal keluarnya kebetulan sama dengan tanggal di pasien_mati
+            // bisa ikut terhitung meninggal padahal bukan baris pemulangan final pasien tersebut.
+            ->selectRaw('sum(case when stts_pulang NOT IN ("-", "Pindah Kamar") and kamar_inap.tgl_keluar BETWEEN ? AND ? and (stts_pulang = "Meninggal" or pasien_mati.no_rkm_medis is not null) then 1 else 0 end) as jumlah_meninggal', [$this->startDate, $this->endDate])
+            // jumlah_meninggal_kurang48: subset dari jumlah_meninggal yang wafat dalam <48 jam sejak
+            // masuk rawat, dipakai untuk NDR (Net Death Rate) sesuai standar Depkes — sebelumnya
+            // tidak dihitung di halaman ini sehingga NDR selalu tampil 0.
+            ->selectRaw('sum(case when stts_pulang NOT IN ("-", "Pindah Kamar") and kamar_inap.tgl_keluar BETWEEN ? AND ? and (stts_pulang = "Meninggal" or pasien_mati.no_rkm_medis is not null)
+                and TIMESTAMPDIFF(HOUR, CONCAT(kamar_inap.tgl_masuk, " ", kamar_inap.jam_masuk), CONCAT(kamar_inap.tgl_keluar, " ", kamar_inap.jam_keluar)) < 48
+                then 1 else 0 end) as jumlah_meninggal_kurang48', [$this->startDate, $this->endDate])
+            // total_hp: seluruh hari rawat pasien pada periode ini (termasuk yang masih dirawat),
+            // dipakai untuk BOR & TOI sesuai standar Depkes ("hari perawatan RS"). Sengaja TIDAK
+            // dibatasi tgl_keluar di dalam periode — pasien yang masih dirawat lintas periode tetap
+            // menyumbang hari rawat selama overlap dengan periode ini.
+            ->selectRaw('sum(case when lama = 0 then 1 else lama end) as total_hp')
+            // total_hp_keluar: HANYA hari rawat pasien yang benar-benar KELUAR (hidup/mati) DI DALAM
+            // periode ini. Ini pembilang yang benar untuk ALOS — jika memakai total_hp (semua pasien,
+            // termasuk yang masih dirawat lama, atau yang keluarnya di luar periode), ALOS bisa
+            // meledak/salah hitung.
+            ->selectRaw('sum(case when stts_pulang NOT IN ("-", "Pindah Kamar") and kamar_inap.tgl_keluar BETWEEN ? AND ? then (case when lama = 0 then 1 else lama end) else 0 end) as total_hp_keluar', [$this->startDate, $this->endDate])
+            // Memakai numerator yang sama (total_hp_keluar) untuk konsistensi antara rata-rata per
+            // bangsal dan ALOS keseluruhan (total_hp_keluar / jumlah_pulang).
+            ->selectRaw('avg(case when stts_pulang NOT IN ("-", "Pindah Kamar") and kamar_inap.tgl_keluar BETWEEN ? AND ? then (case when lama = 0 then 1 else lama end) else null end) as rata_lama_hari', [$this->startDate, $this->endDate])
             ->groupBy('kamar.kd_bangsal', 'kamar.kelas');
 
         // 4. Combine everything starting from ALL wards
@@ -405,6 +415,7 @@ class Recap extends Component
                 DB::raw('IFNULL(p.jumlah_dirujuk, 0) as jumlah_dirujuk'),
                 DB::raw('IFNULL(p.jumlah_aps, 0) as jumlah_aps'),
                 DB::raw('IFNULL(p.jumlah_meninggal, 0) as jumlah_meninggal'),
+                DB::raw('IFNULL(p.jumlah_meninggal_kurang48, 0) as jumlah_meninggal_kurang48'),
                 DB::raw('IFNULL(p.total_hp, 0) as total_hp'),
                 DB::raw('IFNULL(p.total_hp_keluar, 0) as total_hp_keluar'),
                 DB::raw('IFNULL(p.rata_lama_hari, 0) as rata_lama_hari')
@@ -467,6 +478,7 @@ class Recap extends Component
                 pasienKeluarHidup: $jumlahHidup,
                 pasienKeluarMati: $jumlahMeninggal,
                 totalLamaDirawatKeluar: $item->total_hp_keluar,
+                pasienKeluarMatiKurang48: $item->jumlah_meninggal_kurang48 ?? 0,
             );
 
             return array_merge((array) $item, $indicators);
@@ -500,6 +512,7 @@ class Recap extends Component
                     pasienKeluarHidup: max(0, $jumlahPulang - $jumlahMeninggal),
                     pasienKeluarMati: $jumlahMeninggal,
                     totalLamaDirawatKeluar: $totalHpKeluar,
+                    pasienKeluarMatiKurang48: $rows->sum('jumlah_meninggal_kurang48'),
                 );
 
                 return array_merge([
@@ -523,22 +536,14 @@ class Recap extends Component
 
     public function getOverallStatsProperty()
     {
-        $diffDays = Carbon::parse($this->startDate)->diffInDays(Carbon::parse($this->endDate)) + 1;
-        $totalHp = $this->recapData->sum('total_hp');
-        $totalHpKeluar = $this->recapData->sum('total_hp_keluar');
-        $totalKapasitas = $this->recapData->sum('kapasitas');
-        $totalPulang = $this->recapData->sum('jumlah_pulang');
-        $totalMeninggal = $this->recapData->sum('jumlah_meninggal');
         $wardIndicators = $this->wardIndicators;
+        $diffDays = Carbon::parse($this->startDate)->diffInDays(Carbon::parse($this->endDate)) + 1;
 
-        $overall = HospitalIndicatorService::calculate(
-            hariPerawatan: $totalHp,
-            totalTempatTidur: $totalKapasitas,
-            jumlahHari: $diffDays,
-            pasienKeluarHidup: max(0, $totalPulang - $totalMeninggal),
-            pasienKeluarMati: $totalMeninggal,
-            totalLamaDirawatKeluar: $totalHpKeluar,
-        );
+        // Dihitung langsung lewat HospitalIndicatorService::computeForPeriod() — satu-satunya titik
+        // masuk resmi untuk angka indikator level-RS di seluruh aplikasi, dipakai juga oleh RL 1.2 &
+        // Matriks Indikator Tahunan — supaya BOR/ALOS/BTO/TOI/NDR/GDR keseluruhan di halaman ini
+        // konsisten persis dengan kedua laporan tersebut untuk periode yang sama.
+        $overall = HospitalIndicatorService::computeForPeriod($this->startDate, $this->endDate, $diffDays);
 
         // Trend Data (In/Out)
         $trendAdmissions = DB::connection('simrs')

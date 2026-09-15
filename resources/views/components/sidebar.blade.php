@@ -1,7 +1,7 @@
 <aside :class="sidebarToggle ? 'translate-x-0' : '-translate-x-full'"
     class="fixed left-0 top-0 z-[99] flex h-screen w-72.5 flex-col bg-primary-500 duration-300 ease-linear dark:bg-boxdark drop-shadow-1
 dark:drop-shadow-none"
-    @click.outside="sidebarToggle = false">
+    @click.outside="sidebarToggle = false" x-on:livewire:navigated.window="sidebarToggle = false">
     {{-- Hamburger Toggle BTN --}}
     <div class="absolute mx-4 my-4 left-full">
         <button

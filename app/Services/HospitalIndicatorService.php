@@ -18,12 +18,42 @@ class HospitalIndicatorService
 {
     const KONEKSI = 'simrs';
 
-    /** Rentang nilai ideal standar Depkes, dipakai untuk status/pewarnaan di UI (bukan untuk clamp). */
+    /** Rentang nilai ideal tahunan standar Depkes RI */
     const RANGES = [
         'bor' => ['min' => 60, 'max' => 85],
         'alos' => ['min' => 6, 'max' => 9],
         'toi' => ['min' => 1, 'max' => 3],
         'bto' => ['min' => 40, 'max' => 50],
+        'gdr' => ['min' => 0, 'max' => 45],
+        'ndr' => ['min' => 0, 'max' => 25],
+    ];
+
+    /** Rentang nilai ideal bulanan standar Depkes RI (BTO 2-4 kali/bulan). */
+    const MONTHLY_RANGES = [
+        'bor' => ['min' => 60, 'max' => 85],
+        'alos' => ['min' => 6, 'max' => 9],
+        'toi' => ['min' => 1, 'max' => 3],
+        'bto' => ['min' => 2, 'max' => 4],
+        'gdr' => ['min' => 0, 'max' => 45],
+        'ndr' => ['min' => 0, 'max' => 25],
+    ];
+
+    /** Rentang nilai ideal tahunan standar Barber-Johnson */
+    const BARBER_JOHNSON_RANGES = [
+        'bor' => ['min' => 75, 'max' => 85],
+        'alos' => ['min' => 3, 'max' => 12],
+        'toi' => ['min' => 1, 'max' => 3],
+        'bto' => ['min' => 30, 'max' => null],
+        'gdr' => ['min' => 0, 'max' => 45],
+        'ndr' => ['min' => 0, 'max' => 25],
+    ];
+
+    /** Rentang nilai ideal bulanan standar Barber-Johnson */
+    const BARBER_JOHNSON_MONTHLY_RANGES = [
+        'bor' => ['min' => 75, 'max' => 85],
+        'alos' => ['min' => 3, 'max' => 12],
+        'toi' => ['min' => 1, 'max' => 3],
+        'bto' => ['min' => 2.5, 'max' => null],
         'gdr' => ['min' => 0, 'max' => 45],
         'ndr' => ['min' => 0, 'max' => 25],
     ];
@@ -90,12 +120,33 @@ class HospitalIndicatorService
         return $value;
     }
 
-    /** Apakah nilai indikator berada di rentang ideal standar Depkes. */
-    public static function isWithinRange(string $indicator, float $value): bool
-    {
-        $range = self::RANGES[$indicator];
+    /** Apakah nilai indikator berada di rentang ideal (Standar Depkes RI atau Barber-Johnson). */
+    public static function isWithinRange(
+        string $indicator,
+        float $value,
+        bool $isMonthly = false,
+        string $standard = 'depkes'
+    ): bool {
+        if ($standard === 'barber_johnson') {
+            $ranges = $isMonthly ? self::BARBER_JOHNSON_MONTHLY_RANGES : self::BARBER_JOHNSON_RANGES;
+        } else {
+            $ranges = $isMonthly ? self::MONTHLY_RANGES : self::RANGES;
+        }
 
-        return $value >= $range['min'] && $value <= $range['max'];
+        $range = $ranges[$indicator] ?? ($isMonthly ? self::MONTHLY_RANGES[$indicator] : self::RANGES[$indicator]);
+
+        $min = $range['min'] ?? null;
+        $max = $range['max'] ?? null;
+
+        if ($min !== null && $value < $min) {
+            return false;
+        }
+
+        if ($max !== null && $value > $max) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

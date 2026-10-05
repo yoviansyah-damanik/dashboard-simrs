@@ -5,12 +5,12 @@ Halaman laporan data pasien rawat inap berdasarkan query SIMRS Khanza dengan rel
 
 ## Fitur Utama
 - **Filter Periode**: Pilihan per bulan (default), tahun, hari ini, rentang kustom (custom date).
-- **Filter Penjamin (`kd_pj`)**: Default BPJS Kesehatan (`BPJ`), dapat diubah ke penjamin lain atau semua.
+- **Filter Penjamin**: Default BPJS Kesehatan (`BPJ`), dapat diubah ke penjamin lain atau semua.
 - **Filter Status Pulang**: Semua, Sudah Pulang/Keluar (`tgl_keluar <> '0000-00-00'`), Masih Dirawat (`tgl_keluar = '0000-00-00'`).
 - **Filter Bangsal**: Berdasarkan bangsal perawatan.
 - **Pencarian**: No. Rawat, No. Rekam Medis, atau Nama Pasien.
 - **Ringkasan Metrik**: Total pasien, pasien dirawat, pasien sudah pulang, dan penjamin aktif.
-- **Ekspor**: Cetak (Print), CSV, dan PDF.
+- **Ekspor**: Cetak (Print), Excel (.xlsx), CSV, dan PDF.
 
 ## Kolom Laporan
 1. No

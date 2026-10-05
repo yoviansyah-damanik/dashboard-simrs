@@ -373,7 +373,7 @@
                     <x-recap.in-figures title="Golongan Darah">
                         @foreach ($this->demographics['blood_type'] as $item)
                             <x-box :title="$item->gol_darah ?: '-'" :value="number_format($item->total)"
-                                icon="icon-[solar--drop-bold-duotone]" />
+                                icon="icon-[solar--waterdrop-bold-duotone]" />
                         @endforeach
                     </x-recap.in-figures>
 

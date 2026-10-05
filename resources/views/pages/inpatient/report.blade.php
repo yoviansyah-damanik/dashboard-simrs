@@ -1,7 +1,7 @@
 <x-content>
     <x-breadcrumb title="Laporan Pasien Rawat Inap" :items="[['title' => 'Rawat Inap', 'href' => route('inpatient')], ['title' => 'Laporan Pasien']]" />
 
-    <x-export-loading wire:target="exportCsv, exportPdf" />
+    <x-export-loading wire:target="exportCsv, exportPdf, exportExcel" />
 
     {{-- Filter Periode & Ekspor --}}
     <div class="flex flex-wrap items-center justify-between gap-3">
@@ -64,6 +64,9 @@
         <div class="flex items-center gap-2">
             <x-button color="default" icon="i-ph-printer" onclick="window.print()">
                 Cetak
+            </x-button>
+            <x-button color="green" icon="i-ph-file-xls" wire:click="exportExcel">
+                Excel
             </x-button>
             <x-button color="primary" icon="i-ph-file-csv" wire:click="exportCsv">
                 CSV
@@ -136,53 +139,63 @@
         </div>
     </div>
 
-    {{-- Filter Bar Tambahan --}}
-    <div class="bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm p-4 space-y-4">
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    {{-- Filter Bar --}}
+    <div class="bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm p-5 space-y-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {{-- Pencarian --}}
-            <div class="relative lg:col-span-2">
-                <input type="text" wire:model.live.debounce.400ms="search"
-                    placeholder="Cari No. Rawat, No. RM, atau Nama Pasien..."
-                    class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-stroke rounded-xl dark:bg-meta-4 dark:border-strokedark text-sm focus:border-primary focus:ring-0 outline-none transition-all shadow-sm" />
-                <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                    <span class="icon-[solar--magnifer-bold-duotone] text-lg"></span>
+            <div>
+                <label class="block mb-1.5 text-xs font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400">
+                    Pencarian Pasien
+                </label>
+                <div class="relative">
+                    <input type="text" wire:model.live.debounce.400ms="search"
+                        placeholder="No. Rawat, No. RM, atau Nama..."
+                        class="w-full pl-10 pr-9 py-2.5 bg-gray-50 dark:bg-meta-4 border border-stroke dark:border-strokedark rounded-xl text-sm font-medium dark:text-white placeholder:text-gray-400 focus:border-primary focus:bg-white dark:focus:bg-boxdark focus:ring-0 outline-none transition-all shadow-sm" />
+                    <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                        <span class="icon-[solar--magnifer-bold-duotone] text-lg"></span>
+                    </div>
+                    @if ($search)
+                        <button type="button" wire:click="$set('search', '')"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                            <span class="icon-[solar--close-circle-bold] text-base"></span>
+                        </button>
+                    @endif
                 </div>
             </div>
 
-            {{-- Penjamin / Cara Bayar --}}
+            {{-- Penjamin --}}
             <div>
-                <x-form.select label="Penjamin (kd_pj)" block :items="$payTypes" wire:model.live="payType" />
+                <x-form.select label="Penjamin" labelClass="block mb-1.5 text-xs font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400" block :items="$payTypes" wire:model.live="payType" />
             </div>
 
             {{-- Status Pulang --}}
             <div>
-                <x-form.select label="Status Pulang" block :items="$statusPulangOptions" wire:model.live="statusPulang" />
+                <x-form.select label="Status Pulang" labelClass="block mb-1.5 text-xs font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400" block :items="$statusPulangOptions" wire:model.live="statusPulang" />
             </div>
 
             {{-- Bangsal --}}
             <div>
-                <x-form.select label="Bangsal" block :items="$wards" wire:model.live="ward" />
+                <x-form.select label="Bangsal" labelClass="block mb-1.5 text-xs font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400" block :items="$wards" wire:model.live="ward" />
             </div>
         </div>
 
-        <div class="flex items-center justify-between pt-2 border-t border-stroke dark:border-strokedark">
-            <div class="flex items-center gap-3">
-                <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Tampilkan:</span>
-                <div class="w-24">
-                    <select wire:model.live="limit"
-                        class="w-full px-3 py-1.5 bg-gray-50 border border-stroke rounded-lg dark:bg-meta-4 dark:border-strokedark text-xs font-bold focus:border-primary outline-none">
-                        @foreach ($limits as $l)
-                            <option value="{{ $l }}">{{ $l }} baris</option>
-                        @endforeach
-                    </select>
-                </div>
+        {{-- Footer Filter Bar: Limit & Reset --}}
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-stroke dark:border-strokedark">
+            <div class="flex items-center gap-2.5">
+                <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tampilkan:</span>
+                <select wire:model.live="limit"
+                    class="px-3 py-1.5 bg-gray-50 dark:bg-meta-4 border border-stroke dark:border-strokedark rounded-lg text-xs font-bold text-gray-700 dark:text-gray-200 focus:border-primary outline-none cursor-pointer shadow-sm">
+                    @foreach ($limits as $l)
+                        <option value="{{ $l }}">{{ $l }} baris per halaman</option>
+                    @endforeach
+                </select>
             </div>
 
-            @if ($this->search || $this->payType !== 'BPJ' || $this->statusPulang !== 'semua' || $this->ward !== 'semua')
-                <button wire:click="resetFilters"
-                    class="text-xs font-bold text-red-500 hover:text-red-700 flex items-center gap-1 transition-colors">
-                    <span class="icon-[solar--restart-bold-duotone] text-base"></span>
-                    Reset Filter
+            @if ($search || $payType !== 'BPJ' || $statusPulang !== 'semua' || $ward !== 'semua')
+                <button type="button" wire:click="resetFilters"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-all">
+                    <span class="icon-[solar--restart-bold-duotone] text-sm"></span>
+                    Reset Semua Filter
                 </button>
             @endif
         </div>

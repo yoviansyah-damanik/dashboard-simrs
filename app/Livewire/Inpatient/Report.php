@@ -10,6 +10,12 @@ use App\Helpers\FilterHelper;
 use Livewire\Attributes\Computed;
 use App\Repository\InpatientReportRepository;
 use Barryvdh\DomPDF\Facade\Pdf;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 
 class Report extends Component
 {
@@ -332,6 +338,156 @@ class Report extends Component
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf->stream();
         }, 'laporan-pasien-rawat-inap-' . now()->format('Y-m-d-His') . '.pdf');
+    }
+
+    /**
+     * Ekspor data ke format Excel (.xlsx).
+     */
+    public function exportExcel()
+    {
+        set_time_limit(0);
+
+        $patients = InpatientReportRepository::getPatients(
+            startDate: $this->startDate,
+            endDate: $this->endDate,
+            payType: $this->payType,
+            statusPulang: $this->statusPulang,
+            ward: $this->ward,
+            search: $this->search,
+            limit: 0
+        );
+
+        $selectedPayTypeTitle = 'Semua Penjamin';
+        if ($this->payType !== 'semua') {
+            $matched = collect($this->payTypes())->firstWhere('value', $this->payType);
+            if ($matched) {
+                $selectedPayTypeTitle = $matched['title'];
+            }
+        }
+
+        $summary = $this->summary();
+
+        $spreadsheet = new Spreadsheet();
+        $spreadsheet->getProperties()
+            ->setCreator(config('app.name', 'Dashboard SIMRS'))
+            ->setTitle('Laporan Pasien Rawat Inap');
+
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Laporan Ranap');
+        $sheet->setShowGridLines(true);
+
+        // Judul Laporan
+        $sheet->setCellValue('A1', config('app.hospital_name', 'RUMAH SAKIT'));
+        $sheet->mergeCells('A1:I1');
+        $sheet->getStyle('A1')->getFont()->setSize(14)->setBold(true);
+        $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $sheet->setCellValue('A2', 'LAPORAN PASIEN RAWAT INAP');
+        $sheet->mergeCells('A2:I2');
+        $sheet->getStyle('A2')->getFont()->setSize(11)->setBold(true)->getColor()->setRGB('475569');
+        $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Informasi Ringkasan / Metadata
+        $sheet->setCellValue('A4', 'Periode Tanggal Masuk: ' . Carbon::parse($this->startDate)->format('d/m/Y') . ' s/d ' . Carbon::parse($this->endDate)->format('d/m/Y'));
+        $sheet->getStyle('A4')->getFont()->setBold(true)->setSize(9.5);
+
+        $sheet->setCellValue('H4', 'Penjamin: ' . $selectedPayTypeTitle);
+        $sheet->mergeCells('H4:I4');
+        $sheet->getStyle('H4')->getFont()->setBold(true)->setSize(9.5);
+        $sheet->getStyle('H4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+
+        $sheet->setCellValue('A5', 'Total Pasien: ' . number_format($summary['total_pasien'] ?? count($patients), 0, ',', '.') . ' orang (Sudah Pulang: ' . number_format($summary['sudah_pulang'] ?? 0, 0, ',', '.') . ', Masih Dirawat: ' . number_format($summary['masih_dirawat'] ?? 0, 0, ',', '.') . ')');
+        $sheet->getStyle('A5')->getFont()->setSize(9);
+
+        $sheet->setCellValue('H5', 'Dicetak pada: ' . now()->format('d/m/Y H:i:s'));
+        $sheet->mergeCells('H5:I5');
+        $sheet->getStyle('H5')->getFont()->setSize(9);
+        $sheet->getStyle('H5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+
+        // Header Tabel
+        $headers = ['No', 'No. Rawat', 'No. RM', 'Nama Pasien', 'Bangsal', 'Tgl Masuk', 'Tgl Keluar', 'Penjamin', 'DPJP Ranap'];
+        $sheet->fromArray($headers, null, 'A7');
+        $sheet->getRowDimension(7)->setRowHeight(25);
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 10],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '0284C7']],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+                'wrapText' => true
+            ],
+            'borders' => [
+                'allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '0F172A']]
+            ]
+        ];
+        $sheet->getStyle('A7:I7')->applyFromArray($headerStyle);
+
+        // Data Baris
+        $row = 8;
+        foreach ($patients as $index => $patient) {
+            $isMasihDirawat = ($patient->tgl_keluar == '0000-00-00' || empty($patient->tgl_keluar));
+
+            $sheet->setCellValue('A' . $row, $index + 1);
+            $sheet->setCellValueExplicit('B' . $row, $patient->no_rawat, DataType::TYPE_STRING);
+            $sheet->setCellValueExplicit('C' . $row, $patient->no_rkm_medis, DataType::TYPE_STRING);
+            $sheet->setCellValue('D' . $row, $patient->nm_pasien);
+            $sheet->setCellValue('E' . $row, $patient->nm_bangsal);
+            $sheet->setCellValue('F' . $row, Carbon::parse($patient->tgl_masuk)->format('d/m/Y'));
+            $sheet->setCellValue('G' . $row, $isMasihDirawat ? 'Masih Dirawat' : Carbon::parse($patient->tgl_keluar)->format('d/m/Y'));
+            $sheet->setCellValue('H' . $row, $patient->png_jawab ?? '-');
+            $sheet->setCellValue('I' . $row, $patient->dpjp_ranap ?? '-');
+
+            $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('B' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('C' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('F' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('G' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+            // Indikator visual pasien masih dirawat
+            if ($isMasihDirawat) {
+                $sheet->getStyle('G' . $row)->applyFromArray([
+                    'font' => ['bold' => true, 'color' => ['rgb' => 'B45309']],
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FEF3C7']]
+                ]);
+            }
+
+            // Zebra striping untuk baris genap
+            if ($index % 2 === 1) {
+                $sheet->getStyle('A' . $row . ':F' . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
+                if (!$isMasihDirawat) {
+                    $sheet->getStyle('G' . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
+                }
+                $sheet->getStyle('H' . $row . ':I' . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
+            }
+
+            $row++;
+        }
+
+        // Garis batas sel data
+        if ($row > 8) {
+            $sheet->getStyle('A8:I' . ($row - 1))->applyFromArray([
+                'borders' => [
+                    'allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E1']]
+                ],
+                'alignment' => ['vertical' => Alignment::VERTICAL_CENTER]
+            ]);
+        }
+
+        // Penyesuaian lebar kolom otomatis
+        foreach (range('A', 'I') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $filename = 'laporan-pasien-rawat-inap-' . now()->format('Y-m-d-His') . '.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
     }
 
     public function render()

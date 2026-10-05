@@ -109,6 +109,12 @@ class Sidebar extends Component
                                     'href' => route('inpatient.recap'),
                                     'isActive' => request()->routeIs('inpatient.recap'),
                                     'isShown' => auth()->user()->hasPermissionTo('inpatient recap')
+                                ],
+                                [
+                                    'title' => 'Laporan Pasien',
+                                    'href' => route('inpatient.report'),
+                                    'isActive' => request()->routeIs('inpatient.report'),
+                                    'isShown' => auth()->user()->hasPermissionTo('inpatient report')
                                 ]
                             ]
                         ],

@@ -33,10 +33,28 @@
         <x-form.select label="DPJP" block :items="$doctors" wire:model.live='doctor' />
     </div>
 
+    {{-- Keterangan Warna Border Status Pelayanan --}}
+    <div class="p-3 bg-white dark:bg-boxdark rounded-md border border-stroke dark:border-strokedark shadow-xs">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+            <span class="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <span class="w-1.5 h-3.5 bg-primary rounded-full"></span>
+                Keterangan Warna Border:
+            </span>
+            <div class="flex flex-wrap items-center gap-2">
+                @foreach (\App\Helpers\StatusHelper::getBorderLegends() as $legend)
+                    <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-gray-50 dark:bg-meta-4 border border-stroke/60 dark:border-strokedark text-gray-700 dark:text-gray-200">
+                        <span class="w-1.5 h-3 rounded-full {{ $legend['color'] }}"></span>
+                        <span class="text-[11px] font-semibold whitespace-nowrap">{{ $legend['label'] }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+
     @if ($patients->count() > 0)
         <div class="space-y-4">
             @foreach ($patients as $patient)
-                <x-registered-patient-item :$patient />
+                <x-outpatient-item :$patient />
             @endforeach
         </div>
     @else

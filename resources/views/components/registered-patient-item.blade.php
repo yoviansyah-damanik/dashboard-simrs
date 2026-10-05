@@ -20,30 +20,26 @@
         @endif
     </div>
     <div class="xl:[column-count:5] sm:[column-count:3] [column-count:2] gap-x-3">
-        {{-- Data Pendaftaran --}}
-        <x-patient-item title="No Registrasi" :value="$patient['pendaftaran']['no_pendaftaran']" />
+        {{-- Identitas Utama Pasien --}}
         <x-patient-item title="No Rawat" :value="$patient['pendaftaran']['no_rawat']" />
-        <x-patient-item title="Waktu Pendaftaran" :value="$patient['pendaftaran']['waktu_pendaftaran']" />
-        <x-patient-item title="Status Poli" :value="$patient['pendaftaran']['status_poli']" />
-        <x-patient-item title="Jenis Bayar" :value="$patient['pendaftaran']['jenis_bayar']" />
-        <x-patient-item title="Status Bayar" :value="$patient['pendaftaran']['status_bayar']" />
-        <x-patient-item title="No. Peserta" :value="$patient['pasien']['data']['no_peserta']" />
-        {{-- Data Pasien --}}
         <x-patient-item title="No Rekam Medis" :value="$patient['pasien']['data']['no_rekam_medis']" />
         <x-patient-item title="Nama Pasien" :value="$patient['pasien']['data']['nama']" />
+        <x-patient-item title="Jenis Kelamin" :value="$patient['pasien']['data']['jenis_kelamin']" />
         <x-patient-item title="Tempat, Tgl Lahir" :value="$patient['pasien']['data']['tempat_lahir'] . ', ' . $patient['pasien']['data']['tanggal_lahir']" />
         <x-patient-item title="Umur Daftar" :value="$patient['pendaftaran']['umur_mendaftar']" />
         <x-patient-item title="Umur Saat Ini" :value="$patient['pasien']['data']['umur']" />
-        <x-patient-item title="Jenis Kelamin" :value="$patient['pasien']['data']['jenis_kelamin']" />
         <x-patient-item title="Alamat" :value="$patient['pasien']['data']['alamat']" />
-        <x-patient-item title="Jenis Pasien" :value="$patient['pasien']['data']['jenis_pasien']" />
-        {{-- Data Penanggungjawab --}}
-        <x-patient-item title="Nama Pj" :value="$patient['pasien']['penanggungjawab']['nama']" />
-        <x-patient-item title="Hubungan Pj" :value="$patient['pasien']['penanggungjawab']['status']" />
+
         {{-- Data Poli dan Dokter --}}
         <x-patient-item title="Poliklinik" :value="$patient['poliklinik']['nama_poliklinik']" />
         <x-patient-item title="DPJP" :value="$patient['dokter']['nama_dokter']" />
-        <x-patient-item title="Status Poli" :value="$patient['pendaftaran']['status_poli']" />
+
+        {{-- Penjaminan & Penanggung Jawab --}}
+        <x-patient-item title="Jenis Bayar" :value="$patient['pendaftaran']['jenis_bayar']" />
+        <x-patient-item title="No. Peserta" :value="$patient['pasien']['data']['no_peserta']" />
+        <x-patient-item title="Jenis Pasien" :value="$patient['pasien']['data']['jenis_pasien']" />
+        <x-patient-item title="Nama Pj" :value="$patient['pasien']['penanggungjawab']['nama']" />
+        <x-patient-item title="Hubungan Pj" :value="$patient['pasien']['penanggungjawab']['status']" />
     </div>
     <div @class([
         'absolute top-0 right-0 lg:bottom-0 text-sm lg:text-base lg:[writing-mode:vertical-rl] text-center lg:px-1 lg:py-3 py-1 px-3 rounded-bl-md lg:rounded-bl-none',

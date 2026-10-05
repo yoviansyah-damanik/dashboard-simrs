@@ -233,6 +233,34 @@ class Report extends Component
     }
 
     /**
+     * Menghasilkan nama file dokumen ekspor sesuai format:
+     * Laporan Pasien Rawat Inap [bulan laporan] [tahun laporan]_[timestamp].[extension]
+     */
+    private function getExportFilename(string $extension): string
+    {
+        $startCarbon = Carbon::parse($this->startDate);
+        $endCarbon = Carbon::parse($this->endDate);
+
+        $startMonth = $this->months()[(int) $startCarbon->format('n')] ?? $startCarbon->translatedFormat('F');
+        $endMonth = $this->months()[(int) $endCarbon->format('n')] ?? $endCarbon->translatedFormat('F');
+
+        if ($startCarbon->format('Y-m') === $endCarbon->format('Y-m')) {
+            $bulanLaporan = $startMonth;
+            $tahunLaporan = $startCarbon->format('Y');
+        } elseif ($startCarbon->format('Y') === $endCarbon->format('Y')) {
+            $bulanLaporan = "{$startMonth} - {$endMonth}";
+            $tahunLaporan = $startCarbon->format('Y');
+        } else {
+            $bulanLaporan = "{$startMonth} {$startCarbon->format('Y')} - {$endMonth}";
+            $tahunLaporan = $endCarbon->format('Y');
+        }
+
+        $timestamp = now()->format('Ymd_His');
+
+        return "Laporan Pasien Rawat Inap {$bulanLaporan} {$tahunLaporan}_{$timestamp}.{$extension}";
+    }
+
+    /**
      * Ekspor data ke format CSV.
      */
     public function exportCsv()
@@ -249,7 +277,7 @@ class Report extends Component
             limit: 0
         );
 
-        $filename = 'laporan-pasien-rawat-inap-' . now()->format('Y-m-d-His') . '.csv';
+        $filename = $this->getExportFilename('csv');
 
         $headers = [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -335,9 +363,11 @@ class Report extends Component
             'summary' => $this->summary(),
         ])->setPaper('a4', 'landscape');
 
+        $filename = $this->getExportFilename('pdf');
+
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf->stream();
-        }, 'laporan-pasien-rawat-inap-' . now()->format('Y-m-d-His') . '.pdf');
+        }, $filename);
     }
 
     /**
@@ -389,20 +419,22 @@ class Report extends Component
 
         // Informasi Ringkasan / Metadata
         $sheet->setCellValue('A4', 'Periode Tanggal Masuk: ' . Carbon::parse($this->startDate)->format('d/m/Y') . ' s/d ' . Carbon::parse($this->endDate)->format('d/m/Y'));
+        $sheet->mergeCells('A4:F4');
         $sheet->getStyle('A4')->getFont()->setBold(true)->setSize(9.5);
 
-        $sheet->setCellValue('H4', 'Penjamin: ' . $selectedPayTypeTitle);
-        $sheet->mergeCells('H4:I4');
-        $sheet->getStyle('H4')->getFont()->setBold(true)->setSize(9.5);
-        $sheet->getStyle('H4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->setCellValue('G4', 'Penjamin: ' . $selectedPayTypeTitle);
+        $sheet->mergeCells('G4:I4');
+        $sheet->getStyle('G4')->getFont()->setBold(true)->setSize(9.5);
+        $sheet->getStyle('G4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
         $sheet->setCellValue('A5', 'Total Pasien: ' . number_format($summary['total_pasien'] ?? count($patients), 0, ',', '.') . ' orang (Sudah Pulang: ' . number_format($summary['sudah_pulang'] ?? 0, 0, ',', '.') . ', Masih Dirawat: ' . number_format($summary['masih_dirawat'] ?? 0, 0, ',', '.') . ')');
+        $sheet->mergeCells('A5:F5');
         $sheet->getStyle('A5')->getFont()->setSize(9);
 
-        $sheet->setCellValue('H5', 'Dicetak pada: ' . now()->format('d/m/Y H:i:s'));
-        $sheet->mergeCells('H5:I5');
-        $sheet->getStyle('H5')->getFont()->setSize(9);
-        $sheet->getStyle('H5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->setCellValue('G5', 'Dicetak pada: ' . now()->format('d/m/Y H:i:s'));
+        $sheet->mergeCells('G5:I5');
+        $sheet->getStyle('G5')->getFont()->setSize(9);
+        $sheet->getStyle('G5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
         // Header Tabel
         $headers = ['No', 'No. Rawat', 'No. RM', 'Nama Pasien', 'Bangsal', 'Tgl Masuk', 'Tgl Keluar', 'Penjamin', 'DPJP Ranap'];
@@ -474,12 +506,15 @@ class Report extends Component
             ]);
         }
 
-        // Penyesuaian lebar kolom otomatis
-        foreach (range('A', 'I') as $col) {
+        // Penyesuaian lebar kolom (kolom No diberi lebar tetap agar ringkas dan proporsional)
+        $sheet->getColumnDimension('A')->setAutoSize(false);
+        $sheet->getColumnDimension('A')->setWidth(7);
+
+        foreach (range('B', 'I') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
-        $filename = 'laporan-pasien-rawat-inap-' . now()->format('Y-m-d-His') . '.xlsx';
+        $filename = $this->getExportFilename('xlsx');
 
         return response()->streamDownload(function () use ($spreadsheet) {
             $writer = new Xlsx($spreadsheet);

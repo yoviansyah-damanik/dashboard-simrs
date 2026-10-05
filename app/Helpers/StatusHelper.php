@@ -29,4 +29,48 @@ class StatusHelper
             return 'bg-gray-100 text-gray-700';
         }
     }
+
+    /**
+     * @param string $type Tipe data yang ingin ditampilkan warnanya
+     * @param string $data Data untuk difilter
+     */
+    public static function getBorderColor(string $type, string $data): string
+    {
+        try {
+            $payload = [
+                'status_pelayanan' => [
+                    'Sudah' => 'border-l-green-500',
+                    'Belum' => 'border-l-yellow-500',
+                    'Batal' => 'border-l-indigo-500',
+                    'Dirujuk' => 'border-l-cyan-500',
+                    'Berkas Diterima' => 'border-l-pink-500',
+                    'Dirawat' => 'border-l-violet-500',
+                    'Meninggal' => 'border-l-red-500',
+                    'Pulang Paksa' => 'border-l-gray-800',
+                ]
+            ];
+
+            return $payload[$type][$data] ?? 'border-l-gray-300';
+        } catch (\Exception $e) {
+            return 'border-l-gray-300';
+        }
+    }
+
+    /**
+     * Mengambil daftar keterangan (legenda) warna border untuk status pelayanan.
+     * @return array
+     */
+    public static function getBorderLegends(): array
+    {
+        return [
+            ['label' => 'Sudah', 'color' => 'bg-green-500', 'border' => 'border-l-green-500'],
+            ['label' => 'Belum', 'color' => 'bg-yellow-500', 'border' => 'border-l-yellow-500'],
+            ['label' => 'Batal', 'color' => 'bg-indigo-500', 'border' => 'border-l-indigo-500'],
+            ['label' => 'Dirujuk', 'color' => 'bg-cyan-500', 'border' => 'border-l-cyan-500'],
+            ['label' => 'Berkas Diterima', 'color' => 'bg-pink-500', 'border' => 'border-l-pink-500'],
+            ['label' => 'Dirawat', 'color' => 'bg-violet-500', 'border' => 'border-l-violet-500'],
+            ['label' => 'Meninggal', 'color' => 'bg-red-500', 'border' => 'border-l-red-500'],
+            ['label' => 'Pulang Paksa', 'color' => 'bg-gray-800', 'border' => 'border-l-gray-800'],
+        ];
+    }
 }

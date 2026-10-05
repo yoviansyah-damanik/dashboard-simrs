@@ -57,9 +57,6 @@ Route::middleware('auth')
                 Route::get('/rekap', \App\Livewire\RegisteredPatient\Recap::class)
                     ->middleware('permission:registered-patient recap')
                     ->name('.recap');
-                Route::get('/laporan', \App\Livewire\RegisteredPatient\Report::class)
-                    ->middleware('permission:registered-patient report')
-                    ->name('.report');
             });
         Route::prefix('ranap')
             ->as('inpatient')

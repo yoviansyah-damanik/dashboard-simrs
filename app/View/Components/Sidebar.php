@@ -85,12 +85,6 @@ class Sidebar extends Component
                                     'href' => route('registered-patient.recap'),
                                     'isActive' => request()->routeIs('registered-patient.recap'),
                                     'isShown' => auth()->user()->hasPermissionTo('registered-patient recap')
-                                ],
-                                [
-                                    'title' => 'Laporan Kunjungan dan Pengunjung',
-                                    'href' => route('registered-patient.report'),
-                                    'isActive' => request()->routeIs('registered-patient.report'),
-                                    'isShown' => auth()->user()->hasPermissionTo('registered-patient report')
                                 ]
                             ]
                         ],

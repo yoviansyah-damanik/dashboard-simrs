@@ -87,3 +87,14 @@
     - Penyesuaian pada KPI card (8 kartu metrik), tabel rekapan tahunan bulanan, tabel rekapan formal (TNI/POLRI/Umum), dan grafik tren (*line/bar* dengan pilihan metrik *Ralan / IGD / Ranap*).
     - Pada modul **Rawat Jalan Rekap** ([outpatient/recap.blade.php](file:///d:/WebApps/dashboard-simrs/resources/views/pages/outpatient/recap.blade.php)), kunjungan IGD (`kd_poli = 'IGDK'`) dikecualikan secara konsisten agar data murni mencerminkan poliklinik rawat jalan.
 
+13. **Monitoring Kamar & Tempat Tidur ([room/index.blade.php](file:///d:/WebApps/dashboard-simrs/resources/views/pages/room/index.blade.php))**:
+    - Rekonsep halaman monitoring kamar dengan tata letak dasbor yang bersih dan ramah perangkat mobile (*mobile-friendly*).
+    - 4 KPI cards kapasitas tempat tidur rumah sakit: Total Kapasitas, Bed Tersedia, Bed Terisi, dan Tingkat Okupansi (BOR).
+    - Kartu kategori kelas kamar responsif (`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`) dengan visual bilah kemajuan (*progress bar*) okupansi.
+    - Tabel rekapitulasi komparasi okupansi antar kelas kamar di halaman utama.
+    - **Modal Detail Kamar**: Saat pengguna memilih kartu kelas kamar, detail setiap bed langsung ditampilkan dalam dialog modal interaktif:
+      - Header modal dengan indikator *Live status* dan ringkasan angka.
+      - Toolbar pencarian langsung (*live search*) nomor bed/nama bangsal dan tombol filter cepat (*Semua, Tersedia, Terisi*).
+      - Kisi kartu bed responsif (2 kolom di mobile, 3–6 kolom di desktop) menampilkan status, nomor kamar, nama bangsal, dan tarif.
+      - Dukungan navigasi tombol tutup dan penutupan dengan tombol Escape atau klik di luar modal.
+

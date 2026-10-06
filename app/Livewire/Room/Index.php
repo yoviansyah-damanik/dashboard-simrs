@@ -47,4 +47,9 @@ class Index extends Component
             status: 1
         );
     }
+
+    public function closeModal()
+    {
+        $this->reset('roomList', 'roomActive');
+    }
 }

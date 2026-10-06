@@ -25,7 +25,7 @@ class GeneralHelper
             ->first();
 
         return [
-            'version' => 'Versi ' . $lastVersion['version'],
+            'version' => 'v' . $lastVersion['version'],
             'changeLog' => $lastVersion['changeLog'],
         ];
     }
@@ -34,6 +34,6 @@ class GeneralHelper
     {
         $format = number_format($numb, $decimals, $decimal_separator, $thousand_separator);
 
-        return $withCurrency ? ($currencyPosition == 'left' ? $currency . ' ' .  $format : $format . ' ' . $currency) : $format;
+        return $withCurrency ? ($currencyPosition == 'left' ? $currency . ' ' . $format : $format . ' ' . $currency) : $format;
     }
 }

@@ -1,10 +1,47 @@
 <x-content>
     <x-breadcrumb title="Matriks Indikator Tahunan" :items="[['title' => 'Matriks Indikator Tahunan']]" />
 
-    <x-sirs.report-header title="Matriks Indikator Tahunan" subtitle="BOR, ALOS, BTO, TOI, NDR, GDR per bulan"
-        :profil="$profil" bulan="" :tahun="$tahun" />
+    <x-sirs.report-header title="Matriks Indikator Tahunan"
+        :subtitle="'BOR, ALOS, BTO, TOI, NDR, GDR per bulan tahun ' . $tahun"
+        :profil="$profil"
+        bulan=""
+        :tahun="$tahun" />
 
-    <x-sirs.period-filter :tahun="$tahun" :showBulan="false" />
+    {{-- Filter Evaluasi Tahunan --}}
+    <div class="flex flex-wrap items-center justify-between gap-3 p-3 sm:p-4 mb-6 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm no-print">
+        <div class="flex flex-wrap items-center gap-3">
+            {{-- Filter Tahun Saja --}}
+            <div class="flex items-center gap-2.5">
+                <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5 select-none pl-1">
+                    <span class="icon-[solar--calendar-bold-duotone] text-emerald-600 dark:text-emerald-400 text-base"></span>
+                    <span>Tahun Evaluasi:</span>
+                </span>
+                <div class="relative">
+                    <select wire:model.live="tahun"
+                        class="appearance-none pl-9 pr-8 py-2 bg-white dark:bg-boxdark border border-stroke dark:border-strokedark rounded-xl text-xs font-bold text-gray-800 dark:text-white focus:border-emerald-500 outline-none shadow-sm cursor-pointer hover:border-gray-400 dark:hover:border-strokedark transition">
+                        @for ($y = now()->year; $y >= now()->year - 5; $y--)
+                            <option value="{{ $y }}">{{ $y }}</option>
+                        @endfor
+                    </select>
+                    <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-emerald-600 dark:text-emerald-400">
+                        <span class="icon-[solar--history-bold-duotone] text-sm"></span>
+                    </div>
+                    <div class="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                        <span class="icon-[solar--alt-arrow-down-bold-duotone] text-xs"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div wire:loading.flex class="flex items-center gap-2 text-xs font-bold text-emerald-600">
+                <span class="icon-[solar--refresh-bold-duotone] animate-spin text-base"></span>
+                <span>Memuat data...</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <x-button color="default" icon="i-ph-printer" onclick="window.print()">Cetak</x-button>
+        </div>
+    </div>
 
     @php
         $indicators = [
@@ -45,7 +82,7 @@
     @endphp
 
     {{-- Interactive Chart Section --}}
-    <div x-data="indicatorMatrixChart(@js($chartData))" wire:key="indicator-matrix-chart-{{ $tahun }}"
+    <div x-data="indicatorMatrixChart(@js($chartData))" wire:key="indicator-matrix-chart-{{ $tahun }}-{{ $standard }}"
         class="p-5 mb-6 bg-white border shadow-sm sm:p-6 dark:bg-boxdark rounded-3xl border-stroke dark:border-strokedark">
 
         {{-- Header & Chart Controls --}}
@@ -57,10 +94,10 @@
                     </div>
                     <div>
                         <h3 class="text-base font-bold text-gray-800 sm:text-lg dark:text-white">
-                            Grafik Tren Indikator Pelayanan ({{ $tahun }})
+                            Grafik Tren Indikator Pelayanan (Tahun {{ $tahun }})
                         </h3>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            Tren bulanan indikator efisiensi rawat inap dan perbandingan terhadap standar ideal Depkes RI
+                            Tren bulanan indikator efisiensi rawat inap tahun {{ $tahun }} dan perbandingan terhadap <span class="font-semibold text-gray-700 dark:text-gray-300">{{ $standard === 'barber_johnson' ? 'Standar Barber-Johnson' : 'Standar Depkes RI' }}</span>
                         </p>
                     </div>
                 </div>
@@ -68,31 +105,41 @@
 
             <div class="flex flex-wrap items-center gap-2.5">
                 {{-- Standard Selector (Depkes RI vs Barber-Johnson) --}}
-                <div class="inline-flex items-center p-1 bg-gray-100 rounded-xl dark:bg-meta-4/60 shrink-0 border border-stroke/50 dark:border-strokedark/50">
-                    <button type="button" @click="setStandard('depkes')"
-                        :class="activeStandard === 'depkes' ? 'bg-white dark:bg-boxdark text-emerald-600 dark:text-emerald-400 shadow-xs font-bold' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white font-medium'"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200">
-                        <span class="w-1.5 h-1.5 rounded-full" :class="activeStandard === 'depkes' ? 'bg-emerald-500' : 'bg-gray-400'"></span>
+                <div class="inline-flex items-center gap-1 p-1 bg-gray-100 rounded-xl dark:bg-meta-4/60 shrink-0 border border-stroke/50 dark:border-strokedark/50">
+                    <span class="pl-2 pr-1 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5 shrink-0 select-none">
+                        <span class="icon-[solar--scale-bold-duotone] text-sm text-primary-500"></span>
+                        <span>Standar:</span>
+                    </span>
+                    <button type="button"
+                        wire:click="setStandard('depkes')"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200 cursor-pointer {{ $standard === 'depkes' ? 'bg-emerald-600 text-white shadow-sm font-bold ring-1 ring-emerald-500/20' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-meta-4 font-medium' }}">
+                        <span class="w-2 h-2 rounded-full transition-all duration-200 shrink-0 {{ $standard === 'depkes' ? 'bg-white ring-2 ring-white/40' : 'bg-gray-400' }}"></span>
                         <span>1. Depkes RI</span>
+                        @if ($standard === 'depkes')
+                            <span class="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-semibold text-white ml-0.5">Aktif</span>
+                        @endif
                     </button>
-                    <button type="button" @click="setStandard('barber_johnson')"
-                        :class="activeStandard === 'barber_johnson' ? 'bg-white dark:bg-boxdark text-primary-600 dark:text-primary-400 shadow-xs font-bold' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white font-medium'"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200">
-                        <span class="w-1.5 h-1.5 rounded-full" :class="activeStandard === 'barber_johnson' ? 'bg-primary-500' : 'bg-gray-400'"></span>
+                    <button type="button"
+                        wire:click="setStandard('barber_johnson')"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200 cursor-pointer {{ $standard === 'barber_johnson' ? 'bg-blue-600 text-white shadow-sm font-bold ring-1 ring-blue-500/20' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-200/60 dark:hover:bg-meta-4 font-medium' }}">
+                        <span class="w-2 h-2 rounded-full transition-all duration-200 shrink-0 {{ $standard === 'barber_johnson' ? 'bg-white ring-2 ring-white/40' : 'bg-gray-400' }}"></span>
                         <span>2. Barber-Johnson</span>
+                        @if ($standard === 'barber_johnson')
+                            <span class="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-semibold text-white ml-0.5">Aktif</span>
+                        @endif
                     </button>
                 </div>
 
                 {{-- Chart View Switcher (Line vs Bar) --}}
                 <div class="inline-flex items-center p-1 bg-gray-100 rounded-xl dark:bg-meta-4/60 shrink-0 border border-stroke/50 dark:border-strokedark/50">
                     <button type="button" @click="setChartType('line')"
-                        :class="chartType === 'line' ? 'bg-white dark:bg-boxdark text-gray-800 dark:text-white shadow-xs font-bold' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white font-medium'"
+                        :class="chartType === 'line' ? 'bg-white dark:bg-boxdark text-gray-800 dark:text-white shadow-sm font-bold' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white font-medium'"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200">
                         <span class="icon-[solar--graph-new-bold-duotone] text-sm text-emerald-600 dark:text-emerald-400"></span>
                         <span>Garis</span>
                     </button>
                     <button type="button" @click="setChartType('bar')"
-                        :class="chartType === 'bar' ? 'bg-white dark:bg-boxdark text-gray-800 dark:text-white shadow-xs font-bold' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white font-medium'"
+                        :class="chartType === 'bar' ? 'bg-white dark:bg-boxdark text-gray-800 dark:text-white shadow-sm font-bold' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white font-medium'"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200">
                         <span class="icon-[solar--chart-2-bold-duotone] text-sm text-emerald-600 dark:text-emerald-400"></span>
                         <span>Batang</span>
@@ -242,7 +289,7 @@
                 <thead>
                     <tr class="bg-gray-50 dark:bg-meta-4/40 text-xs font-black tracking-wider uppercase text-gray-500">
                         <th class="px-5 py-3.5 text-left">Indikator</th>
-                        <th class="px-4 py-3.5 text-center">Capaian RS ({{ $tahun }})</th>
+                        <th class="px-4 py-3.5 text-center">Capaian RS (Tahun {{ $tahun }})</th>
                         <th class="px-4 py-3.5 text-left bg-emerald-500/5 border-l border-stroke dark:border-strokedark">
                             <div class="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -334,10 +381,10 @@
                         <th
                             class="sticky left-0 z-10 px-4 py-3 font-black tracking-widest text-left text-gray-500 uppercase bg-gray-50 dark:bg-meta-4">
                             Indikator</th>
-                        @for ($bulan = 1; $bulan <= 12; $bulan++)
+                        @for ($b = 1; $b <= 12; $b++)
                             <th
-                                class="px-3 py-3 font-black tracking-widest text-center text-gray-500 uppercase border-l border-stroke dark:border-strokedark">
-                                {{ Str::limit(ucfirst(strtolower(\App\Helpers\SirsHelper::getMonthName($bulan))), 3, '') }}
+                                class="px-3 py-3 font-black tracking-widest text-center uppercase border-l border-stroke dark:border-strokedark text-gray-500">
+                                {{ Str::limit(ucfirst(strtolower(\App\Helpers\SirsHelper::getMonthName($b))), 3, '') }}
                             </th>
                         @endfor
                         <th
@@ -354,9 +401,9 @@
                             <td
                                 class="sticky left-0 z-10 px-4 py-3 font-bold text-gray-700 bg-white dark:text-gray-300 dark:bg-boxdark">
                                 {!! $meta['label'] !!}</td>
-                            @for ($bulan = 1; $bulan <= 12; $bulan++)
+                            @for ($b = 1; $b <= 12; $b++)
                                 @php
-                                    $nilai = $matrix[$bulan][$key];
+                                    $nilai = $matrix[$b][$key];
                                     $isOutOfRange = $withRange && !\App\Services\HospitalIndicatorService::isWithinRange($key, $nilai, true, $standard);
                                 @endphp
                                 <td
@@ -430,9 +477,6 @@
                     setStandard(std) {
                         if (this.activeStandard === std) return;
                         this.activeStandard = std;
-                        if (this.$wire) {
-                            this.$wire.setStandard(std);
-                        }
                         this.updateDatasets();
                     },
 
@@ -509,7 +553,7 @@
                                 pointBorderColor: isDark ? '#1e293b' : '#ffffff',
                                 pointBorderWidth: 2,
                                 pointRadius: 5,
-                                pointHoverRadius: 7,
+                                pointHoverRadius: 8,
                                 fill: this.chartType === 'line',
                                 borderRadius: this.chartType === 'bar' ? 6 : 0,
                             });

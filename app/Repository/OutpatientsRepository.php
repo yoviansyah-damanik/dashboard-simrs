@@ -274,7 +274,10 @@ class OutpatientsRepository implements OutpatientsInterface
         if (!static::$polyclinicData)
             static::$polyclinicData = collect(PolyclinicRepository::getAll(limit: 0))->pluck('kode_poliklinik')->toArray();
 
-        $result = $result->whereIn(RegisteredPatient::getTableName() . '.' . RegisteredPatient::KODE_POLIKLINIK, static::$polyclinicData);
+        $result = $result
+            ->whereIn(RegisteredPatient::getTableName() . '.' . RegisteredPatient::KODE_POLIKLINIK, static::$polyclinicData)
+            ->where(RegisteredPatient::STATUS_LANJUT, RegisteredPatient::STATUS_RALAN)
+            ->whereNot(RegisteredPatient::KODE_POLIKLINIK, RegisteredPatient::KODE_IGD);
 
         switch ($type) {
             case 'ageGroup':

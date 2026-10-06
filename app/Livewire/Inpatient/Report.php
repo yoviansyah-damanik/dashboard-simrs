@@ -45,8 +45,15 @@ class Report extends Component
     #[Url]
     public $limit = 25;
 
+    public bool $showCharts = true;
+
     public $selectedMonth;
     public $selectedYear;
+
+    public function toggleCharts(): void
+    {
+        $this->showCharts = !$this->showCharts;
+    }
 
     public function mount()
     {
@@ -230,6 +237,110 @@ class Report extends Component
             ward: $this->ward,
             search: $this->search
         );
+    }
+
+    #[Computed]
+    public function wardBreakdown(): array
+    {
+        return InpatientReportRepository::getWardBreakdown(
+            startDate: $this->startDate,
+            endDate: $this->endDate,
+            payType: $this->payType,
+            statusPulang: $this->statusPulang,
+            search: $this->search
+        );
+    }
+
+    #[Computed]
+    public function payTypeBreakdown(): array
+    {
+        return InpatientReportRepository::getPayTypeBreakdown(
+            startDate: $this->startDate,
+            endDate: $this->endDate,
+            statusPulang: $this->statusPulang,
+            ward: $this->ward,
+            search: $this->search
+        );
+    }
+
+    #[Computed]
+    public function ageGroupBreakdown(): array
+    {
+        return InpatientReportRepository::getAgeGroupBreakdown(
+            startDate: $this->startDate,
+            endDate: $this->endDate,
+            payType: $this->payType,
+            statusPulang: $this->statusPulang,
+            ward: $this->ward,
+            search: $this->search
+        );
+    }
+
+    #[Computed]
+    public function chartPayload(): array
+    {
+        // 1. Tren Pasien Masuk Harian
+        $trend = InpatientReportRepository::getTrend(
+            startDate: $this->startDate,
+            endDate: $this->endDate,
+            payType: $this->payType,
+            statusPulang: $this->statusPulang,
+            ward: $this->ward,
+            search: $this->search
+        );
+
+        // 2. Top 8 Bangsal / Ruangan
+        $wardList = array_slice($this->wardBreakdown, 0, 8);
+        $wardLabels = array_map(function ($w) {
+            $name = $w['nm_bangsal'];
+            return strlen($name) > 22 ? substr($name, 0, 20) . '...' : $name;
+        }, $wardList);
+        $wardTotals = array_column($wardList, 'total');
+        $wardMasih = array_column($wardList, 'masih_dirawat');
+        $wardPulang = array_column($wardList, 'sudah_pulang');
+
+        // 3. Distribusi Jenis Bayar / Penjamin (Top 5 + Lainnya)
+        $topPayers = array_slice($this->payTypeBreakdown, 0, 5);
+        $otherPayerCount = array_sum(array_column(array_slice($this->payTypeBreakdown, 5), 'total'));
+        $payerLabels = array_map(function ($p) {
+            $name = $p['png_jawab'];
+            return strlen($name) > 20 ? substr($name, 0, 18) . '...' : $name;
+        }, $topPayers);
+        $payerTotals = array_column($topPayers, 'total');
+        if ($otherPayerCount > 0) {
+            $payerLabels[] = 'Lainnya';
+            $payerTotals[] = $otherPayerCount;
+        }
+
+        // 4. Sebaran Kelompok Umur & Gender SIRS
+        $ageList = $this->ageGroupBreakdown;
+        $ageLabels = array_column($ageList, 'nama');
+        $agePria = array_column($ageList, 'pria');
+        $ageWanita = array_column($ageList, 'wanita');
+
+        return [
+            'trend' => [
+                'labels' => $trend['labels'],
+                'total' => $trend['total'],
+                'pria' => $trend['pria'],
+                'wanita' => $trend['wanita'],
+            ],
+            'ward' => [
+                'labels' => $wardLabels,
+                'total' => $wardTotals,
+                'masih' => $wardMasih,
+                'pulang' => $wardPulang,
+            ],
+            'payer' => [
+                'labels' => $payerLabels,
+                'totals' => $payerTotals,
+            ],
+            'age' => [
+                'labels' => $ageLabels,
+                'pria' => $agePria,
+                'wanita' => $ageWanita,
+            ],
+        ];
     }
 
     /**

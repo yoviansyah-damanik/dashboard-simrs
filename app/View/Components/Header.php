@@ -32,11 +32,6 @@ class Header extends Component
                 'href' => route('account'),
                 'icon' => 'i-ph-user',
             ],
-            [
-                'title' => 'Riwayat Login',
-                'href' => route('account'),
-                'icon' => 'i-ph-user',
-            ]
         ];
 
         return view('components.header', compact('menus'));

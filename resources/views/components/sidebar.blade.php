@@ -1,157 +1,160 @@
 <aside :class="sidebarToggle ? 'translate-x-0' : '-translate-x-full'"
-    class="fixed left-0 top-0 z-[99] flex h-screen w-72.5 flex-col bg-primary-500 duration-300 ease-linear dark:bg-boxdark drop-shadow-1
-dark:drop-shadow-none"
+    class="fixed left-0 top-0 z-[99] flex h-screen w-72 flex-col bg-white/95 dark:bg-slate-950/95 border-r border-slate-200/90 dark:border-slate-800/80 duration-300 ease-in-out backdrop-blur-2xl shadow-xl dark:shadow-2xl"
     @click.outside="sidebarToggle = false" x-on:livewire:navigated.window="sidebarToggle = false">
-    {{-- Hamburger Toggle BTN --}}
-    <div class="absolute mx-4 my-4 left-full">
+    {{-- Tombol Toggle Hamburger (Mobile Floating) --}}
+    <div class="absolute top-4 -right-12 lg:hidden">
         <button
-            class="flex items-center gap-3 p-3 transition duration-150 rounded-md shadow-sm z-99999 bg-primary-500 dark:bg-boxdark"
-            @click.stop="sidebarToggle = !sidebarToggle">
-            <div class="relative block h-5.5 w-5.5 cursor-pointer">
-                <span class="absolute right-0 w-full h-full du-block">
-                    <span
-                        class="relative left-0 top-0 my-1 block h-0.5 w-0 rounded-sm bg-white delay-[0] duration-200 ease-in-out"
-                        :class="{ '!w-full delay-300 dark:!bg-white': !sidebarToggle }"></span>
-                    <span
-                        class="relative left-0 top-0 my-1 block h-0.5 w-0 rounded-sm bg-white delay-150 duration-200 ease-in-out"
-                        :class="{ '!w-full delay-400 dark:!bg-white': !sidebarToggle }"></span>
-                    <span
-                        class="relative left-0 top-0 my-1 block h-0.5 w-0 rounded-sm bg-white delay-200 duration-200 ease-in-out"
-                        :class="{ '!w-full delay-500 dark:!bg-white': !sidebarToggle }"></span>
-                </span>
-                <span class="absolute right-0 w-full h-full rotate-45 du-block">
-                    <span
-                        class="absolute left-2.5 top-0 block h-full w-0.5 rounded-sm bg-white delay-300 duration-200 ease-in-out"
-                        :class="{ '!h-0 delay-[0] dark:!bg-white': !sidebarToggle }"></span>
-                    <span
-                        class="delay-400 absolute left-0 top-2.5 block h-0.5 w-full rounded-sm bg-white duration-200 ease-in-out"
-                        :class="{ '!h-0 delay-200 dark:!bg-white': !sidebarToggle }"></span>
-                </span>
-            </div>
-            <div class="hidden text-white lg:block">
-                Menu
-            </div>
+            class="flex items-center justify-center w-10 h-10 rounded-xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 text-emerald-600 dark:text-emerald-400 shadow-xl backdrop-blur-md hover:text-emerald-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            @click.stop="sidebarToggle = !sidebarToggle" title="Tutup Menu">
+            <span class="icon-[solar--close-circle-bold] text-2xl" x-show="sidebarToggle"></span>
+            <span class="icon-[solar--hamburger-menu-bold] text-2xl" x-show="!sidebarToggle"></span>
         </button>
     </div>
-    {{-- Hamburger Toggle BTN --}}
 
-    {{-- SIDEBAR HEADER --}}
-    <div class="text-center px-6 py-5.5 lg:py-6.5 bg-primarydark dark:bg-slate-800">
-        <a href="{{ route('home') }}" wire:navigate class="inline">
-            <img src="{{ Vite::image('logo.png') }}" class="h-full mx-auto max-h-32" alt="Logo" />
+    {{-- SIDEBAR HEADER / BRANDING --}}
+    <div
+        class="px-5 py-4 border-b border-slate-200/80 dark:border-slate-800/80 bg-gradient-to-b from-slate-50/80 dark:from-white/[0.02] to-transparent">
+        <a href="{{ route('home') }}" wire:navigate class="flex items-center gap-3.5 group">
+            <div class="relative flex items-center justify-center shrink-0">
+                <div
+                    class="absolute inset-0 bg-emerald-500/20 rounded-full blur-md scale-125 opacity-70 group-hover:opacity-100 transition duration-300 pointer-events-none">
+                </div>
+                <img src="{{ Vite::image('logo.png') }}" class="relative h-11 w-auto object-contain drop-shadow"
+                    alt="Logo" />
+            </div>
+            <div class="min-w-0 flex-1">
+                <div
+                    class="relative font-black text-sm tracking-tight uppercase truncate bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-700 to-slate-900 dark:from-emerald-400 dark:via-teal-200 dark:to-white leading-tight">
+                    {{ env('APP_NAME') }}
+                </div>
+                <div class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate leading-5">
+                    {{ config('app.hospital_name') }}
+                </div>
+                <div
+                    class="inline-flex items-center gap-1 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="leading-tight">{{ GeneralHelper::getVersion()['version'] }}</span>
+                </div>
+            </div>
         </a>
     </div>
-
-    <div class="px-3 py-3 mt-3 mb-3 bg-primarydark dark:bg-slate-800">
-        <div class="font-bold text-center text-secondary-500">
-            {{ config('app.name') }}
-        </div>
-        <div class="text-sm font-normal text-center text-secondary-500">
-            {{ config('app.hospital_name') }}
-        </div>
-        <div class="text-xs text-center text-whiten">
-            <x-button color="transparent" size="sm">
-                {{ GeneralHelper::getVersion()['version'] }}
-            </x-button>
-        </div>
-    </div>
     {{-- SIDEBAR HEADER --}}
 
-    <div class="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
-        <nav class="px-3 py-4 lg:px-4" x-data="{ selected: $persist('home') }">
+    {{-- DAFTAR NAVIGASI MENU --}}
+    <div class="flex flex-col flex-1 overflow-y-auto duration-300 ease-linear no-scrollbar">
+        <nav class="px-3.5 py-4 space-y-6" x-data="{ selected: $persist('home') }">
             @foreach ($menus as $menu)
-                <h3 class="mb-4 ml-4 text-sm font-bold tracking-[.25em] uppercase font-title text-secondary-500">
-                    {{ $menu['title'] }}</h3>
+                <div>
+                    <h3
+                        class="mb-2 px-3 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-400/80">
+                        {{ $menu['title'] }}
+                    </h3>
 
-                <ul class="mb-6 flex flex-col gap-1.5">
-                    @forelse ($menu['items'] as $item)
-                        @if (!empty($item['items']))
-                            <li>
-                                <a href="#"
-                                    @click.prevent="selected = (selected === '{{ Str::of($item['title'])->lower()->snake() }}' ? '':'{{ Str::of($item['title'])->lower()->snake() }}')"
-                                    @class([
-                                        'group relative flex items-center gap-2.5 rounded-md px-3 py-2 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-primarydark dark:hover:bg-meta-4',
-                                        'bg-primarydark dark:bg-meta-4' => collect($item['items'])->some(
-                                            fn($x) => $x['isActive']),
-                                    ])>
-                                    <span class="{{ $item['icon'] }} size-5"></span>
-
-                                    {{ $item['title'] }}
-
-                                    <svg class="absolute transition -translate-y-1/2 fill-current right-4 top-1/2"
-                                        :class="{
-                                            'rotate-180': (
-                                                selected === '{{ Str::of($item['title'])->lower()->snake() }}')
-                                        }"
-                                        width="20" height="20" viewBox="0 0 20 20" fill="none"
-                                        xmlns="http://www.w3.org/2000/svg">
-                                        <path fill-rule="evenodd" clip-rule="evenodd"
-                                            d="M4.41107 6.9107C4.73651 6.58527 5.26414 6.58527 5.58958 6.9107L10.0003 11.3214L14.4111 6.91071C14.7365 6.58527 15.2641 6.58527 15.5896 6.91071C15.915 7.23614 15.915 7.76378 15.5896 8.08922L10.5896 13.0892C10.2641 13.4147 9.73651 13.4147 9.41107 13.0892L4.41107 8.08922C4.08563 7.76378 4.08563 7.23614 4.41107 6.9107Z"
-                                            fill="" />
-                                    </svg>
-                                </a>
-
-                                <div class="overflow-hidden transform translate"
-                                    :class="(selected === '{{ Str::of($item['title'])->lower()->snake() }}') ? 'block' :
-                                    'hidden'">
-                                    <ul class="mb-5.5 mt-4 flex flex-col gap-2.5 pl-6">
-                                        @forelse ($item['items'] as $item_)
-                                            <li>
-                                                <a href="{{ $item_['href'] }}" @class([
-                                                    'group relative flex items-center gap-2.5 rounded-md px-3 font-medium text-bodydark2 duration-300 ease-in-out hover:text-white',
-                                                    '!text-white' => $item_['isActive'],
-                                                ])
-                                                    wire:navigate>
-                                                    {{ $item_['title'] }}
-                                                </a>
-                                            </li>
-                                        @empty
-                                            <li>
-                                                <a href="#"
-                                                    class="relative block px-3 py-2 text-center duration-300 ease-in-out rounded-md group text-bodydark1 hover:bg-primarydark dark:hover:bg-meta-4">
-                                                    Tidak ada menu ditemukan
-                                                </a>
-                                            </li>
-                                        @endforelse
-                                    </ul>
-                                </div>
-                            </li>
-                        @else
-                            @if ($item['href'] != '#')
+                    <ul class="flex flex-col gap-1">
+                        @forelse ($menu['items'] as $item)
+                            @if (!empty($item['items']))
+                                @php
+                                    $hasActiveChild = collect($item['items'])->some(fn($x) => $x['isActive'] ?? false);
+                                @endphp
                                 <li>
-                                    <a href="{{ $item['href'] }}"
-                                        @click.prevent="selected = (selected === '{{ Str::of($item['title'])->lower()->snake() }}' ? '':'{{ Str::of($item['title'])->lower()->snake() }}')"
+                                    <a href="#"
+                                        @click.prevent="selected = (selected === '{{ Str::of($item['title'])->lower()->snake() }}' ? '' : '{{ Str::of($item['title'])->lower()->snake() }}')"
                                         @class([
-                                            'group relative flex items-center gap-2.5 rounded-md px-3 py-2 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-primarydark dark:hover:bg-meta-4',
-                                            'bg-primarydark dark:bg-meta-4' => $item['isActive'],
-                                        ]) wire:navigate>
-                                        <span class="{{ $item['icon'] }} size-5"></span>
+                                            'group relative flex items-center justify-between gap-2.5 rounded-xl px-3 py-2.5 text-xs font-semibold duration-200 ease-in-out transition-all',
+                                            'bg-slate-100 text-slate-900 dark:bg-white/[0.04] dark:text-white border border-slate-200 dark:border-white/10' => $hasActiveChild,
+                                            'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/[0.04]' => !$hasActiveChild,
+                                        ])>
+                                        <div class="flex items-center gap-2.5 truncate">
+                                            <span
+                                                class="{{ $item['icon'] }} size-4.5 text-emerald-600 dark:text-emerald-400 shrink-0"></span>
+                                            <span class="truncate">{{ $item['title'] }}</span>
+                                        </div>
 
-                                        {{ $item['title'] }}
+                                        <span
+                                            class="icon-[solar--alt-arrow-down-bold] text-xs text-slate-400 transition-transform duration-200 shrink-0"
+                                            :class="{
+                                                'rotate-180 text-emerald-600 dark:text-emerald-400': (
+                                                    selected === '{{ Str::of($item['title'])->lower()->snake() }}')
+                                            }"></span>
                                     </a>
+
+                                    <div class="overflow-hidden transition-all duration-200"
+                                        :class="(selected === '{{ Str::of($item['title'])->lower()->snake() }}') ? 'block' :
+                                        'hidden'">
+                                        <ul
+                                            class="my-1.5 ml-4 flex flex-col gap-1 border-l border-slate-200 dark:border-slate-800/90 pl-3">
+                                            @forelse ($item['items'] as $item_)
+                                                <li>
+                                                    <a href="{{ $item_['href'] }}" @class([
+                                                        'group relative flex items-center justify-between gap-2 px-2.5 py-1.5 text-xs rounded-lg duration-150 transition-all',
+                                                        'bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 font-bold' =>
+                                                            $item_['isActive'],
+                                                        'text-slate-500 hover:text-slate-900 hover:bg-slate-100/70 dark:text-slate-400 dark:hover:text-white dark:hover:bg-white/[0.03] font-medium' => !$item_[
+                                                            'isActive'
+                                                        ],
+                                                    ])
+                                                        wire:navigate>
+                                                        <span class="truncate">{{ $item_['title'] }}</span>
+                                                        @if ($item_['isActive'])
+                                                            <span
+                                                                class="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 shrink-0"></span>
+                                                        @endif
+                                                    </a>
+                                                </li>
+                                            @empty
+                                                <li>
+                                                    <span
+                                                        class="block px-3 py-1.5 text-xs text-slate-400 dark:text-slate-500 italic">
+                                                        Tidak ada menu
+                                                    </span>
+                                                </li>
+                                            @endforelse
+                                        </ul>
+                                    </div>
                                 </li>
                             @else
-                                <li>
-                                    <span @class([
-                                        'group relative flex items-center gap-2.5 rounded-md px-3 py-2 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-primarydark dark:hover:bg-meta-4',
-                                        'bg-primarydark dark:bg-meta-4' => $item['isActive'],
-                                    ])>
-                                        <span class="{{ $item['icon'] }} size-5"></span>
-
-                                        {{ $item['title'] }}
-                                    </span>
-                                </li>
+                                @if ($item['href'] != '#')
+                                    <li>
+                                        <a href="{{ $item['href'] }}"
+                                            @click.prevent="selected = (selected === '{{ Str::of($item['title'])->lower()->snake() }}' ? '' : '{{ Str::of($item['title'])->lower()->snake() }}')"
+                                            @class([
+                                                'group relative flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-semibold duration-200 ease-in-out transition-all',
+                                                'bg-gradient-to-r from-emerald-500/15 to-teal-500/10 text-emerald-800 border border-emerald-500/30 dark:from-emerald-500/20 dark:to-teal-500/10 dark:text-emerald-300 shadow-sm' =>
+                                                    $item['isActive'],
+                                                'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-white/[0.04]' => !$item[
+                                                    'isActive'
+                                                ],
+                                            ]) wire:navigate>
+                                            <span
+                                                class="{{ $item['icon'] }} size-4.5 text-emerald-600 dark:text-emerald-400 shrink-0"></span>
+                                            <span class="truncate">{{ $item['title'] }}</span>
+                                        </a>
+                                    </li>
+                                @else
+                                    <li>
+                                        <span @class([
+                                            'group relative flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-semibold duration-200 ease-in-out transition-all opacity-60 cursor-not-allowed',
+                                            'bg-gradient-to-r from-emerald-500/15 to-teal-500/10 text-emerald-800 border border-emerald-500/30 dark:from-emerald-500/20 dark:to-teal-500/10 dark:text-emerald-300' =>
+                                                $item['isActive'],
+                                            'text-slate-400 dark:text-slate-400' => !$item['isActive'],
+                                        ])>
+                                            <span
+                                                class="{{ $item['icon'] }} size-4.5 text-emerald-600 dark:text-emerald-400 shrink-0"></span>
+                                            <span class="truncate">{{ $item['title'] }}</span>
+                                        </span>
+                                    </li>
+                                @endif
                             @endif
-                        @endif
-                    @empty
-                        <li>
-                            <a href="#"
-                                class="relative block px-3 py-2 text-center duration-300 ease-in-out rounded-md group text-bodydark1 hover:bg-primarydark dark:hover:bg-meta-4">
-                                Tidak ada menu ditemukan
-                            </a>
-                        </li>
-                    @endforelse
-                </ul>
+                        @empty
+                            <li>
+                                <span
+                                    class="block px-3 py-2 text-xs text-center text-slate-400 dark:text-slate-500 italic">
+                                    Tidak ada menu ditemukan
+                                </span>
+                            </li>
+                        @endforelse
+                    </ul>
+                </div>
             @endforeach
         </nav>
     </div>

@@ -1,0 +1,371 @@
+<?php
+
+namespace App\Repository;
+
+use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\LengthAwarePaginator;
+use App\Helpers\SirsHelper;
+
+interface OutpatientReportInterface {}
+
+class OutpatientReportRepository implements OutpatientReportInterface
+{
+    const CONNECTION = 'simrs';
+    const LIMIT_DEFAULT = 25;
+
+    /**
+     * Membangun base query laporan pasien rawat jalan.
+     *
+     * @param string|null $startDate
+     * @param string|null $endDate
+     * @param string|null $poly
+     * @param string|null $payType
+     * @param string|null $doctor
+     * @param string|null $gender
+     * @param string|null $sttsDaftar
+     * @param string|null $search
+     * @return \Illuminate\Database\Query\Builder
+     */
+    private static function buildQuery(
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $poly = null,
+        ?string $payType = null,
+        ?string $doctor = null,
+        ?string $gender = null,
+        ?string $sttsDaftar = null,
+        ?string $search = null
+    ) {
+        $query = DB::connection(self::CONNECTION)
+            ->table('reg_periksa as rp')
+            ->join('pasien as p', 'rp.no_rkm_medis', '=', 'p.no_rkm_medis')
+            ->join('poliklinik as poli', 'rp.kd_poli', '=', 'poli.kd_poli')
+            ->join('dokter as d', 'rp.kd_dokter', '=', 'd.kd_dokter')
+            ->leftJoin('penjab as pj', 'rp.kd_pj', '=', 'pj.kd_pj')
+            ->leftJoin('pasien_tni as pt', 'rp.no_rkm_medis', '=', 'pt.no_rkm_medis')
+            ->leftJoin('pasien_polri as pp', 'rp.no_rkm_medis', '=', 'pp.no_rkm_medis')
+            ->where('rp.status_lanjut', 'Ralan')
+            ->where('rp.kd_poli', '!=', 'IGDK')
+            ->where('rp.stts', '!=', 'Batal');
+
+        // Filter Rentang Tanggal Registrasi
+        if (!empty($startDate) && !empty($endDate)) {
+            $query->whereBetween('rp.tgl_registrasi', [$startDate, $endDate]);
+        } elseif (!empty($startDate)) {
+            $query->where('rp.tgl_registrasi', '>=', $startDate);
+        } elseif (!empty($endDate)) {
+            $query->where('rp.tgl_registrasi', '<=', $endDate);
+        }
+
+        // Filter Poliklinik
+        if (!empty($poly) && $poly !== 'semua') {
+            $query->where('rp.kd_poli', $poly);
+        }
+
+        // Filter Penanggung Jawab / Jenis Bayar
+        if (!empty($payType) && $payType !== 'semua') {
+            if ($payType === 'BPJS') {
+                $query->where('pj.png_jawab', 'like', '%BPJS%');
+            } elseif ($payType === 'UMUM') {
+                $query->where('pj.png_jawab', 'like', '%UMUM%');
+            } elseif ($payType === 'DINAS') {
+                $query->where(function ($q) {
+                    $q->whereNotNull('pt.no_rkm_medis')
+                      ->orWhereNotNull('pp.no_rkm_medis');
+                });
+            } else {
+                $query->where('rp.kd_pj', $payType);
+            }
+        }
+
+        // Filter Dokter
+        if (!empty($doctor) && $doctor !== 'semua') {
+            $query->where('rp.kd_dokter', $doctor);
+        }
+
+        // Filter Jenis Kelamin
+        if (!empty($gender) && $gender !== 'semua') {
+            $query->where('p.jk', $gender);
+        }
+
+        // Filter Status Daftar (Baru / Lama)
+        if (!empty($sttsDaftar) && $sttsDaftar !== 'semua') {
+            $query->where('rp.stts_daftar', $sttsDaftar);
+        }
+
+        // Filter Pencarian
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('rp.no_rawat', 'like', "%{$search}%")
+                  ->orWhere('rp.no_rkm_medis', 'like', "%{$search}%")
+                  ->orWhere('p.nm_pasien', 'like', "%{$search}%")
+                  ->orWhere('d.nm_dokter', 'like', "%{$search}%")
+                  ->orWhere('poli.nm_poli', 'like', "%{$search}%");
+            });
+        }
+
+        return $query;
+    }
+
+    /**
+     * Mengambil ringkasan metrik utama pasien rawat jalan.
+     */
+    public static function getSummary(
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $poly = null,
+        ?string $payType = null,
+        ?string $doctor = null,
+        ?string $gender = null,
+        ?string $sttsDaftar = null,
+        ?string $search = null
+    ): array {
+        $row = self::buildQuery($startDate, $endDate, $poly, $payType, $doctor, $gender, $sttsDaftar, $search)
+            ->selectRaw("
+                count(*) as total_pasien,
+                sum(case when p.jk = 'L' then 1 else 0 end) as total_pria,
+                sum(case when p.jk = 'P' then 1 else 0 end) as total_wanita,
+                sum(case when rp.stts_daftar = 'Baru' then 1 else 0 end) as total_baru,
+                sum(case when rp.stts_daftar = 'Lama' then 1 else 0 end) as total_lama,
+                sum(case when pj.png_jawab like '%BPJS%' then 1 else 0 end) as total_bpjs,
+                sum(case when pj.png_jawab like '%UMUM%' then 1 else 0 end) as total_umum,
+                sum(case when pt.no_rkm_medis is not null or pp.no_rkm_medis is not null then 1 else 0 end) as total_dinas,
+                sum(case when rp.stts = 'Sudah' then 1 else 0 end) as total_sudah,
+                sum(case when rp.stts = 'Belum' then 1 else 0 end) as total_belum
+            ")
+            ->first();
+
+        $total = $row ? (int) $row->total_pasien : 0;
+        $pria = $row ? (int) $row->total_pria : 0;
+        $wanita = $row ? (int) $row->total_wanita : 0;
+
+        return [
+            'total_pasien' => $total,
+            'total_pria' => $pria,
+            'total_wanita' => $wanita,
+            'rasio_pria' => $total > 0 ? round(($pria / $total) * 100, 1) : 0,
+            'rasio_wanita' => $total > 0 ? round(($wanita / $total) * 100, 1) : 0,
+            'total_baru' => $row ? (int) $row->total_baru : 0,
+            'total_lama' => $row ? (int) $row->total_lama : 0,
+            'total_bpjs' => $row ? (int) $row->total_bpjs : 0,
+            'total_umum' => $row ? (int) $row->total_umum : 0,
+            'total_dinas' => $row ? (int) $row->total_dinas : 0,
+            'total_sudah' => $row ? (int) $row->total_sudah : 0,
+            'total_belum' => $row ? (int) $row->total_belum : 0,
+        ];
+    }
+
+    /**
+     * Mengambil data rekap jumlah pasien per Poliklinik / Unit.
+     */
+    public static function getPolyBreakdown(
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $payType = null,
+        ?string $gender = null
+    ): array {
+        $rows = self::buildQuery($startDate, $endDate, null, $payType, null, $gender)
+            ->selectRaw("
+                poli.kd_poli,
+                poli.nm_poli,
+                count(*) as total,
+                sum(case when p.jk = 'L' then 1 else 0 end) as pria,
+                sum(case when p.jk = 'P' then 1 else 0 end) as wanita,
+                sum(case when rp.stts_daftar = 'Baru' then 1 else 0 end) as baru,
+                sum(case when rp.stts_daftar = 'Lama' then 1 else 0 end) as lama,
+                sum(case when pj.png_jawab like '%BPJS%' then 1 else 0 end) as bpjs,
+                sum(case when pj.png_jawab like '%UMUM%' then 1 else 0 end) as umum,
+                sum(case when pt.no_rkm_medis is not null or pp.no_rkm_medis is not null then 1 else 0 end) as dinas,
+                sum(case when rp.stts = 'Sudah' then 1 else 0 end) as sudah,
+                sum(case when rp.stts = 'Belum' then 1 else 0 end) as belum
+            ")
+            ->groupBy('poli.kd_poli', 'poli.nm_poli')
+            ->orderByDesc('total')
+            ->get();
+
+        $grandTotal = $rows->sum('total') ?: 1;
+
+        return $rows->map(function ($r) use ($grandTotal) {
+            return [
+                'kd_poli' => $r->kd_poli,
+                'nm_poli' => $r->nm_poli,
+                'total' => (int) $r->total,
+                'percent' => round(($r->total / $grandTotal) * 100, 1),
+                'pria' => (int) $r->pria,
+                'wanita' => (int) $r->wanita,
+                'baru' => (int) $r->baru,
+                'lama' => (int) $r->lama,
+                'bpjs' => (int) $r->bpjs,
+                'umum' => (int) $r->umum,
+                'dinas' => (int) $r->dinas,
+                'sudah' => (int) $r->sudah,
+                'belum' => (int) $r->belum,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Mengambil data rekap jumlah pasien per Jenis Bayar / Penjamin.
+     */
+    public static function getPayTypeBreakdown(
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $poly = null,
+        ?string $gender = null
+    ): array {
+        $rows = self::buildQuery($startDate, $endDate, $poly, null, null, $gender)
+            ->selectRaw("
+                COALESCE(pj.kd_pj, '-') as kd_pj,
+                COALESCE(pj.png_jawab, 'Tidak Diketahui') as png_jawab,
+                count(*) as total,
+                sum(case when p.jk = 'L' then 1 else 0 end) as pria,
+                sum(case when p.jk = 'P' then 1 else 0 end) as wanita,
+                sum(case when rp.stts_daftar = 'Baru' then 1 else 0 end) as baru,
+                sum(case when rp.stts_daftar = 'Lama' then 1 else 0 end) as lama
+            ")
+            ->groupBy('pj.kd_pj', 'pj.png_jawab')
+            ->orderByDesc('total')
+            ->get();
+
+        $grandTotal = $rows->sum('total') ?: 1;
+
+        return $rows->map(function ($r) use ($grandTotal) {
+            return [
+                'kd_pj' => $r->kd_pj,
+                'png_jawab' => $r->png_jawab,
+                'total' => (int) $r->total,
+                'percent' => round(($r->total / $grandTotal) * 100, 1),
+                'pria' => (int) $r->pria,
+                'wanita' => (int) $r->wanita,
+                'baru' => (int) $r->baru,
+                'lama' => (int) $r->lama,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Mengambil data rekap kelompok umur rawat jalan berdasarkan simrs.kelompok_umur.
+     */
+    public static function getAgeGroupBreakdown(
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $poly = null,
+        ?string $payType = null
+    ): array {
+        $categories = SirsHelper::getAgeGroupCategories();
+        $caseSql = SirsHelper::ageGroupCategoryCaseSql('p.tgl_lahir', 'rp.tgl_registrasi');
+
+        $rows = self::buildQuery($startDate, $endDate, $poly, $payType)
+            ->selectRaw("
+                {$caseSql} as kode_kelompok,
+                count(*) as total,
+                sum(case when p.jk = 'L' then 1 else 0 end) as pria,
+                sum(case when p.jk = 'P' then 1 else 0 end) as wanita
+            ")
+            ->groupBy('kode_kelompok')
+            ->get()
+            ->keyBy('kode_kelompok');
+
+        $grandTotal = $rows->sum('total') ?: 1;
+        $items = [];
+
+        foreach ($categories as $kode => $info) {
+            $row = $rows->get($kode);
+            $total = $row ? (int) $row->total : 0;
+            $pria = $row ? (int) $row->pria : 0;
+            $wanita = $row ? (int) $row->wanita : 0;
+
+            $items[] = [
+                'kode' => $kode,
+                'nama' => $info['nama'],
+                'total' => $total,
+                'pria' => $pria,
+                'wanita' => $wanita,
+                'percent' => round(($total / $grandTotal) * 100, 1),
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * Mengambil daftar pasien rawat jalan secara terperinci.
+     */
+    public static function getPatients(
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $poly = null,
+        ?string $payType = null,
+        ?string $doctor = null,
+        ?string $gender = null,
+        ?string $sttsDaftar = null,
+        ?string $search = null,
+        int $limit = self::LIMIT_DEFAULT
+    ) {
+        $query = self::buildQuery($startDate, $endDate, $poly, $payType, $doctor, $gender, $sttsDaftar, $search)
+            ->leftJoin('pangkat_tni as pkt', 'pt.pangkat_tni', '=', 'pkt.id')
+            ->leftJoin('satuan_tni as sat', 'pt.satuan_tni', '=', 'sat.id')
+            ->select([
+                'rp.no_rawat',
+                'rp.no_rkm_medis',
+                'p.nm_pasien',
+                'p.jk',
+                'p.tgl_lahir',
+                'p.alamat',
+                'rp.umurdaftar',
+                'rp.sttsumur',
+                'rp.tgl_registrasi',
+                'rp.jam_reg',
+                'poli.kd_poli',
+                'poli.nm_poli',
+                'd.kd_dokter',
+                'd.nm_dokter',
+                'pj.kd_pj',
+                'pj.png_jawab',
+                'rp.stts_daftar',
+                'rp.stts',
+                'pkt.nama_pangkat',
+                'sat.nama_satuan',
+                DB::raw("CASE WHEN pt.no_rkm_medis IS NOT NULL THEN 'TNI' WHEN pp.no_rkm_medis IS NOT NULL THEN 'POLRI' ELSE 'UMUM' END as status_dinas")
+            ])
+            ->orderByDesc('rp.tgl_registrasi')
+            ->orderByDesc('rp.jam_reg');
+
+        if ($limit === 0) {
+            return $query->get();
+        }
+
+        return $query->paginate($limit);
+    }
+
+    /**
+     * Mengambil tren kunjungan pasien rawat jalan per tanggal.
+     */
+    public static function getTrend(
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $poly = null,
+        ?string $payType = null,
+        ?string $doctor = null,
+        ?string $gender = null,
+        ?string $sttsDaftar = null
+    ): array {
+        $rows = self::buildQuery($startDate, $endDate, $poly, $payType, $doctor, $gender, $sttsDaftar)
+            ->selectRaw("
+                rp.tgl_registrasi as tgl,
+                count(*) as total,
+                sum(case when p.jk = 'L' then 1 else 0 end) as pria,
+                sum(case when p.jk = 'P' then 1 else 0 end) as wanita
+            ")
+            ->groupBy('rp.tgl_registrasi')
+            ->orderBy('rp.tgl_registrasi')
+            ->get();
+
+        return [
+            'labels' => $rows->map(fn($r) => \Carbon\Carbon::parse($r->tgl)->format('d/m'))->toArray(),
+            'total' => $rows->map(fn($r) => (int) $r->total)->toArray(),
+            'pria' => $rows->map(fn($r) => (int) $r->pria)->toArray(),
+            'wanita' => $rows->map(fn($r) => (int) $r->wanita)->toArray(),
+        ];
+    }
+}

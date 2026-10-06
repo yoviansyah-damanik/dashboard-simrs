@@ -7,6 +7,8 @@ use Livewire\Component;
 use Jenssegers\Agent\Agent;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Jantinnerezo\LivewireAlert\LivewireAlert;
 
 class Login extends Component
@@ -14,13 +16,26 @@ class Login extends Component
     use LivewireAlert;
 
     public bool $isLoading = false;
-    public string $username;
-    public string $password;
+    public string $username = '';
+    public string $password = '';
     public bool $rememberMe = false;
 
     public function render()
     {
-        return view('pages.auth.login')
+        $setting = Cache::remember('simrs_setting_profile', 3600, function () {
+            try {
+                return (array) DB::connection('simrs')
+                    ->table('setting')
+                    ->select('nama_instansi', 'alamat_instansi', 'kabupaten', 'propinsi', 'kontak', 'email')
+                    ->first();
+            } catch (\Throwable $e) {
+                return [];
+            }
+        });
+
+        return view('pages.auth.login', [
+            'setting' => $setting,
+        ])
             ->title('Login')
             ->layout('layouts.auth');
     }

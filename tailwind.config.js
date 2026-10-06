@@ -8,6 +8,7 @@ export default {
     content: [
         "./resources/**/*.blade.php",
         "./app/View/**/*.php",
+        "./app/Livewire/**/*.php",
         "./app/Helpers/StatusHelper.php",
     ],
     theme: {
@@ -32,8 +33,8 @@ export default {
                 bodydark: '#aec0ae',
                 bodydark1: '#e0eede',
                 bodydark2: '#bdd1bc',
-                // primary: '#00923f',
                 primary: {
+                    DEFAULT: "#00923f",
                     100: "#cce9d9",
                     200: "#99d3b2",
                     300: "#66be8c",
@@ -45,8 +46,8 @@ export default {
                     900: "#001d0d"
                 },
                 primarydark: '#0a6e3e',
-                // secondary: '#fff700',
                 secondary: {
+                    DEFAULT: "#fff700",
                     100: "#fffdcc",
                     200: "#fffc99",
                     300: "#fffa66",

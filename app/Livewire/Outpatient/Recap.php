@@ -144,7 +144,9 @@ class Recap extends Component
             ->join('poliklinik', 'reg_periksa.kd_poli', '=', 'poliklinik.kd_poli')
             ->join('dokter', 'reg_periksa.kd_dokter', '=', 'dokter.kd_dokter')
             ->whereBetween('tgl_registrasi', [$this->startDate, $this->endDate])
-            ->where('stts', '!=', 'Batal')
+            ->where('reg_periksa.stts', '!=', 'Batal')
+            ->where('reg_periksa.status_lanjut', 'Ralan')
+            ->where('reg_periksa.kd_poli', '!=', 'IGDK')
             ->select(
                 'poliklinik.nm_poli',
                 'dokter.nm_dokter',
@@ -172,7 +174,9 @@ class Recap extends Component
             ->table('reg_periksa')
             ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
             ->whereBetween('tgl_registrasi', [$this->startDate, $this->endDate])
-            ->where('stts', '!=', 'Batal')
+            ->where('reg_periksa.stts', '!=', 'Batal')
+            ->where('reg_periksa.status_lanjut', 'Ralan')
+            ->where('reg_periksa.kd_poli', '!=', 'IGDK')
             ->select(
                 DB::raw(SirsHelper::ageGroupCategoryCaseSql('pasien.tgl_lahir') . ' as kelompok_kode'),
                 DB::raw('count(*) as total'),
@@ -191,7 +195,9 @@ class Recap extends Component
             ->table('reg_periksa')
             ->join('penjab', 'reg_periksa.kd_pj', '=', 'penjab.kd_pj')
             ->whereBetween('tgl_registrasi', [$this->startDate, $this->endDate])
-            ->where('stts', '!=', 'Batal')
+            ->where('reg_periksa.stts', '!=', 'Batal')
+            ->where('reg_periksa.status_lanjut', 'Ralan')
+            ->where('reg_periksa.kd_poli', '!=', 'IGDK')
             ->select(
                 DB::raw('sum(case when penjab.png_jawab like "%BPJS%" then 1 else 0 end) as bpjs'),
                 DB::raw('sum(case when penjab.png_jawab not like "%BPJS%" and penjab.png_jawab != "UMUM" then 1 else 0 end) as asuransi_lain'),
@@ -203,7 +209,9 @@ class Recap extends Component
             ->table('reg_periksa')
             ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
             ->whereBetween('tgl_registrasi', [$this->startDate, $this->endDate])
-            ->where('stts', '!=', 'Batal')
+            ->where('reg_periksa.stts', '!=', 'Batal')
+            ->where('reg_periksa.status_lanjut', 'Ralan')
+            ->where('reg_periksa.kd_poli', '!=', 'IGDK')
             ->select(
                 DB::raw('sum(case when pasien.jk = "L" then 1 else 0 end) as laki'),
                 DB::raw('sum(case when pasien.jk = "P" then 1 else 0 end) as perempuan')
@@ -216,7 +224,9 @@ class Recap extends Component
             ->table('reg_periksa')
             ->select('tgl_registrasi as date', DB::raw('count(*) as total'))
             ->whereBetween('tgl_registrasi', [$this->startDate, $this->endDate])
-            ->where('stts', '!=', 'Batal')
+            ->where('reg_periksa.stts', '!=', 'Batal')
+            ->where('reg_periksa.status_lanjut', 'Ralan')
+            ->where('reg_periksa.kd_poli', '!=', 'IGDK')
             ->groupBy('tgl_registrasi')
             ->orderBy('tgl_registrasi')
             ->get();
@@ -268,7 +278,9 @@ class Recap extends Component
             ->join('pasien', 'reg_periksa.no_rkm_medis', '=', 'pasien.no_rkm_medis')
             ->join('penjab', 'reg_periksa.kd_pj', '=', 'penjab.kd_pj')
             ->whereBetween('tgl_registrasi', [$this->startDate, $this->endDate])
-            ->where('stts', '!=', 'Batal');
+            ->where('reg_periksa.stts', '!=', 'Batal')
+            ->where('reg_periksa.status_lanjut', 'Ralan')
+            ->where('reg_periksa.kd_poli', '!=', 'IGDK');
 
         $gender = (clone $baseQuery)
             ->select('pasien.jk', DB::raw('count(*) as total'))

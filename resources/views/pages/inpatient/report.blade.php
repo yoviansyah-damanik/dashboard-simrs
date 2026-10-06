@@ -179,7 +179,7 @@
             </div>
         </div>
 
-        {{-- Footer Filter Bar: Limit & Reset --}}
+        {{-- Footer Filter Bar: Limit, Toggle Grafik & Reset --}}
         <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-stroke dark:border-strokedark">
             <div class="flex items-center gap-2.5">
                 <span class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tampilkan:</span>
@@ -191,15 +191,111 @@
                 </select>
             </div>
 
-            @if ($search || $payType !== 'BPJ' || $statusPulang !== 'semua' || $ward !== 'semua')
-                <button type="button" wire:click="resetFilters"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-all">
-                    <span class="icon-[solar--restart-bold-duotone] text-sm"></span>
-                    Reset Semua Filter
+            <div class="flex items-center gap-2">
+                <button type="button" wire:click="toggleCharts"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer {{ $showCharts ? 'text-primary bg-primary/10 hover:bg-primary/20 dark:text-primary dark:bg-primary/10' : 'text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-meta-4 dark:text-gray-300' }}">
+                    <span class="{{ $showCharts ? 'icon-[solar--eye-closed-bold-duotone]' : 'icon-[solar--chart-bold-duotone]' }} text-sm"></span>
+                    <span>{{ $showCharts ? 'Sembunyikan Grafik' : 'Tampilkan Grafik' }}</span>
                 </button>
-            @endif
+                @if ($search || $payType !== 'BPJ' || $statusPulang !== 'semua' || $ward !== 'semua')
+                    <button type="button" wire:click="resetFilters"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-all cursor-pointer">
+                        <span class="icon-[solar--restart-bold-duotone] text-sm"></span>
+                        Reset Semua Filter
+                    </button>
+                @endif
+            </div>
         </div>
     </div>
+
+    {{-- Seksi Grafik & Visualisasi Tren Rawat Inap --}}
+    @if ($showCharts)
+        <div wire:key="inpatient-charts-{{ md5($startDate . $endDate . $payType . $statusPulang . $ward . $search) }}"
+            x-data="inpatientReportCharts(@js($this->chartPayload))"
+            class="space-y-4 no-print transition-all duration-300">
+
+            {{-- Baris 1: Tren Pasien Masuk Harian (8 col) & Komposisi Penjamin (4 col) --}}
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
+                {{-- Tren Pasien Masuk Rawat Inap --}}
+                <div class="lg:col-span-8 p-4 sm:p-5 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col justify-between transition hover:shadow-md">
+                    <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-stroke/70 dark:border-strokedark/70 mb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                <span class="icon-[solar--graph-up-bold-duotone] text-lg"></span>
+                            </div>
+                            <div>
+                                <h3 class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider">Tren Pasien Masuk Rawat Inap</h3>
+                                <p class="text-[11px] text-gray-400 font-medium">Fluktuasi harian tanggal masuk pasien & komparasi gender</p>
+                            </div>
+                        </div>
+                        <span class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-primary/10 text-primary dark:text-primary border border-primary/20">
+                            {{ count($this->chartPayload['trend']['labels']) }} Titik Waktu
+                        </span>
+                    </div>
+                    <div class="relative h-[280px] w-full">
+                        <canvas id="chartInpatientTrend"></canvas>
+                    </div>
+                </div>
+
+                {{-- Proporsi Penjamin / Jenis Bayar --}}
+                <div class="lg:col-span-4 p-4 sm:p-5 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col justify-between transition hover:shadow-md">
+                    <div class="flex items-center justify-between pb-3 border-b border-stroke/70 dark:border-strokedark/70 mb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
+                                <span class="icon-[solar--pie-chart-2-bold-duotone] text-lg"></span>
+                            </div>
+                            <div>
+                                <h3 class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider">Proporsi Penjamin</h3>
+                                <p class="text-[11px] text-gray-400 font-medium">Distribusi cara bayar & asuransi pasien ranap</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative h-[280px] w-full flex items-center justify-center">
+                        <canvas id="chartInpatientPayer"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Baris 2: Top 8 Bangsal (6 col) & Sebaran Kelompok Umur (6 col) --}}
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {{-- Top 8 Bangsal / Ruangan --}}
+                <div class="p-4 sm:p-5 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col justify-between transition hover:shadow-md">
+                    <div class="flex items-center justify-between pb-3 border-b border-stroke/70 dark:border-strokedark/70 mb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                                <span class="icon-[solar--bed-bold-duotone] text-lg"></span>
+                            </div>
+                            <div>
+                                <h3 class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider">Top 8 Bangsal / Ruangan</h3>
+                                <p class="text-[11px] text-gray-400 font-medium">Bangsal dengan volume pasien masuk tertinggi</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative h-[270px] w-full">
+                        <canvas id="chartInpatientWard"></canvas>
+                    </div>
+                </div>
+
+                {{-- Sebaran Kelompok Umur SIRS & Gender --}}
+                <div class="p-4 sm:p-5 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col justify-between transition hover:shadow-md">
+                    <div class="flex items-center justify-between pb-3 border-b border-stroke/70 dark:border-strokedark/70 mb-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-600 flex items-center justify-center shrink-0">
+                                <span class="icon-[solar--users-group-two-rounded-bold-duotone] text-lg"></span>
+                            </div>
+                            <div>
+                                <h3 class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider">Sebaran Kelompok Umur (SIRS)</h3>
+                                <p class="text-[11px] text-gray-400 font-medium">Perbandingan Laki-laki vs Perempuan per kategori usia</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative h-[270px] w-full">
+                        <canvas id="chartInpatientAge"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Tabel Laporan --}}
     <div class="bg-white dark:bg-boxdark rounded-3xl border border-stroke dark:border-strokedark shadow-sm overflow-hidden">
@@ -333,4 +429,325 @@
             }
         }
     </style>
+
+    @script
+        <script>
+            Alpine.data('inpatientReportCharts', (chartPayload) => ({
+                trendChart: null,
+                payerChart: null,
+                wardChart: null,
+                ageChart: null,
+                init() {
+                    this.$nextTick(() => {
+                        this.renderAll(chartPayload);
+                    });
+                },
+                destroy() {
+                    this.destroyAll();
+                },
+                destroyAll() {
+                    if (this.trendChart) { try { this.trendChart.destroy(); } catch(e){} this.trendChart = null; }
+                    if (this.payerChart) { try { this.payerChart.destroy(); } catch(e){} this.payerChart = null; }
+                    if (this.wardChart) { try { this.wardChart.destroy(); } catch(e){} this.wardChart = null; }
+                    if (this.ageChart) { try { this.ageChart.destroy(); } catch(e){} this.ageChart = null; }
+                },
+                renderAll(data) {
+                    if (!data) return;
+                    this.destroyAll();
+                    const isDark = document.documentElement.classList.contains('dark');
+                    const gridColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+                    const textColor = isDark ? '#94A3B8' : '#64748B';
+
+                    // 1. Line Chart: Tren Pasien Masuk Rawat Inap
+                    const trendCanvas = document.getElementById('chartInpatientTrend');
+                    if (trendCanvas && data.trend) {
+                        const ctx = trendCanvas.getContext('2d');
+                        if (ctx) {
+                            const gradPrimary = ctx.createLinearGradient(0, 0, 0, 260);
+                            gradPrimary.addColorStop(0, 'rgba(59, 130, 246, 0.28)');
+                            gradPrimary.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+                            this.trendChart = new Chart(ctx, {
+                                type: 'line',
+                                data: {
+                                    labels: data.trend.labels || [],
+                                    datasets: [
+                                        {
+                                            label: 'Total Pasien',
+                                            data: data.trend.total || [],
+                                            borderColor: '#3B82F6',
+                                            backgroundColor: gradPrimary,
+                                            fill: true,
+                                            tension: 0.35,
+                                            borderWidth: 2.5,
+                                            pointRadius: (data.trend.labels || []).length > 25 ? 1 : 3,
+                                            pointHoverRadius: 5,
+                                            pointBackgroundColor: '#3B82F6',
+                                        },
+                                        {
+                                            label: 'Laki-laki',
+                                            data: data.trend.pria || [],
+                                            borderColor: '#06B6D4',
+                                            backgroundColor: 'transparent',
+                                            borderWidth: 1.8,
+                                            tension: 0.35,
+                                            pointRadius: 0,
+                                            pointHoverRadius: 4,
+                                        },
+                                        {
+                                            label: 'Perempuan',
+                                            data: data.trend.wanita || [],
+                                            borderColor: '#EC4899',
+                                            backgroundColor: 'transparent',
+                                            borderWidth: 1.8,
+                                            tension: 0.35,
+                                            pointRadius: 0,
+                                            pointHoverRadius: 4,
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    animation: { duration: 600, easing: 'easeOutQuart' },
+                                    interaction: { mode: 'index', intersect: false },
+                                    plugins: {
+                                        legend: {
+                                            display: true,
+                                            position: 'top',
+                                            align: 'end',
+                                            labels: {
+                                                color: textColor,
+                                                usePointStyle: true,
+                                                pointStyle: 'circle',
+                                                padding: 12,
+                                                font: { size: 11, weight: '600' }
+                                            }
+                                        },
+                                        tooltip: {
+                                            backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                                            titleColor: isDark ? '#F1F5F9' : '#0F172A',
+                                            bodyColor: isDark ? '#CBD5E1' : '#334155',
+                                            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                                            borderWidth: 1,
+                                            padding: 10,
+                                            boxPadding: 4,
+                                            usePointStyle: true,
+                                            callbacks: {
+                                                label: function(context) {
+                                                    const val = context.raw || 0;
+                                                    return ` ${context.dataset.label}: ${val.toLocaleString('id-ID')} pasien`;
+                                                }
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            grid: { color: gridColor },
+                                            ticks: { color: textColor, font: { size: 10 } }
+                                        },
+                                        x: {
+                                            grid: { display: false },
+                                            ticks: { color: textColor, font: { size: 10, weight: 'bold' } }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                    // 2. Donut Chart: Proporsi Penjamin
+                    const payerCanvas = document.getElementById('chartInpatientPayer');
+                    if (payerCanvas && data.payer) {
+                        const ctx = payerCanvas.getContext('2d');
+                        if (ctx) {
+                            const palette = ['#10B981', '#3B82F6', '#F59E0B', '#8B5CF6', '#EC4899', '#64748B'];
+                            this.payerChart = new Chart(ctx, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: data.payer.labels || [],
+                                    datasets: [{
+                                        data: data.payer.totals || [],
+                                        backgroundColor: palette.slice(0, (data.payer.labels || []).length),
+                                        borderWidth: 2,
+                                        borderColor: isDark ? '#1E293B' : '#FFFFFF',
+                                        hoverOffset: 6
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    cutout: '66%',
+                                    animation: { duration: 600, easing: 'easeOutQuart' },
+                                    plugins: {
+                                        legend: {
+                                            display: true,
+                                            position: 'bottom',
+                                            labels: {
+                                                color: textColor,
+                                                usePointStyle: true,
+                                                pointStyle: 'circle',
+                                                padding: 8,
+                                                font: { size: 10, weight: '600' }
+                                            }
+                                        },
+                                        tooltip: {
+                                            backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                                            titleColor: isDark ? '#F1F5F9' : '#0F172A',
+                                            bodyColor: isDark ? '#CBD5E1' : '#334155',
+                                            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                                            borderWidth: 1,
+                                            padding: 10,
+                                            callbacks: {
+                                                label: function(context) {
+                                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                    const val = context.raw || 0;
+                                                    const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                                                    return ` ${context.label}: ${val.toLocaleString('id-ID')} (${pct}%)`;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                    // 3. Horizontal Bar Chart: Top 8 Bangsal
+                    const wardCanvas = document.getElementById('chartInpatientWard');
+                    if (wardCanvas && data.ward) {
+                        const ctx = wardCanvas.getContext('2d');
+                        if (ctx) {
+                            this.wardChart = new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: data.ward.labels || [],
+                                    datasets: [{
+                                        label: 'Total Pasien',
+                                        data: data.ward.total || [],
+                                        backgroundColor: isDark ? 'rgba(245, 158, 11, 0.75)' : 'rgba(245, 158, 11, 0.85)',
+                                        borderColor: '#F59E0B',
+                                        borderWidth: 1,
+                                        borderRadius: 6,
+                                        maxBarThickness: 22,
+                                    }]
+                                },
+                                options: {
+                                    indexAxis: 'y',
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    animation: { duration: 600, easing: 'easeOutQuart' },
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                            backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                                            titleColor: isDark ? '#F1F5F9' : '#0F172A',
+                                            bodyColor: isDark ? '#CBD5E1' : '#334155',
+                                            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                                            borderWidth: 1,
+                                            padding: 10,
+                                            callbacks: {
+                                                label: function(context) {
+                                                    return ` Total: ${(context.raw || 0).toLocaleString('id-ID')} pasien`;
+                                                }
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        x: {
+                                            beginAtZero: true,
+                                            grid: { color: gridColor },
+                                            ticks: { color: textColor, font: { size: 10 } }
+                                        },
+                                        y: {
+                                            grid: { display: false },
+                                            ticks: { color: textColor, font: { size: 10, weight: 'bold' } }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                    // 4. Grouped Bar Chart: Kelompok Umur & Gender (SIRS)
+                    const ageCanvas = document.getElementById('chartInpatientAge');
+                    if (ageCanvas && data.age) {
+                        const ctx = ageCanvas.getContext('2d');
+                        if (ctx) {
+                            this.ageChart = new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: data.age.labels || [],
+                                    datasets: [
+                                        {
+                                            label: 'Laki-laki',
+                                            data: data.age.pria || [],
+                                            backgroundColor: 'rgba(59, 130, 246, 0.85)',
+                                            borderColor: '#3B82F6',
+                                            borderWidth: 1,
+                                            borderRadius: 5,
+                                            maxBarThickness: 16,
+                                        },
+                                        {
+                                            label: 'Perempuan',
+                                            data: data.age.wanita || [],
+                                            backgroundColor: 'rgba(236, 72, 153, 0.85)',
+                                            borderColor: '#EC4899',
+                                            borderWidth: 1,
+                                            borderRadius: 5,
+                                            maxBarThickness: 16,
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    animation: { duration: 600, easing: 'easeOutQuart' },
+                                    plugins: {
+                                        legend: {
+                                            display: true,
+                                            position: 'top',
+                                            align: 'end',
+                                            labels: {
+                                                color: textColor,
+                                                usePointStyle: true,
+                                                pointStyle: 'circle',
+                                                padding: 12,
+                                                font: { size: 10, weight: '600' }
+                                            }
+                                        },
+                                        tooltip: {
+                                            backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                                            titleColor: isDark ? '#F1F5F9' : '#0F172A',
+                                            bodyColor: isDark ? '#CBD5E1' : '#334155',
+                                            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                                            borderWidth: 1,
+                                            padding: 10,
+                                            callbacks: {
+                                                label: function(context) {
+                                                    return ` ${context.dataset.label}: ${(context.raw || 0).toLocaleString('id-ID')} pasien`;
+                                                }
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            grid: { color: gridColor },
+                                            ticks: { color: textColor, font: { size: 10 } }
+                                        },
+                                        x: {
+                                            grid: { display: false },
+                                            ticks: { color: textColor, font: { size: 10, weight: 'bold' } }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    }
+                }
+            }));
+        </script>
+    @endscript
 </x-content>

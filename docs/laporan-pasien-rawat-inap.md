@@ -10,6 +10,12 @@ Halaman laporan data pasien rawat inap berdasarkan query SIMRS Khanza dengan rel
 - **Filter Bangsal**: Berdasarkan bangsal perawatan.
 - **Pencarian**: No. Rawat, No. Rekam Medis, atau Nama Pasien.
 - **Ringkasan Metrik**: Total pasien, pasien dirawat, pasien sudah pulang, dan penjamin aktif.
+- **Visualisasi Grafik (Charts)**:
+  1. *Tren Pasien Masuk Rawat Inap*: Line chart kurva halus dengan fill area gradien (Total Pasien, Laki-laki, Perempuan).
+  2. *Proporsi Penjamin*: Doughnut chart distribusi asuransi & cara bayar pasien ranap.
+  3. *Top 8 Bangsal / Ruangan*: Horizontal bar chart bangsal bervolume pasien tertinggi.
+  4. *Sebaran Kelompok Umur (SIRS)*: Grouped bar chart komparasi Laki-laki vs Perempuan per 8 kategori umur SIRS Kemkes.
+  5. *Toggle Tampilkan/Sembunyikan*: Tombol kendali visualisasi untuk fleksibilitas tampilan.
 - **Ekspor**: Cetak (Print), Excel (.xlsx), CSV, dan PDF.
 
 ## Kolom Laporan

@@ -66,7 +66,7 @@ class Index extends Component
 
         if (str_contains($kd, 'ANA') || str_contains($name, 'anak') || str_contains($name, 'pediatri')) {
             return [
-                'icon' => 'icon-[solar--baby-bold-duotone]',
+                'icon' => 'icon-[solar--sticker-smile-circle-bold-duotone]',
                 'bg' => 'bg-pink-500/10 text-pink-600 dark:text-pink-400',
                 'color' => 'text-pink-500',
                 'border_hover' => 'hover:border-pink-400/50',

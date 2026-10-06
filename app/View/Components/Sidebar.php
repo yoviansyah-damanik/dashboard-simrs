@@ -127,6 +127,12 @@ class Sidebar extends Component
                                     'href' => route('outpatient.recap'),
                                     'isActive' => request()->routeIs('outpatient.recap'),
                                     'isShown' => auth()->user()->hasPermissionTo('outpatient recap')
+                                ],
+                                [
+                                    'title' => 'Laporan Pasien',
+                                    'href' => route('outpatient.report'),
+                                    'isActive' => request()->routeIs('outpatient.report'),
+                                    'isShown' => auth()->user()->hasPermissionTo('outpatient report')
                                 ]
                             ]
                         ],

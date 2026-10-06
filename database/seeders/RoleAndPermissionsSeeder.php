@@ -29,6 +29,7 @@ class RoleAndPermissionsSeeder extends Seeder
             'medical-non-personnel show',
             'outpatient show',
             'outpatient recap',
+            'outpatient report',
             'inpatient show',
             'inpatient recap',
             'inpatient report',

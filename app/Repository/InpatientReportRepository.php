@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
+use App\Helpers\SirsHelper;
 
 interface InpatientReportInterface {}
 
@@ -165,5 +166,154 @@ class InpatientReportRepository implements InpatientReportInterface
             'sudah_pulang' => (int) ($stats->sudah_pulang ?? 0),
             'masih_dirawat' => (int) ($stats->masih_dirawat ?? 0),
         ];
+    }
+
+    /**
+     * Mengambil data tren masuk pasien rawat inap per tanggal.
+     */
+    public static function getTrend(
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $payType = null,
+        ?string $statusPulang = 'semua',
+        ?string $ward = null,
+        ?string $search = null
+    ): array {
+        $rows = self::buildQuery($startDate, $endDate, $payType, $statusPulang, $ward, $search)
+            ->selectRaw("
+                ki.tgl_masuk as tgl,
+                count(distinct ki.no_rawat) as total,
+                count(distinct case when p.jk = 'L' then ki.no_rawat end) as pria,
+                count(distinct case when p.jk = 'P' then ki.no_rawat end) as wanita
+            ")
+            ->groupBy('ki.tgl_masuk')
+            ->orderBy('ki.tgl_masuk')
+            ->get();
+
+        return [
+            'labels' => $rows->map(fn($r) => \Carbon\Carbon::parse($r->tgl)->format('d/m'))->toArray(),
+            'total' => $rows->map(fn($r) => (int) $r->total)->toArray(),
+            'pria' => $rows->map(fn($r) => (int) $r->pria)->toArray(),
+            'wanita' => $rows->map(fn($r) => (int) $r->wanita)->toArray(),
+        ];
+    }
+
+    /**
+     * Mengambil data sebaran pasien per bangsal / ruangan rawat inap.
+     */
+    public static function getWardBreakdown(
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $payType = null,
+        ?string $statusPulang = 'semua',
+        ?string $search = null
+    ): array {
+        $rows = self::buildQuery($startDate, $endDate, $payType, $statusPulang, null, $search)
+            ->selectRaw("
+                b.kd_bangsal,
+                b.nm_bangsal,
+                count(distinct ki.no_rawat) as total,
+                count(distinct case when p.jk = 'L' then ki.no_rawat end) as pria,
+                count(distinct case when p.jk = 'P' then ki.no_rawat end) as wanita,
+                count(distinct case when ki.tgl_keluar = '0000-00-00' or ki.tgl_keluar is null then ki.no_rawat end) as masih_dirawat,
+                count(distinct case when ki.tgl_keluar <> '0000-00-00' and ki.tgl_keluar is not null then ki.no_rawat end) as sudah_pulang
+            ")
+            ->groupBy('b.kd_bangsal', 'b.nm_bangsal')
+            ->orderByDesc('total')
+            ->get();
+
+        $grandTotal = $rows->sum('total') ?: 1;
+
+        return $rows->map(function ($r) use ($grandTotal) {
+            return [
+                'kd_bangsal' => $r->kd_bangsal,
+                'nm_bangsal' => $r->nm_bangsal,
+                'total' => (int) $r->total,
+                'pria' => (int) $r->pria,
+                'wanita' => (int) $r->wanita,
+                'masih_dirawat' => (int) $r->masih_dirawat,
+                'sudah_pulang' => (int) $r->sudah_pulang,
+                'percent' => round(($r->total / $grandTotal) * 100, 1),
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Mengambil data proporsi cara bayar / penjamin pasien rawat inap.
+     */
+    public static function getPayTypeBreakdown(
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $statusPulang = 'semua',
+        ?string $ward = null,
+        ?string $search = null
+    ): array {
+        $rows = self::buildQuery($startDate, $endDate, null, $statusPulang, $ward, $search)
+            ->selectRaw("
+                COALESCE(pj.kd_pj, '-') as kd_pj,
+                COALESCE(pj.png_jawab, 'Tidak Diketahui') as png_jawab,
+                count(distinct ki.no_rawat) as total
+            ")
+            ->groupBy('pj.kd_pj', 'pj.png_jawab')
+            ->orderByDesc('total')
+            ->get();
+
+        $grandTotal = $rows->sum('total') ?: 1;
+
+        return $rows->map(function ($r) use ($grandTotal) {
+            return [
+                'kd_pj' => $r->kd_pj,
+                'png_jawab' => $r->png_jawab,
+                'total' => (int) $r->total,
+                'percent' => round(($r->total / $grandTotal) * 100, 1),
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Mengambil data kelompok umur standar SIRS Kemkes untuk pasien rawat inap.
+     */
+    public static function getAgeGroupBreakdown(
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $payType = null,
+        ?string $statusPulang = 'semua',
+        ?string $ward = null,
+        ?string $search = null
+    ): array {
+        $categories = SirsHelper::getAgeGroupCategories();
+        $caseSql = SirsHelper::ageGroupCategoryCaseSql('p.tgl_lahir', 'ki.tgl_masuk');
+
+        $rows = self::buildQuery($startDate, $endDate, $payType, $statusPulang, $ward, $search)
+            ->selectRaw("
+                {$caseSql} as kode_kelompok,
+                count(distinct ki.no_rawat) as total,
+                count(distinct case when p.jk = 'L' then ki.no_rawat end) as pria,
+                count(distinct case when p.jk = 'P' then ki.no_rawat end) as wanita
+            ")
+            ->groupBy('kode_kelompok')
+            ->get()
+            ->keyBy('kode_kelompok');
+
+        $grandTotal = $rows->sum('total') ?: 1;
+        $items = [];
+
+        foreach ($categories as $kode => $info) {
+            $row = $rows->get($kode);
+            $total = $row ? (int) $row->total : 0;
+            $pria = $row ? (int) $row->pria : 0;
+            $wanita = $row ? (int) $row->wanita : 0;
+
+            $items[] = [
+                'kode' => $kode,
+                'nama' => $info['nama'],
+                'total' => $total,
+                'pria' => $pria,
+                'wanita' => $wanita,
+                'percent' => round(($total / $grandTotal) * 100, 1),
+            ];
+        }
+
+        return $items;
     }
 }

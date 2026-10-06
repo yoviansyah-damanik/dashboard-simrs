@@ -79,6 +79,9 @@ Route::middleware('auth')
                 Route::get('/rekap', \App\Livewire\Outpatient\Recap::class)
                     ->middleware('permission:outpatient recap')
                     ->name('.recap');
+                Route::get('/laporan', \App\Livewire\Outpatient\Report::class)
+                    ->middleware('permission:outpatient report')
+                    ->name('.report');
             });
         Route::prefix('jadwal-operasi')
             ->as('operation-schedule')

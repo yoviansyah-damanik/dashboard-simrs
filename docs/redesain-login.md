@@ -16,6 +16,11 @@ Pembaruan total visual dan antarmuka halaman autentikasi (login) Dashboard SIMRS
   - Opsi *Ingatkan Saya* (remember me) terintegrasi.
   - Tombol aksi masuk bergradien dinamis dengan animasi status memuat (*loading state*).
 - **Pusat Bantuan IT**: Dialog interaktif untuk panduan reset sandi dan kontak unit IT/SIMRS 24 jam (telepon/WhatsApp & email).
+- **Optimasi Mobile View**:
+  - Kolom deskripsi desktop disembunyikan di layar kecil (`hidden lg:flex`).
+  - Kartu login langsung terpusat dan pas dalam 1 layar ponsel tanpa perlu scroll.
+  - Header kartu di mobile menampilkan logo ringkas, nama aplikasi, dan nama rumah sakit.
+  - Teks keterangan dibuat ringkas dan padat.
 
 ## Lokasi File Terkait
 - **Livewire Component**: [Login.php](file:///d:/WebApps/dashboard-simrs/app/Livewire/Auth/Login.php)

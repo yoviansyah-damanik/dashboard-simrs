@@ -22,14 +22,13 @@
 @endphp
 
 <div x-data="{
-        showHelp: false,
-        darkMode: JSON.parse(localStorage.getItem('darkMode')) ?? true
-    }"
-    x-init="$watch('darkMode', value => {
-        localStorage.setItem('darkMode', JSON.stringify(value));
-        document.documentElement.classList.toggle('dark', value);
-    });
-    document.documentElement.classList.toggle('dark', darkMode);"
+    showHelp: false,
+    darkMode: JSON.parse(localStorage.getItem('darkMode')) ?? true
+}" x-init="$watch('darkMode', value => {
+    localStorage.setItem('darkMode', JSON.stringify(value));
+    document.documentElement.classList.toggle('dark', value);
+});
+document.documentElement.classList.toggle('dark', darkMode);"
     class="min-h-dvh w-full relative flex items-center justify-center p-3 sm:p-6 lg:p-12 overflow-hidden bg-slate-50 dark:bg-slate-950 font-body transition-colors duration-300">
 
     {{-- Tombol Toggle Dark Mode (Kanan Atas) --}}
@@ -39,13 +38,15 @@
             :title="darkMode ? 'Beralih ke Mode Terang (Light Mode)' : 'Beralih ke Mode Gelap (Dark Mode)'">
             <template x-if="darkMode">
                 <div class="flex items-center gap-1.5">
-                    <span class="icon-[solar--sun-2-bold-duotone] text-base sm:text-lg text-amber-400 group-hover:rotate-45 transition-transform duration-300"></span>
+                    <span
+                        class="icon-[solar--sun-2-bold-duotone] text-base sm:text-lg text-amber-400 group-hover:rotate-45 transition-transform duration-300"></span>
                     <span class="text-xs font-bold tracking-wide hidden sm:inline-block">Light</span>
                 </div>
             </template>
             <template x-if="!darkMode">
                 <div class="flex items-center gap-1.5">
-                    <span class="icon-[solar--moon-stars-bold-duotone] text-base sm:text-lg text-emerald-600 group-hover:-rotate-12 transition-transform duration-300"></span>
+                    <span
+                        class="icon-[solar--moon-stars-bold-duotone] text-base sm:text-lg text-emerald-600 group-hover:-rotate-12 transition-transform duration-300"></span>
                     <span class="text-xs font-bold tracking-wide hidden sm:inline-block">Dark</span>
                 </div>
             </template>
@@ -58,7 +59,9 @@
     </div>
 
     {{-- Layer Gradien & Mesh Grid untuk Estetika Medis Premium --}}
-    <div class="absolute inset-0 bg-gradient-to-tr from-slate-100/90 via-slate-50/95 to-emerald-50/70 dark:from-slate-950 dark:via-slate-950/92 dark:to-emerald-950/80 transition-colors duration-300"></div>
+    <div
+        class="absolute inset-0 bg-gradient-to-tr from-slate-100/90 via-slate-50/95 to-emerald-50/70 dark:from-slate-950 dark:via-slate-950/92 dark:to-emerald-950/80 transition-colors duration-300">
+    </div>
     <div
         class="absolute inset-0 bg-[linear-gradient(to_right,#00000008_1px,transparent_1px),linear-gradient(to_bottom,#00000008_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:36px_36px] pointer-events-none">
     </div>
@@ -67,12 +70,12 @@
     <div
         class="absolute -top-32 -left-32 w-80 sm:w-96 h-80 sm:h-96 bg-emerald-500/10 dark:bg-emerald-500/15 rounded-full blur-[100px] sm:blur-[120px] pointer-events-none animate-pulse">
     </div>
-    <div class="absolute -bottom-32 -right-32 w-80 sm:w-96 h-80 sm:h-96 bg-teal-500/10 dark:bg-teal-500/15 rounded-full blur-[100px] sm:blur-[120px] pointer-events-none">
+    <div
+        class="absolute -bottom-32 -right-32 w-80 sm:w-96 h-80 sm:h-96 bg-teal-500/10 dark:bg-teal-500/15 rounded-full blur-[100px] sm:blur-[120px] pointer-events-none">
     </div>
 
     {{-- Kontainer Utama Grid --}}
-    <div
-        class="relative z-10 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-14 items-center">
+    <div class="relative z-10 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-14 items-center">
 
         {{-- Kolom Kiri: Identitas Rumah Sakit & Fitur Unggulan (Hanya Desktop) --}}
         <div class="hidden lg:flex lg:col-span-7 flex-col justify-center space-y-6">
@@ -92,12 +95,14 @@
                         class="block text-4xl lg:text-5xl font-black bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-700 to-slate-900 dark:from-emerald-400 dark:via-teal-200 dark:to-white drop-shadow-[0_4px_16px_rgba(16,185,129,0.25)]">
                         {{ env('APP_NAME') }}
                     </span>
-                    <span class="block text-xl lg:text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
+                    <span
+                        class="block text-xl lg:text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
                         {{ $hospitalName }}
                     </span>
                 </h1>
                 <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal max-w-xl pt-0.5">
-                    Portal analitik dan visualisasi data pelayanan SIMRS untuk monitoring operasional serta evaluasi kinerja rumah sakit secara real-time.
+                    Portal analitik dan visualisasi data pelayanan SIMRS untuk monitoring operasional serta evaluasi
+                    kinerja rumah sakit secara real-time.
                 </p>
             </div>
 
@@ -110,34 +115,43 @@
                         class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2.5">
                         <span class="icon-[solar--database-bold-duotone] text-lg"></span>
                     </div>
-                    <h2 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Data SIMRS</h2>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">Terintegrasi langsung basis data rekam medis.</p>
+                    <h2 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Data SIMRS
+                    </h2>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">Terintegrasi langsung
+                        basis data rekam medis.</p>
                 </div>
 
                 {{-- Pilar 2 --}}
                 <div
                     class="p-3.5 rounded-2xl bg-white/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/10 backdrop-blur-md transition hover:bg-white/95 dark:hover:bg-white/[0.06] hover:border-teal-500/30 shadow-sm dark:shadow-none">
-                    <div class="w-8 h-8 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-2.5">
+                    <div
+                        class="w-8 h-8 rounded-xl bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-2.5">
                         <span class="icon-[solar--pie-chart-2-bold-duotone] text-lg"></span>
                     </div>
-                    <h2 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Visualisasi</h2>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">Grafik tren kunjungan, bayar, & demografi.</p>
+                    <h2 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Visualisasi
+                    </h2>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">Grafik tren kunjungan,
+                        bayar, & demografi.</p>
                 </div>
 
                 {{-- Pilar 3 --}}
                 <div
                     class="p-3.5 rounded-2xl bg-white/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/10 backdrop-blur-md transition hover:bg-white/95 dark:hover:bg-white/[0.06] hover:border-cyan-500/30 shadow-sm dark:shadow-none">
-                    <div class="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center mb-2.5">
+                    <div
+                        class="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center mb-2.5">
                         <span class="icon-[solar--graph-up-bold-duotone] text-lg"></span>
                     </div>
-                    <h2 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Monitoring</h2>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">Pantauan statistik pelayanan ralan, ranap & mutu.</p>
+                    <h2 class="text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">Monitoring
+                    </h2>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">Pantauan statistik
+                        pelayanan ralan, ranap & mutu.</p>
                 </div>
             </div>
 
             {{-- Informasi Lokasi Institusi --}}
             <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                <span class="icon-[solar--map-point-bold-duotone] text-emerald-500 dark:text-emerald-400 text-sm shrink-0"></span>
+                <span
+                    class="icon-[solar--map-point-bold-duotone] text-emerald-500 dark:text-emerald-400 text-sm shrink-0"></span>
                 <span>{{ $hospitalAddress }}{{ !empty($hospitalCity) ? ', ' . $hospitalCity : '' }}</span>
             </div>
         </div>
@@ -157,14 +171,18 @@
                 {{-- Header Mobile: Logo + Nama Aplikasi Ringkas (Hanya di Mobile) --}}
                 <div class="lg:hidden text-center mb-4">
                     <div class="relative inline-flex items-center justify-center mb-2">
-                        <div class="absolute inset-0 bg-emerald-500/20 rounded-full blur-lg scale-125 pointer-events-none"></div>
+                        <div
+                            class="absolute inset-0 bg-emerald-500/20 rounded-full blur-lg scale-125 pointer-events-none">
+                        </div>
                         <img src="{{ Vite::image('logo.png') }}" alt="{{ $hospitalName }}"
-                            class="relative h-11 w-auto object-contain drop-shadow" />
+                            class="relative h-18 w-auto object-contain drop-shadow" />
                     </div>
-                    <h1 class="text-lg font-black uppercase tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-700 to-slate-900 dark:from-emerald-400 dark:via-teal-200 dark:to-white leading-tight">
+                    <h1
+                        class="text-lg font-black uppercase tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-700 to-slate-900 dark:from-emerald-400 dark:via-teal-200 dark:to-white leading-tight">
                         {{ env('APP_NAME') }}
                     </h1>
-                    <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate max-w-xs mx-auto mt-0.5">
+                    <p
+                        class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate max-w-xs mx-auto mt-0.5">
                         {{ $hospitalName }}
                     </p>
                 </div>
@@ -204,7 +222,8 @@
                                 class="w-full pl-10 sm:pl-11 pr-4 py-2.5 sm:py-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-300 dark:border-slate-700/80 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-semibold text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-3 focus:ring-emerald-500/15 transition-all shadow-inner" />
                         </div>
                         @error('username')
-                            <p class="mt-1 text-[11px] text-rose-500 dark:text-rose-400 flex items-center gap-1 font-semibold">
+                            <p
+                                class="mt-1 text-[11px] text-rose-500 dark:text-rose-400 flex items-center gap-1 font-semibold">
                                 <span class="icon-[solar--danger-circle-bold] text-xs"></span>
                                 <span>{{ $message }}</span>
                             </p>
@@ -228,13 +247,15 @@
                             <button type="button" @click="showPassword = !showPassword"
                                 class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:hover:text-white transition p-1 cursor-pointer"
                                 :title="showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'">
-                                <span x-show="!showPassword" class="icon-[solar--eye-bold-duotone] text-base sm:text-lg"></span>
+                                <span x-show="!showPassword"
+                                    class="icon-[solar--eye-bold-duotone] text-base sm:text-lg"></span>
                                 <span x-show="showPassword"
                                     class="icon-[solar--eye-closed-bold-duotone] text-base sm:text-lg"></span>
                             </button>
                         </div>
                         @error('password')
-                            <p class="mt-1 text-[11px] text-rose-500 dark:text-rose-400 flex items-center gap-1 font-semibold">
+                            <p
+                                class="mt-1 text-[11px] text-rose-500 dark:text-rose-400 flex items-center gap-1 font-semibold">
                                 <span class="icon-[solar--danger-circle-bold] text-xs"></span>
                                 <span>{{ $message }}</span>
                             </p>
@@ -243,9 +264,11 @@
 
                     {{-- Baris Remember Me & Bantuan --}}
                     <div class="flex items-center justify-between pt-0.5">
-                        <label for="login-remember" class="inline-flex items-center gap-2 cursor-pointer select-none group">
+                        <label for="login-remember"
+                            class="inline-flex items-center gap-2 cursor-pointer select-none group">
                             <div class="relative flex items-center justify-center">
-                                <input id="login-remember" type="checkbox" wire:model="rememberMe" class="sr-only peer" />
+                                <input id="login-remember" type="checkbox" wire:model="rememberMe"
+                                    class="sr-only peer" />
                                 <div
                                     class="w-4.5 h-4.5 rounded-md border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-950/70 group-hover:border-emerald-500/50 group-hover:bg-slate-200 dark:group-hover:bg-slate-900/80 peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-500/40 peer-checked:bg-gradient-to-tr peer-checked:from-emerald-600 peer-checked:to-teal-500 peer-checked:border-emerald-400 transition-all duration-200">
                                 </div>
@@ -254,7 +277,8 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                                 </svg>
                             </div>
-                            <span class="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 font-semibold group-hover:text-slate-900 dark:group-hover:text-white transition">
+                            <span
+                                class="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 font-semibold group-hover:text-slate-900 dark:group-hover:text-white transition">
                                 Ingatkan Saya
                             </span>
                         </label>
@@ -277,7 +301,8 @@
 
                             {{-- Kondisi Memuat / Verifikasi --}}
                             <span wire:loading wire:target="login" class="flex items-center gap-1.5 sm:gap-2">
-                                <span class="icon-[solar--refresh-bold-duotone] animate-spin text-base sm:text-lg"></span>
+                                <span
+                                    class="icon-[solar--refresh-bold-duotone] animate-spin text-base sm:text-lg"></span>
                                 <span>Memverifikasi...</span>
                             </span>
                         </button>
@@ -306,7 +331,8 @@
                         class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
                         <span class="icon-[solar--headphones-round-bold-duotone] text-base"></span>
                     </div>
-                    <h3 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Bantuan SIMRS</h3>
+                    <h3 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                        Bantuan SIMRS</h3>
                 </div>
                 <button type="button" @click="showHelp = false"
                     class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition p-1 cursor-pointer">
@@ -316,18 +342,22 @@
 
             <div class="space-y-3 py-3 text-xs text-slate-600 dark:text-slate-300">
                 <p class="leading-relaxed">
-                    Jika Anda lupa kata sandi atau mengalami kendala login, silakan hubungi tim IT SIMRS {{ $hospitalName }}:
+                    Jika Anda lupa kata sandi atau mengalami kendala login, silakan hubungi tim IT SIMRS
+                    {{ $hospitalName }}:
                 </p>
 
-                <div class="space-y-2 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5">
+                <div
+                    class="space-y-2 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/5">
                     <div class="flex items-center gap-2">
-                        <span class="icon-[solar--phone-bold-duotone] text-emerald-600 dark:text-emerald-400 text-sm"></span>
+                        <span
+                            class="icon-[solar--phone-bold-duotone] text-emerald-600 dark:text-emerald-400 text-sm"></span>
                         <span class="font-bold text-slate-800 dark:text-white">WhatsApp:</span>
                         <a href="https://wa.me/{{ $waNumber }}" target="_blank"
                             class="text-emerald-600 dark:text-emerald-400 hover:underline font-semibold">{{ $contactNumber }}</a>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="icon-[solar--letter-bold-duotone] text-teal-600 dark:text-teal-400 text-sm"></span>
+                        <span
+                            class="icon-[solar--letter-bold-duotone] text-teal-600 dark:text-teal-400 text-sm"></span>
                         <span class="font-bold text-slate-800 dark:text-white">Email:</span>
                         <span class="text-slate-600 dark:text-slate-300">{{ $contactEmail }}</span>
                     </div>

@@ -107,12 +107,27 @@ Route::middleware('auth')
             ->middleware('permission:nutrition show')
             ->name('nutrition');
 
-        Route::get('/laboratorium', \App\Livewire\Laboratory\Index::class)
-            ->middleware('permission:laboratory show')
-            ->name('laboratory');
-        Route::get('/radiologi', \App\Livewire\Radiology\Index::class)
-            ->middleware('permission:radiology show')
-            ->name('radiology');
+        Route::prefix('laboratorium')
+            ->as('laboratory')
+            ->group(function () {
+                Route::get('/', \App\Livewire\Laboratory\Index::class)
+                    ->middleware('permission:laboratory show')
+                    ->name('');
+                Route::get('/rekap', \App\Livewire\Laboratory\Recap::class)
+                    ->middleware('permission:laboratory recap')
+                    ->name('.recap');
+            });
+
+        Route::prefix('radiologi')
+            ->as('radiology')
+            ->group(function () {
+                Route::get('/', \App\Livewire\Radiology\Index::class)
+                    ->middleware('permission:radiology show')
+                    ->name('');
+                Route::get('/rekap', \App\Livewire\Radiology\Recap::class)
+                    ->middleware('permission:radiology recap')
+                    ->name('.recap');
+            });
         Route::prefix('farmasi')
             ->as('pharmacy')
             ->group(function () {
@@ -124,7 +139,7 @@ Route::middleware('auth')
                     ->name('.recap');
             });
 
-        // LAPORAN KEUANGAN
+        // LAPORAN
         Route::get('/laporan-keuangan', \App\Livewire\FinancialReport\Index::class)
             ->middleware('permission:financial-report show')
             ->name('financial-report');
@@ -134,6 +149,11 @@ Route::middleware('auth')
         Route::get('/laporan-indikator', \App\Livewire\IndicatorMatrix\Index::class)
             ->middleware('permission:indicator-matrix show')
             ->name('indicator-matrix');
+        Route::get('/laporan-indikator-penunjang', \App\Livewire\Ancillary\YearlyMatrix::class)
+            ->middleware('permission:indicator-matrix show|laboratory recap|radiology recap|laboratory show|radiology show')
+            ->name('ancillary.yearly-matrix');
+        Route::get('/penunjang/matriks-tahunan', \App\Livewire\Ancillary\YearlyMatrix::class)
+            ->middleware('permission:indicator-matrix show|laboratory recap|radiology recap|laboratory show|radiology show');
 
         Route::get('/icd', \App\Livewire\Icd\Recap::class)
             ->middleware('permission:icd recap')

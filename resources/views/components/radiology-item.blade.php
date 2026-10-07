@@ -11,10 +11,12 @@
         <x-detail-item icon="i-ph-hash" label="No Rawat" :value="$record['layanan']['no_rawat']" />
         <x-detail-item icon="i-ph-radioactive" label="Jenis Pemeriksaan"
             :value="$record['layanan']['jenis_pemeriksaan']" />
+        <x-detail-item icon="i-ph-broadcast" label="Modality"
+            :value="$record['layanan']['modality']" />
         <x-detail-item icon="i-ph-calendar" label="Tanggal Periksa"
             :value="$record['layanan']['tgl_periksa']" />
         <x-detail-item icon="i-ph-clock" label="Jam" :value="$record['layanan']['jam']" />
-        <x-detail-item icon="i-ph-stethoscope" label="Dokter" :value="$record['dokter']['nama_dokter']" />
+        <x-detail-item icon="i-ph-stethoscope" label="Dokter Perujuk" :value="$record['dokter']['nama_dokter']" />
         <x-detail-item icon="i-ph-money" label="Biaya"
             :value="'Rp ' . number_format($record['layanan']['biaya'], 0, ',', '.')" />
     </div>

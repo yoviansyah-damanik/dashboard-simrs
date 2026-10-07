@@ -180,17 +180,39 @@ class Sidebar extends Component
                     [
                         [
                             'title' => 'Laboratorium',
-                            'href' => route('laboratory'),
                             'icon' => 'i-medical-icon-i-pathology',
-                            'isActive' => request()->routeIs('laboratory'),
-                            'isShown' => auth()->user()->hasPermissionTo('laboratory show')
+                            'items' => [
+                                [
+                                    'title' => 'Data Pemeriksaan',
+                                    'href' => route('laboratory'),
+                                    'isActive' => request()->routeIs('laboratory'),
+                                    'isShown' => auth()->user()->hasPermissionTo('laboratory show')
+                                ],
+                                [
+                                    'title' => 'Rekap Laboratorium',
+                                    'href' => route('laboratory.recap'),
+                                    'isActive' => request()->routeIs('laboratory.recap'),
+                                    'isShown' => auth()->user()->hasPermissionTo('laboratory recap')
+                                ]
+                            ]
                         ],
                         [
                             'title' => 'Radiologi',
-                            'href' => route('radiology'),
                             'icon' => 'i-medical-icon-i-radiology',
-                            'isActive' => request()->routeIs('radiology'),
-                            'isShown' => auth()->user()->hasPermissionTo('radiology show')
+                            'items' => [
+                                [
+                                    'title' => 'Data Pemeriksaan',
+                                    'href' => route('radiology'),
+                                    'isActive' => request()->routeIs('radiology'),
+                                    'isShown' => auth()->user()->hasPermissionTo('radiology show')
+                                ],
+                                [
+                                    'title' => 'Rekap Radiologi',
+                                    'href' => route('radiology.recap'),
+                                    'isActive' => request()->routeIs('radiology.recap'),
+                                    'isShown' => auth()->user()->hasPermissionTo('radiology recap')
+                                ]
+                            ]
                         ],
                         [
                             'title' => 'Farmasi',
@@ -280,6 +302,13 @@ class Sidebar extends Component
                         'icon' => 'i-ph-chart-line',
                         'isActive' => request()->routeIs('indicator-matrix'),
                         'isShown' => auth()->user()->hasPermissionTo('indicator-matrix show')
+                    ],
+                    [
+                        'title' => 'Matriks Indikator Penunjang',
+                        'href' => route('ancillary.yearly-matrix'),
+                        'icon' => 'i-ph-chart-pie-slice',
+                        'isActive' => request()->routeIs('ancillary.yearly-matrix'),
+                        'isShown' => auth()->user()->hasAnyPermission(['indicator-matrix show', 'laboratory recap', 'radiology recap', 'laboratory show', 'radiology show'])
                     ],
                     [
                         'title' => 'Pendapatan',

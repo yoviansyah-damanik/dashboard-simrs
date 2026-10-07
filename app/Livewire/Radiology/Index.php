@@ -26,6 +26,9 @@ class Index extends Component
     public string $status;
 
     #[Url]
+    public string $modality;
+
+    #[Url]
     public string $gender;
 
     #[Url]
@@ -33,6 +36,7 @@ class Index extends Component
 
     public array $genders;
     public array $statuses;
+    public array $modalities;
     public array $limits;
 
     public function mount(): void
@@ -49,6 +53,9 @@ class Index extends Component
         $this->statuses = RadiologyRepository::getRadiologyStatuses();
         $this->status = $this->statuses[0]['value'];
 
+        $this->modalities = RadiologyRepository::getRadiologyModalities();
+        $this->modality = $this->modalities[0]['value'];
+
         $this->limits = FilterHelper::getPerPageList();
         $this->limit = $this->limits[0];
     }
@@ -61,6 +68,7 @@ class Index extends Component
             limit: (int) $this->limit,
             search: $this->search,
             status: $this->status,
+            modality: $this->modality,
             gender: $this->gender
         );
 

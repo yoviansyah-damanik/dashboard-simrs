@@ -10,9 +10,10 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-3 gap-3">
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <x-form.select label="Perpage" block :items="$limits" wire:model.live='limit' />
         <x-form.select label="Status" block :items="$statuses" wire:model.live='status' />
+        <x-form.select label="Modality" block :items="$modalities" wire:model.live='modality' />
         <x-form.select label="Jenis Kelamin" block :items="$genders" wire:model.live='gender' />
     </div>
 

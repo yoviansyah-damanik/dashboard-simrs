@@ -110,7 +110,7 @@
                     'label' => 'IGD',
                     'value' => $s['igd'],
                     'sub'   => 'Pengunjung: ' . number_format($s['total_pengunjung_igd'], 0, ',', '.'),
-                    'icon'  => 'icon-[solar--ambulance-bold-duotone]',
+                    'icon'  => 'icon-[ph--ambulance-duotone]',
                     'color' => 'text-amber-600 bg-amber-500/10'
                 ],
                 [

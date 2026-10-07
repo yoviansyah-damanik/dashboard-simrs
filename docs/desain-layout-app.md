@@ -97,4 +97,14 @@
       - Toolbar pencarian langsung (*live search*) nomor bed/nama bangsal dan tombol filter cepat (*Semua, Tersedia, Terisi*).
       - Kisi kartu bed responsif (2 kolom di mobile, 3–6 kolom di desktop) menampilkan status, nomor kamar, nama bangsal, dan tarif.
       - Dukungan navigasi tombol tutup dan penutupan dengan tombol Escape atau klik di luar modal.
+    - **Sistem Ikon Kategori Kelas Kamar** ([StatusHelper::getRoomClassMeta](file:///d:/WebApps/dashboard-simrs/app/Helpers/StatusHelper.php)):
+      - VIP / VVIP: `icon-[solar--crown-star-bold-duotone]` (amber).
+      - Kelas 1: `icon-[ph--number-circle-one-duotone]` (sky).
+      - Kelas 2: `icon-[ph--number-circle-two-duotone]` (teal).
+      - Kelas 3: `icon-[ph--number-circle-three-duotone]` (emerald).
+      - ICU / Intensif: `icon-[solar--heart-pulse-bold-duotone]` (rose).
+      - HCU: `icon-[solar--pulse-2-bold-duotone]` (orange).
+      - Ruang Isolasi: `icon-[solar--shield-cross-bold-duotone]` (violet).
+      - Transit IGD / Non-Kelas: `icon-[solar--siren-bold-duotone]` (cyan).
+      - Sinkronisasi visual otomatis pada kartu kelas, tabel komparasi, dan header dialog modal.
 

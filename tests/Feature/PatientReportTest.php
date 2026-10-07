@@ -43,4 +43,33 @@ class PatientReportTest extends TestCase
             ->assertSee('Desember')
             ->assertSee('TOTAL TAHUN');
     }
+
+    public function test_patient_report_trend_and_summary_math_balances(): void
+    {
+        $this->authenticateUser();
+
+        $summary = \App\Repository\PatientReportRepository::getSummary('2024-01-01', '2024-01-31');
+        $this->assertEquals(
+            $summary['total_kunjungan'],
+            $summary['rawat_jalan'] + $summary['igd'] + $summary['rawat_inap'],
+            'Summary total kunjungan must equal rawat jalan (poli) + igd + rawat inap'
+        );
+        $this->assertEquals(
+            $summary['total_rawat_jalan'],
+            $summary['rawat_jalan'] + $summary['igd'],
+            'Summary total rawat jalan must equal poli + igd'
+        );
+
+        $trend = \App\Repository\PatientReportRepository::getTrendData('2024-01-01', '2024-01-31');
+        for ($i = 0; $i < count($trend['labels']); $i++) {
+            $kunjungan = $trend['kunjungan'][$i];
+            $poli = $trend['rawatJalan'][$i];
+            $igd = $trend['igd'][$i];
+            $totRalan = $trend['totalRawatJalan'][$i];
+            $ranap = $trend['rawatInap'][$i];
+
+            $this->assertEquals($totRalan, $poli + $igd, "Day {$trend['labels'][$i]} totalRawatJalan must equal poli + igd");
+            $this->assertEquals($kunjungan, $totRalan + $ranap, "Day {$trend['labels'][$i]} kunjungan must equal totalRawatJalan + ranap");
+        }
+    }
 }

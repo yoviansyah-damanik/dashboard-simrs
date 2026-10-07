@@ -3,7 +3,7 @@
 @section('code', '503')
 @section('title', 'Layanan Dalam Pemeliharaan')
 
-@section('icon_class', 'icon-[solar--wrench-bold-duotone]')
+@section('icon_class', 'icon-[ph--wrench-duotone]')
 @section('badge_bg', 'bg-violet-500/10 dark:bg-violet-500/15')
 @section('badge_text', 'text-violet-600 dark:text-violet-400')
 @section('badge_border', 'border border-violet-500/20')

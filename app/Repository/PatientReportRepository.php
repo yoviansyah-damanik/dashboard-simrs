@@ -56,9 +56,10 @@ class PatientReportRepository implements PatientReportInterface
         return [
             "COUNT(DISTINCT CASE WHEN {$kondisi} THEN {$rp}.no_rkm_medis END) AS {$prefix}_p",
             "COUNT(DISTINCT CASE WHEN {$kondisi} AND {$statusLanjut} = 'Ralan' AND {$kdPoli} != 'IGDK' THEN {$rp}.no_rkm_medis END) AS {$prefix}_p_rj",
-            "COUNT(DISTINCT CASE WHEN {$kondisi} AND {$kdPoli} = 'IGDK' THEN {$rp}.no_rkm_medis END) AS {$prefix}_p_igd",
+            "COUNT(DISTINCT CASE WHEN {$kondisi} AND {$statusLanjut} = 'Ralan' AND {$kdPoli} = 'IGDK' THEN {$rp}.no_rkm_medis END) AS {$prefix}_p_igd",
+            "COUNT(DISTINCT CASE WHEN {$kondisi} AND {$statusLanjut} = 'Ralan' THEN {$rp}.no_rkm_medis END) AS {$prefix}_p_tot_rj",
             "COUNT(CASE WHEN {$kondisi} AND {$statusLanjut} = 'Ralan' AND {$kdPoli} != 'IGDK' THEN 1 END) AS {$prefix}_rj",
-            "COUNT(CASE WHEN {$kondisi} AND {$kdPoli} = 'IGDK' THEN 1 END) AS {$prefix}_igd",
+            "COUNT(CASE WHEN {$kondisi} AND {$statusLanjut} = 'Ralan' AND {$kdPoli} = 'IGDK' THEN 1 END) AS {$prefix}_igd",
             "COUNT(CASE WHEN {$kondisi} AND {$statusLanjut} = 'Ranap' THEN 1 END) AS {$prefix}_ri",
             "COUNT(CASE WHEN {$kondisi} AND {$stts} = 'Dirujuk' THEN 1 END) AS {$prefix}_ruj",
             "COUNT(CASE WHEN {$kondisi} AND {$stts} = 'Meninggal' THEN 1 END) AS {$prefix}_men",
@@ -72,6 +73,7 @@ class PatientReportRepository implements PatientReportInterface
     {
         $pRj  = (int) ($d["{$prefix}_p_rj"] ?? 0);
         $pIgd = (int) ($d["{$prefix}_p_igd"] ?? 0);
+        $pTotRj = isset($d["{$prefix}_p_tot_rj"]) ? (int) $d["{$prefix}_p_tot_rj"] : ($pRj + $pIgd);
         $rj   = (int) ($d["{$prefix}_rj"] ?? 0);
         $igd  = (int) ($d["{$prefix}_igd"] ?? 0);
 
@@ -79,7 +81,7 @@ class PatientReportRepository implements PatientReportInterface
             'pengunjung'             => (int) ($d["{$prefix}_p"] ?? 0),
             'pengunjung_ralan'       => $pRj,
             'pengunjung_igd'         => $pIgd,
-            'pengunjung_total_ralan' => $pRj + $pIgd,
+            'pengunjung_total_ralan' => $pTotRj,
             'rawat_jalan'            => $rj,
             'igd'                    => $igd,
             'total_rawat_jalan'      => $rj + $igd,
@@ -148,10 +150,11 @@ class PatientReportRepository implements PatientReportInterface
         $selects = [
             "COUNT(DISTINCT {$rp}.no_rkm_medis) AS total_p",
             "COUNT(DISTINCT CASE WHEN {$statusLanjut} = 'Ralan' AND {$kdPoli} != 'IGDK' THEN {$rp}.no_rkm_medis END) AS total_p_rj",
-            "COUNT(DISTINCT CASE WHEN {$kdPoli} = 'IGDK' THEN {$rp}.no_rkm_medis END) AS total_p_igd",
+            "COUNT(DISTINCT CASE WHEN {$statusLanjut} = 'Ralan' AND {$kdPoli} = 'IGDK' THEN {$rp}.no_rkm_medis END) AS total_p_igd",
+            "COUNT(DISTINCT CASE WHEN {$statusLanjut} = 'Ralan' THEN {$rp}.no_rkm_medis END) AS total_p_tot_rj",
             "COUNT({$rp}.no_rawat) AS total_k",
             "COUNT(CASE WHEN {$statusLanjut} = 'Ralan' AND {$kdPoli} != 'IGDK' THEN 1 END) AS total_rj",
-            "COUNT(CASE WHEN {$kdPoli} = 'IGDK' THEN 1 END) AS total_igd",
+            "COUNT(CASE WHEN {$statusLanjut} = 'Ralan' AND {$kdPoli} = 'IGDK' THEN 1 END) AS total_igd",
             "COUNT(CASE WHEN {$statusLanjut} = 'Ranap' THEN 1 END) AS total_ri",
             "COUNT(CASE WHEN {$stts} = 'Dirujuk' THEN 1 END) AS total_ruj",
             "COUNT(CASE WHEN {$stts} = 'Meninggal' THEN 1 END) AS total_men",
@@ -212,7 +215,7 @@ class PatientReportRepository implements PatientReportInterface
             'total_pengunjung'             => (int) $d['total_p'],
             'total_pengunjung_ralan'       => (int) $d['total_p_rj'],
             'total_pengunjung_igd'         => (int) $d['total_p_igd'],
-            'total_pengunjung_total_ralan' => ((int) $d['total_p_rj']) + ((int) $d['total_p_igd']),
+            'total_pengunjung_total_ralan' => (int) $d['total_p_tot_rj'],
             'total_kunjungan'              => (int) $d['total_k'],
             'rawat_jalan'                  => (int) $d['total_rj'],
             'igd'                          => (int) $d['total_igd'],
@@ -259,52 +262,102 @@ class PatientReportRepository implements PatientReportInterface
                 DATE_FORMAT({$rp}.{$tgl}, '{$format}') as periode,
                 COUNT(DISTINCT {$rp}.{$rm}) as pengunjung,
                 COUNT(DISTINCT CASE WHEN {$rp}.{$statusLanjut} = 'Ralan' AND {$rp}.{$kdPoli} != 'IGDK' THEN {$rp}.{$rm} END) as pengunjung_ralan,
-                COUNT(DISTINCT CASE WHEN {$rp}.{$kdPoli} = 'IGDK' THEN {$rp}.{$rm} END) as pengunjung_igd,
+                COUNT(DISTINCT CASE WHEN {$rp}.{$statusLanjut} = 'Ralan' AND {$rp}.{$kdPoli} = 'IGDK' THEN {$rp}.{$rm} END) as pengunjung_igd,
+                COUNT(DISTINCT CASE WHEN {$rp}.{$statusLanjut} = 'Ralan' THEN {$rp}.{$rm} END) as pengunjung_total_ralan,
                 COUNT({$rp}.{$rawat}) as kunjungan,
                 COUNT(CASE WHEN {$rp}.{$statusLanjut} = 'Ralan' AND {$rp}.{$kdPoli} != 'IGDK' THEN 1 END) as rawat_jalan,
-                COUNT(CASE WHEN {$rp}.{$kdPoli} = 'IGDK' THEN 1 END) as igd,
+                COUNT(CASE WHEN {$rp}.{$statusLanjut} = 'Ralan' AND {$rp}.{$kdPoli} = 'IGDK' THEN 1 END) as igd,
                 COUNT(CASE WHEN {$rp}.{$statusLanjut} = 'Ranap' THEN 1 END) as rawat_inap
             ")
             ->groupBy('periode')
             ->orderBy('periode')
-            ->get();
+            ->get()
+            ->keyBy('periode');
 
-        $labels          = [];
-        $fullLabels      = [];
-        $pengunjung      = [];
-        $pengunjungRalan = [];
-        $pengunjungIgd   = [];
-        $kunjungan       = [];
-        $rawatJalan      = [];
-        $igd             = [];
-        $rawatInap       = [];
-
-        $totalRawatJalan      = [];
+        $labels               = [];
+        $fullLabels           = [];
+        $pengunjung           = [];
+        $pengunjungRalan      = [];
+        $pengunjungIgd        = [];
         $pengunjungTotalRalan = [];
+        $kunjungan            = [];
+        $rawatJalan           = [];
+        $igd                  = [];
+        $totalRawatJalan      = [];
+        $rawatInap            = [];
 
-        foreach ($rows as $row) {
-            if ($isDaily) {
-                $c = Carbon::parse($row->periode);
-                $labels[]     = $c->format('d M');
-                $fullLabels[] = $c->translatedFormat('d F Y');
-            } else {
-                $c = Carbon::parse($row->periode . '-01');
-                $labels[]     = $c->translatedFormat('M Y');
-                $fullLabels[] = $c->translatedFormat('F Y');
+        if ($isDaily) {
+            $cursor = $startCarbon->copy();
+            while ($cursor->lte($endCarbon)) {
+                $pKey = $cursor->format('Y-m-d');
+                $row  = $rows->get($pKey);
+
+                $labels[]     = $cursor->format('d M');
+                $fullLabels[] = $cursor->translatedFormat('d F Y');
+
+                $pRalan    = $row ? (int) $row->pengunjung_ralan : 0;
+                $pIgd      = $row ? (int) $row->pengunjung_igd : 0;
+                $pTotRalan = $row ? (int) ($row->pengunjung_total_ralan ?? ($pRalan + $pIgd)) : 0;
+                $rJalan    = $row ? (int) $row->rawat_jalan : 0;
+                $rIgd      = $row ? (int) $row->igd : 0;
+
+                $pengunjung[]           = $row ? (int) $row->pengunjung : 0;
+                $pengunjungRalan[]      = $pRalan;
+                $pengunjungIgd[]        = $pIgd;
+                $pengunjungTotalRalan[] = $pTotRalan;
+                $kunjungan[]            = $row ? (int) $row->kunjungan : 0;
+                $rawatJalan[]           = $rJalan;
+                $igd[]                  = $rIgd;
+                $totalRawatJalan[]      = $rJalan + $rIgd;
+                $rawatInap[]            = $row ? (int) $row->rawat_inap : 0;
+
+                $cursor->addDay();
             }
-            $pengunjung[]           = (int) $row->pengunjung;
-            $pengunjungRalan[]      = (int) $row->pengunjung_ralan;
-            $pengunjungIgd[]        = (int) $row->pengunjung_igd;
-            $pengunjungTotalRalan[] = ((int) $row->pengunjung_ralan) + ((int) $row->pengunjung_igd);
-            $kunjungan[]            = (int) $row->kunjungan;
-            $rawatJalan[]           = (int) $row->rawat_jalan;
-            $igd[]                  = (int) $row->igd;
-            $totalRawatJalan[]      = ((int) $row->rawat_jalan) + ((int) $row->igd);
-            $rawatInap[]            = (int) $row->rawat_inap;
+        } else {
+            $cursor = $startCarbon->copy()->startOfMonth();
+            while ($cursor->lte($endCarbon)) {
+                $pKey = $cursor->format('Y-m');
+                $row  = $rows->get($pKey);
+
+                $labels[]     = $cursor->translatedFormat('M Y');
+                $fullLabels[] = $cursor->translatedFormat('F Y');
+
+                $pRalan    = $row ? (int) $row->pengunjung_ralan : 0;
+                $pIgd      = $row ? (int) $row->pengunjung_igd : 0;
+                $pTotRalan = $row ? (int) ($row->pengunjung_total_ralan ?? ($pRalan + $pIgd)) : 0;
+                $rJalan    = $row ? (int) $row->rawat_jalan : 0;
+                $rIgd      = $row ? (int) $row->igd : 0;
+
+                $pengunjung[]           = $row ? (int) $row->pengunjung : 0;
+                $pengunjungRalan[]      = $pRalan;
+                $pengunjungIgd[]        = $pIgd;
+                $pengunjungTotalRalan[] = $pTotRalan;
+                $kunjungan[]            = $row ? (int) $row->kunjungan : 0;
+                $rawatJalan[]           = $rJalan;
+                $igd[]                  = $rIgd;
+                $totalRawatJalan[]      = $rJalan + $rIgd;
+                $rawatInap[]            = $row ? (int) $row->rawat_inap : 0;
+
+                $cursor->addMonth();
+            }
         }
 
         $totalK = array_sum($kunjungan);
-        $totalP = array_sum($pengunjung);
+
+        // Menghitung distinct total pengunjung riil untuk seluruh rentang waktu
+        $distinctVisitors = DB::connection(self::KONEKSI)
+            ->table($rp)
+            ->where("{$rp}.{$stts}", '!=', 'Batal')
+            ->whereBetween("{$rp}.{$tgl}", [$startDate, $endDate])
+            ->selectRaw("
+                COUNT(DISTINCT {$rp}.{$rm}) as total_p,
+                COUNT(DISTINCT CASE WHEN {$rp}.{$statusLanjut} = 'Ralan' AND {$rp}.{$kdPoli} != 'IGDK' THEN {$rp}.{$rm} END) as total_p_rj,
+                COUNT(DISTINCT CASE WHEN {$rp}.{$statusLanjut} = 'Ralan' AND {$rp}.{$kdPoli} = 'IGDK' THEN {$rp}.{$rm} END) as total_p_igd,
+                COUNT(DISTINCT CASE WHEN {$rp}.{$statusLanjut} = 'Ralan' THEN {$rp}.{$rm} END) as total_p_tot_rj
+            ")
+            ->first();
+
+        $totalP = (int) ($distinctVisitors->total_p ?? 0);
         $avgK   = count($kunjungan) > 0 ? round($totalK / count($kunjungan), 1) : 0;
 
         $maxKunjungan = 0;
@@ -339,9 +392,9 @@ class PatientReportRepository implements PatientReportInterface
             'maxPeriode'           => $maxPeriode,
             'stats'                => [
                 'total_pengunjung'               => $totalP,
-                'total_pengunjung_ralan'         => array_sum($pengunjungRalan),
-                'total_pengunjung_igd'           => array_sum($pengunjungIgd),
-                'total_pengunjung_total_ralan'   => array_sum($pengunjungTotalRalan),
+                'total_pengunjung_ralan'         => (int) ($distinctVisitors->total_p_rj ?? 0),
+                'total_pengunjung_igd'           => (int) ($distinctVisitors->total_p_igd ?? 0),
+                'total_pengunjung_total_ralan'   => (int) ($distinctVisitors->total_p_tot_rj ?? 0),
                 'total_kunjungan'                => $totalK,
                 'total_rawat_jalan'              => array_sum($rawatJalan),
                 'total_igd'                      => array_sum($igd),
@@ -383,10 +436,11 @@ class PatientReportRepository implements PatientReportInterface
                 MONTH({$rp}.{$tgl}) as bulan,
                 COUNT(DISTINCT {$rm}) as pengunjung,
                 COUNT(DISTINCT CASE WHEN {$statusLanjut} = 'Ralan' AND {$kdPoli} != 'IGDK' THEN {$rm} END) as pengunjung_ralan,
-                COUNT(DISTINCT CASE WHEN {$kdPoli} = 'IGDK' THEN {$rm} END) as pengunjung_igd,
+                COUNT(DISTINCT CASE WHEN {$statusLanjut} = 'Ralan' AND {$kdPoli} = 'IGDK' THEN {$rm} END) as pengunjung_igd,
+                COUNT(DISTINCT CASE WHEN {$statusLanjut} = 'Ralan' THEN {$rm} END) as pengunjung_total_ralan,
                 COUNT({$rawat}) as kunjungan,
                 COUNT(CASE WHEN {$statusLanjut} = 'Ralan' AND {$kdPoli} != 'IGDK' THEN 1 END) as rawat_jalan,
-                COUNT(CASE WHEN {$kdPoli} = 'IGDK' THEN 1 END) as igd,
+                COUNT(CASE WHEN {$statusLanjut} = 'Ralan' AND {$kdPoli} = 'IGDK' THEN 1 END) as igd,
                 COUNT(CASE WHEN {$statusLanjut} = 'Ranap' THEN 1 END) as rawat_inap,
                 COUNT(CASE WHEN pt.no_rkm_medis IS NOT NULL THEN 1 END) as tni,
                 COUNT(CASE WHEN pt.no_rkm_medis IS NULL AND pp.no_rkm_medis IS NOT NULL THEN 1 END) as polri,
@@ -398,6 +452,18 @@ class PatientReportRepository implements PatientReportInterface
             ->orderBy('bulan')
             ->get()
             ->keyBy('bulan');
+
+        $yearDistinct = DB::connection(self::KONEKSI)
+            ->table($rp)
+            ->where($stts, '!=', 'Batal')
+            ->whereYear("{$rp}.{$tgl}", $year)
+            ->selectRaw("
+                COUNT(DISTINCT {$rm}) as total_p,
+                COUNT(DISTINCT CASE WHEN {$statusLanjut} = 'Ralan' AND {$kdPoli} != 'IGDK' THEN {$rm} END) as total_p_rj,
+                COUNT(DISTINCT CASE WHEN {$statusLanjut} = 'Ralan' AND {$kdPoli} = 'IGDK' THEN {$rm} END) as total_p_igd,
+                COUNT(DISTINCT CASE WHEN {$statusLanjut} = 'Ralan' THEN {$rm} END) as total_p_tot_rj
+            ")
+            ->first();
 
         $monthNames = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
@@ -425,6 +491,7 @@ class PatientReportRepository implements PatientReportInterface
             $pengunjung      = (int) ($row->pengunjung ?? 0);
             $pengunjungRalan = (int) ($row->pengunjung_ralan ?? 0);
             $pengunjungIgd   = (int) ($row->pengunjung_igd ?? 0);
+            $pTotRalan       = (int) ($row->pengunjung_total_ralan ?? ($pengunjungRalan + $pengunjungIgd));
             $kunjungan       = (int) ($row->kunjungan ?? 0);
             $rawatJalan      = (int) ($row->rawat_jalan ?? 0);
             $igd             = (int) ($row->igd ?? 0);
@@ -441,7 +508,7 @@ class PatientReportRepository implements PatientReportInterface
                 'pengunjung'             => $pengunjung,
                 'pengunjung_ralan'       => $pengunjungRalan,
                 'pengunjung_igd'         => $pengunjungIgd,
-                'pengunjung_total_ralan' => $pengunjungRalan + $pengunjungIgd,
+                'pengunjung_total_ralan' => $pTotRalan,
                 'kunjungan'              => $kunjungan,
                 'rawat_jalan'            => $rawatJalan,
                 'igd'                    => $igd,
@@ -472,10 +539,10 @@ class PatientReportRepository implements PatientReportInterface
             'year'   => $year,
             'months' => $items,
             'totals' => [
-                'pengunjung'              => $totalPengunjung,
-                'pengunjung_ralan'        => $totalPengunjungRalan,
-                'pengunjung_igd'          => $totalPengunjungIgd,
-                'pengunjung_total_ralan'  => $totalPengunjungRalan + $totalPengunjungIgd,
+                'pengunjung'              => (int) ($yearDistinct->total_p ?? $totalPengunjung),
+                'pengunjung_ralan'        => (int) ($yearDistinct->total_p_rj ?? $totalPengunjungRalan),
+                'pengunjung_igd'          => (int) ($yearDistinct->total_p_igd ?? $totalPengunjungIgd),
+                'pengunjung_total_ralan'  => (int) ($yearDistinct->total_p_tot_rj ?? ($totalPengunjungRalan + $totalPengunjungIgd)),
                 'kunjungan'               => $totalKunjungan,
                 'rawat_jalan'             => $totalRawatJalan,
                 'igd'                     => $totalIgd,

@@ -8,42 +8,10 @@
 
 @php
     $percentage = $total > 0 ? round(($filled / $total) * 100, 0) : 0;
-    $normalized = strtoupper(trim($title));
-
-    // Pemilihan ikon & nuansa tematik sesuai kategori kelas kamar
-    if (str_contains($normalized, 'VVIP') || str_contains($normalized, 'VIP')) {
-        $iconClass = 'icon-[solar--crown-star-bold-duotone]';
-        $iconColor = 'text-amber-500 bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20';
-        $glowGradient = 'from-amber-500 to-amber-600 shadow-amber-500/25';
-    } elseif (str_contains($normalized, 'KELAS 1') || str_contains($normalized, 'KELAS I') || str_contains($normalized, 'KL 1')) {
-        $iconClass = 'icon-[solar--medal-star-circle-bold-duotone]';
-        $iconColor = 'text-sky-500 bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/20';
-        $glowGradient = 'from-sky-500 to-blue-600 shadow-sky-500/25';
-    } elseif (str_contains($normalized, 'KELAS 2') || str_contains($normalized, 'KELAS II') || str_contains($normalized, 'KL 2')) {
-        $iconClass = 'icon-[solar--bedside-table-2-bold-duotone]';
-        $iconColor = 'text-teal-500 bg-teal-500/10 dark:bg-teal-500/15 border border-teal-500/20';
-        $glowGradient = 'from-teal-500 to-emerald-600 shadow-teal-500/25';
-    } elseif (str_contains($normalized, 'KELAS 3') || str_contains($normalized, 'KELAS III') || str_contains($normalized, 'KL 3')) {
-        $iconClass = 'icon-[solar--bed-bold-duotone]';
-        $iconColor = 'text-emerald-500 bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20';
-        $glowGradient = 'from-emerald-500 to-teal-600 shadow-emerald-500/25';
-    } elseif (str_contains($normalized, 'ICU') || str_contains($normalized, 'ICCU') || str_contains($normalized, 'NICU') || str_contains($normalized, 'PICU')) {
-        $iconClass = 'icon-[solar--heart-pulse-bold-duotone]';
-        $iconColor = 'text-rose-500 bg-rose-500/10 dark:bg-rose-500/15 border border-rose-500/20';
-        $glowGradient = 'from-rose-500 to-red-600 shadow-rose-500/25';
-    } elseif (str_contains($normalized, 'HCU')) {
-        $iconClass = 'icon-[solar--pulse-2-bold-duotone]';
-        $iconColor = 'text-orange-500 bg-orange-500/10 dark:bg-orange-500/15 border border-orange-500/20';
-        $glowGradient = 'from-orange-500 to-amber-600 shadow-orange-500/25';
-    } elseif (str_contains($normalized, 'ISOLASI')) {
-        $iconClass = 'icon-[solar--shield-cross-bold-duotone]';
-        $iconColor = 'text-violet-500 bg-violet-500/10 dark:bg-violet-500/15 border border-violet-500/20';
-        $glowGradient = 'from-violet-500 to-purple-600 shadow-violet-500/25';
-    } else {
-        $iconClass = 'icon-[solar--hospital-bold-duotone]';
-        $iconColor = 'text-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/15 border border-indigo-500/20';
-        $glowGradient = 'from-indigo-500 to-blue-600 shadow-indigo-500/25';
-    }
+    $meta = \App\Helpers\StatusHelper::getRoomClassMeta($title);
+    $iconClass = $meta['icon'];
+    $iconColor = $meta['iconColor'];
+    $glowGradient = $meta['glowGradient'];
 @endphp
 
 <div @class([

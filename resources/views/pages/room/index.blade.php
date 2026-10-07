@@ -131,15 +131,21 @@
                     $classTerisi = $room['terisi'];
                     $classTersedia = $room['tersedia'];
                     $classPct = $classTotal > 0 ? round(($classTerisi / $classTotal) * 100, 1) : 0;
+                    $classMeta = \App\Helpers\StatusHelper::getRoomClassMeta($key);
                 @endphp
                 <div
                     class="p-3 sm:p-3.5 rounded-xl bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition hover:bg-slate-100/60 dark:hover:bg-slate-800/60">
-                    <div class="sm:w-48 shrink-0 flex items-center justify-between sm:justify-start gap-2">
-                        <span
-                            class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight">{{ $key }}</span>
-                        <span
-                            class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400">({{ $classTotal }}
-                            Bed)</span>
+                    <div class="sm:w-56 shrink-0 flex items-center justify-between sm:justify-start gap-2.5">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 {{ $classMeta['iconColor'] }}">
+                            <span class="{{ $classMeta['icon'] }} text-base sm:text-lg"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <span
+                                class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-tight block truncate">{{ $key }}</span>
+                            <span
+                                class="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 block">({{ $classTotal }}
+                                Bed)</span>
+                        </div>
                     </div>
 
                     {{-- Visual Progress Bar --}}
@@ -183,6 +189,7 @@
             $activeTersedia = $activeRoomsCollection->where('status', 'KOSONG')->count();
             $activeTerisi = $activeRoomsCollection->where('status', '!=', 'KOSONG')->count();
             $activeBOR = $activeTotal > 0 ? round(($activeTerisi / $activeTotal) * 100, 1) : 0;
+            $activeMeta = \App\Helpers\StatusHelper::getRoomClassMeta($roomActive);
         @endphp
 
         <div x-data="{
@@ -221,8 +228,8 @@
                     class="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between gap-3 shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
                     <div class="flex items-center gap-3 min-w-0">
                         <div
-                            class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 shrink-0">
-                            <span class="icon-[solar--bed-bold-duotone] text-xl sm:text-2xl"></span>
+                            class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br text-white flex items-center justify-center shadow-md shrink-0 {{ $activeMeta['glowGradient'] }}">
+                            <span class="{{ $activeMeta['icon'] }} text-xl sm:text-2xl"></span>
                         </div>
                         <div class="min-w-0">
                             <div class="flex items-center gap-2">

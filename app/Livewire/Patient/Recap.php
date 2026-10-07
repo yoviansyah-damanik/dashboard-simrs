@@ -177,7 +177,7 @@ class Recap extends Component
             ->groupBy('kelompok_kode')
             ->get()
             ->map(function ($item) {
-                $item->kelompok = SirsHelper::ageGroupCategoryLabels()[$item->kelompok_kode] ?? $item->kelompok_kode;
+                $item->kelompok = SirsHelper::ageGroupCategoryLabels()[$item->kelompok_kode] ?? ($item->kelompok_kode ?: 'Tidak Diketahui');
                 return $item;
             })
             ->sortBy(fn($item) => array_search($item->kelompok_kode, array_keys(SirsHelper::getAgeGroupCategories())))

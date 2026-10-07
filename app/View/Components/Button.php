@@ -27,7 +27,7 @@ class Button extends Component
         public string $iconPosition = 'left',
     ) {
         $this->baseClass = join(' ', [
-            'relative font-semibold transition duration-300 text-base cursor-pointer',
+            'relative font-semibold transition duration-300 cursor-pointer',
             $this->sizeVariant($size),
             $block ? 'w-full text-center' : '',
             $this->bgClass = $this->colorVariant($color),
@@ -73,9 +73,11 @@ class Button extends Component
     public function sizeVariant($size)
     {
         $sizeVariants = [
+            'xs' => 'text-xs py-1.5 px-2.5',
             'sm' => 'text-sm py-1.5 px-2',
-            'md' => 'py-2.5 px-5'
+            'md' => 'text-base py-2.5 px-5',
+            'lg' => 'text-lg py-3 px-6',
         ];
-        return $sizeVariants[$size];
+        return $sizeVariants[$size] ?? $sizeVariants['md'];
     }
 }

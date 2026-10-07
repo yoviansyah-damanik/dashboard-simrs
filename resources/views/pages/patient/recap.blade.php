@@ -335,7 +335,7 @@
 
                     <x-recap.in-figures title="Kelompok Usia">
                         @foreach ($this->summary['age_groups'] as $age)
-                            <x-box :title="$age->kelompok" :value="number_format($age->total)"
+                            <x-box :title="$age->kelompok ?: 'Tidak Diketahui'" :value="number_format($age->total)"
                                 icon="icon-[solar--calendar-bold-duotone]" />
                         @endforeach
                     </x-recap.in-figures>
@@ -351,7 +351,7 @@
 
                     <x-recap.in-figures title="Penjamin / Pembayar">
                         @foreach ($this->demographics['pay_type'] as $item)
-                            <x-box :title="$item->png_jawab" :value="number_format($item->total)"
+                            <x-box :title="$item->png_jawab ?: '-'" :value="number_format($item->total)"
                                 icon="icon-[solar--wallet-money-bold-duotone]" />
                         @endforeach
                     </x-recap.in-figures>
@@ -386,7 +386,7 @@
 
                     <x-recap.in-figures title="Sebaran Provinsi">
                         @foreach ($this->summary['charts']['region']['labels'] as $index => $label)
-                            <x-box :title="$label" :value="number_format($this->summary['charts']['region']['datasets'][0]['data'][$index])"
+                            <x-box :title="$label ?: '-'" :value="number_format($this->summary['charts']['region']['datasets'][0]['data'][$index] ?? 0)"
                                 icon="icon-[solar--map-point-bold-duotone]" />
                         @endforeach
                     </x-recap.in-figures>

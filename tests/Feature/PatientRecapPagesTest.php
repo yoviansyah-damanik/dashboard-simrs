@@ -48,4 +48,17 @@ class PatientRecapPagesTest extends TestCase
             ->call('switchTab', 'snapshot')
             ->assertSee('Kapasitas Bed Keseluruhan');
     }
+
+    public function test_patient_demographics_recap_can_render_chart_and_figures(): void
+    {
+        $this->authenticateUser();
+
+        Livewire::test(\App\Livewire\Patient\Recap::class)
+            ->assertStatus(200)
+            ->assertSee('Data Pasien')
+            ->set('mainView', 'figures')
+            ->assertStatus(200)
+            ->assertSee('Jenis Kelamin')
+            ->assertSee('Kelompok Usia');
+    }
 }

@@ -12,14 +12,15 @@ class Box extends Component
      * Create a new component instance.
      */
     public function __construct(
-        public string $title,
-        public string $value,
+        public ?string $title = '-',
+        public string|int|float|null $value = '0',
         public string $icon = 'i-ph-bounding-box',
         public ?float $percentage = null,
         public bool $isUp = true,
         public bool $isActive = false
     ) {
-        //
+        $this->title = $this->title ?: '-';
+        $this->value = (string) ($this->value ?? '0');
     }
 
     /**

@@ -25,6 +25,7 @@
    - Widget jam dilengkapi kapsul ikon tersendiri (`w-6 h-6 rounded-lg bg-emerald-500/15`) serta tipografi waktu dan tanggal yang bersih dan proporsional.
    - Ditambahkan garis pembatas vertikal (*separator*) minimalis (`h-5 w-px`) di antara widget jam dan tombol akun pengguna.
    - Avatar profil bulat (*rounded-full ring-2 ring-emerald-500/40*) dengan *dropdown* mengambang modern.
+   - Tombol **Log Out** ([logout.blade.php](file:///d:/WebApps/dashboard-simrs/resources/views/pages/auth/logout.blade.php)) disesuaikan ukurannya secara proporsional (`text-xs`, `py-2 px-3`, `rounded-xl`) dengan ikon `solar--logout-2-bold-duotone`, efek hover interaktif, dan status *loading* saat proses keluar.
 
 4. **Footer ([footer.blade.php](file:///d:/WebApps/dashboard-simrs/resources/views/components/footer.blade.php))**:
    - Didesain **tetap di bawah (*sticky/docked*)** di dasar jendela layar dengan `sticky bottom-0 shrink-0 z-20`.

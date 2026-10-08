@@ -490,6 +490,13 @@ class OutpatientReportRepository implements OutpatientReportInterface
             ->limit(10)
             ->get();
 
+        $satuan = $satuanRows->map(function ($r) {
+            return [
+                'nama_satuan' => (string) $r->nama_satuan,
+                'total' => (int) $r->total,
+            ];
+        })->toArray();
+
         return [
             'summary' => [
                 'total' => $totalDinas,
@@ -504,7 +511,7 @@ class OutpatientReportRepository implements OutpatientReportInterface
             ],
             'polyclinics' => $polyclinics,
             'categories' => $categories,
-            'satuan' => $satuanRows->toArray(),
+            'satuan' => $satuan,
         ];
     }
 }

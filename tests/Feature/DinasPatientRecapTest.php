@@ -92,4 +92,25 @@ class DinasPatientRecapTest extends TestCase
         $resMed->assertStatus(200);
         $resMed->assertSee('Pasien Dinas', false);
     }
+
+    /**
+     * Memastikan komponen Livewire dapat berganti tab ke rekap_dinas tanpa error stdClass.
+     */
+    public function test_livewire_can_switch_to_rekap_dinas_tab(): void
+    {
+        $user = $this->getAuthUser();
+        $this->actingAs($user);
+
+        \Livewire\Livewire::test(\App\Livewire\Inpatient\Report::class)
+            ->assertStatus(200)
+            ->call('switchTab', 'rekap_dinas')
+            ->assertStatus(200)
+            ->assertSee('Sebaran Pasien Dinas per Bangsal');
+
+        \Livewire\Livewire::test(\App\Livewire\Outpatient\Report::class)
+            ->assertStatus(200)
+            ->call('switchTab', 'rekap_dinas')
+            ->assertStatus(200)
+            ->assertSee('Rekapitulasi Kunjungan Pasien Dinas per Poliklinik');
+    }
 }

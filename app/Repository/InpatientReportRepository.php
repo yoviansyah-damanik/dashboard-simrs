@@ -443,6 +443,13 @@ class InpatientReportRepository implements InpatientReportInterface
             ->limit(10)
             ->get();
 
+        $satuan = $satuanRows->map(function ($r) {
+            return [
+                'nama_satuan' => (string) $r->nama_satuan,
+                'total' => (int) $r->total,
+            ];
+        })->toArray();
+
         return [
             'summary' => [
                 'total' => $totalDinas,
@@ -453,7 +460,7 @@ class InpatientReportRepository implements InpatientReportInterface
             ],
             'wards' => $wards,
             'categories' => $categories,
-            'satuan' => $satuanRows->toArray(),
+            'satuan' => $satuan,
         ];
     }
 }

@@ -657,8 +657,8 @@
                                 @forelse ($dinasData['satuan'] as $sIdx => $sat)
                                     <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/40">
                                         <td class="px-4 py-3 text-center font-bold text-gray-500 text-xs">{{ $sIdx + 1 }}</td>
-                                        <td class="px-4 py-3 font-bold text-gray-800 dark:text-white">{{ $sat['nama_satuan'] }}</td>
-                                        <td class="px-4 py-3 text-center font-black text-emerald-600">{{ number_format($sat['total'], 0, ',', '.') }}</td>
+                                        <td class="px-4 py-3 font-bold text-gray-800 dark:text-white">{{ data_get($sat, 'nama_satuan') }}</td>
+                                        <td class="px-4 py-3 text-center font-black text-emerald-600">{{ number_format(data_get($sat, 'total', 0), 0, ',', '.') }}</td>
                                     </tr>
                                 @empty
                                     <tr>

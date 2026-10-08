@@ -1167,10 +1167,10 @@
                                     <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/20">
                                         <td class="py-2 px-3 text-center text-gray-500">{{ $sIdx + 1 }}</td>
                                         <td class="py-2 px-3 font-bold text-gray-800 dark:text-white truncate max-w-[180px]">
-                                            {{ $sat->nama_satuan }}
+                                            {{ data_get($sat, 'nama_satuan') }}
                                         </td>
                                         <td class="py-2 px-3 text-center font-black text-purple-700 dark:text-purple-400">
-                                            {{ number_format($sat->total, 0, ',', '.') }}
+                                            {{ number_format(data_get($sat, 'total', 0), 0, ',', '.') }}
                                         </td>
                                     </tr>
                                 @empty

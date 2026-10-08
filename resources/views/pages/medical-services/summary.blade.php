@@ -627,13 +627,13 @@
                                     @forelse ($dinas['satuan'] as $sat)
                                         <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/20">
                                             <td class="py-2 px-3 font-bold text-gray-800 dark:text-white truncate max-w-[150px]">
-                                                {{ $sat->nama_satuan }}
+                                                {{ data_get($sat, 'nama_satuan') }}
                                             </td>
-                                            <td class="py-2 px-2 text-center text-sky-600 dark:text-sky-400 font-semibold">{{ number_format($sat->poli, 0, ',', '.') }}</td>
-                                            <td class="py-2 px-2 text-center text-rose-600 dark:text-rose-400 font-semibold">{{ number_format($sat->igd, 0, ',', '.') }}</td>
-                                            <td class="py-2 px-2 text-center text-amber-600 dark:text-amber-400 font-semibold">{{ number_format($sat->ranap, 0, ',', '.') }}</td>
+                                            <td class="py-2 px-2 text-center text-sky-600 dark:text-sky-400 font-semibold">{{ number_format(data_get($sat, 'poli', 0), 0, ',', '.') }}</td>
+                                            <td class="py-2 px-2 text-center text-rose-600 dark:text-rose-400 font-semibold">{{ number_format(data_get($sat, 'igd', 0), 0, ',', '.') }}</td>
+                                            <td class="py-2 px-2 text-center text-amber-600 dark:text-amber-400 font-semibold">{{ number_format(data_get($sat, 'ranap', 0), 0, ',', '.') }}</td>
                                             <td class="py-2 px-3 text-center font-black text-purple-700 dark:text-purple-400">
-                                                {{ number_format($sat->total, 0, ',', '.') }}
+                                                {{ number_format(data_get($sat, 'total', 0), 0, ',', '.') }}
                                             </td>
                                         </tr>
                                     @empty

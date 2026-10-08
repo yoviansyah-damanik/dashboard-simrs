@@ -197,4 +197,26 @@ class Index extends Component
             'selectedYear' => $this->selectedYear,
         ])->title('Laporan Kunjungan dan Pengunjung');
     }
+
+    /**
+     * Ekspor laporan kunjungan pasien ke format PDF resmi
+     */
+    public function exportPdf()
+    {
+        set_time_limit(0);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.patient-monthly-report-pdf', [
+            'summary' => $this->summary(),
+            'startDate' => \Carbon\Carbon::parse($this->startDate)->translatedFormat('d F Y'),
+            'endDate' => \Carbon\Carbon::parse($this->endDate)->translatedFormat('d F Y'),
+            'printedAt' => now()->translatedFormat('d F Y H:i'),
+            'printedBy' => auth()->user()->name ?? 'Petugas Rekam Medis SIMRS',
+        ])->setPaper('a4', 'portrait');
+
+        $filename = 'laporan-kunjungan-pasien-' . $this->startDate . '-sd-' . $this->endDate . '.pdf';
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->stream();
+        }, $filename);
+    }
 }

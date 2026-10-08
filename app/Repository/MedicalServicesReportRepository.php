@@ -22,7 +22,13 @@ class MedicalServicesReportRepository implements MedicalServicesReportInterface
 
         // 1. Agregasi Utama Registrasi Periksa
         $regSummary = $conn->table('reg_periksa as rp')
+            ->leftJoin('pasien_tni as pt', 'rp.no_rkm_medis', '=', 'pt.no_rkm_medis')
+            ->leftJoin('pasien_polri as pp', 'rp.no_rkm_medis', '=', 'pp.no_rkm_medis')
             ->whereBetween('rp.tgl_registrasi', [$startDate, $endDate])
+            ->where(function ($q) {
+                $q->where('rp.status_lanjut', '!=', 'Ralan')
+                  ->orWhereNotIn('rp.stts', ['Batal', 'Belum']);
+            })
             ->selectRaw("
                 count(*) as total_kunjungan,
                 count(distinct rp.no_rkm_medis) as total_pasien,
@@ -35,7 +41,20 @@ class MedicalServicesReportRepository implements MedicalServicesReportInterface
                 sum(case when rp.stts_daftar = 'Baru' then 1 else 0 end) as pasien_baru,
                 sum(case when rp.stts_daftar = 'Lama' then 1 else 0 end) as pasien_lama,
                 sum(case when rp.status_poli = 'Baru' then 1 else 0 end) as poli_baru,
-                sum(case when rp.status_poli = 'Lama' then 1 else 0 end) as poli_lama
+                sum(case when rp.status_poli = 'Lama' then 1 else 0 end) as poli_lama,
+                sum(case when pt.no_rkm_medis is not null or pp.no_rkm_medis is not null then 1 else 0 end) as dinas_total,
+                sum(case when (pt.no_rkm_medis is not null or pp.no_rkm_medis is not null) and rp.status_lanjut = 'Ralan' and (rp.kd_poli != 'IGDK' or rp.kd_poli is null) then 1 else 0 end) as dinas_poli,
+                sum(case when (pt.no_rkm_medis is not null or pp.no_rkm_medis is not null) and rp.status_lanjut = 'Ralan' and rp.kd_poli = 'IGDK' then 1 else 0 end) as dinas_igd,
+                sum(case when (pt.no_rkm_medis is not null or pp.no_rkm_medis is not null) and rp.status_lanjut = 'Ranap' then 1 else 0 end) as dinas_ranap,
+                sum(case when pt.no_rkm_medis is not null then 1 else 0 end) as dinas_tni,
+                sum(case when pt.no_rkm_medis is not null and rp.status_lanjut = 'Ralan' and (rp.kd_poli != 'IGDK' or rp.kd_poli is null) then 1 else 0 end) as dinas_tni_poli,
+                sum(case when pt.no_rkm_medis is not null and rp.status_lanjut = 'Ralan' and rp.kd_poli = 'IGDK' then 1 else 0 end) as dinas_tni_igd,
+                sum(case when pt.no_rkm_medis is not null and rp.status_lanjut = 'Ranap' then 1 else 0 end) as dinas_tni_ranap,
+                sum(case when pp.no_rkm_medis is not null then 1 else 0 end) as dinas_polri,
+                sum(case when pp.no_rkm_medis is not null and rp.status_lanjut = 'Ralan' and (rp.kd_poli != 'IGDK' or rp.kd_poli is null) then 1 else 0 end) as dinas_polri_poli,
+                sum(case when pp.no_rkm_medis is not null and rp.status_lanjut = 'Ralan' and rp.kd_poli = 'IGDK' then 1 else 0 end) as dinas_polri_igd,
+                sum(case when pp.no_rkm_medis is not null and rp.status_lanjut = 'Ranap' then 1 else 0 end) as dinas_polri_ranap,
+                count(distinct case when pt.no_rkm_medis is not null or pp.no_rkm_medis is not null then rp.no_rkm_medis end) as dinas_pasien
             ")
             ->first();
 
@@ -67,6 +86,7 @@ class MedicalServicesReportRepository implements MedicalServicesReportInterface
             ->whereBetween('rp.tgl_registrasi', [$startDate, $endDate])
             ->where('rp.status_lanjut', 'Ralan')
             ->where('rp.kd_poli', '!=', 'IGDK')
+            ->whereNotIn('rp.stts', ['Batal', 'Belum'])
             ->selectRaw("p.nm_poli, count(*) as total, count(distinct rp.no_rkm_medis) as pasien")
             ->groupBy('p.nm_poli')
             ->orderByDesc('total')
@@ -77,6 +97,10 @@ class MedicalServicesReportRepository implements MedicalServicesReportInterface
         $caraBayarRows = $conn->table('reg_periksa as rp')
             ->join('penjab as pj', 'rp.kd_pj', '=', 'pj.kd_pj')
             ->whereBetween('rp.tgl_registrasi', [$startDate, $endDate])
+            ->where(function ($q) {
+                $q->where('rp.status_lanjut', '!=', 'Ralan')
+                  ->orWhereNotIn('rp.stts', ['Batal', 'Belum']);
+            })
             ->selectRaw("
                 pj.png_jawab as cara_bayar,
                 count(*) as total,
@@ -114,9 +138,67 @@ class MedicalServicesReportRepository implements MedicalServicesReportInterface
             ->take(8)
             ->get();
 
-        // 8. Tren Harian (Daily Points)
+        // 8. Breakdown Pasien Dinas: Kategori Golongan & Satuan
+        $dinasCategories = $conn->table('reg_periksa as rp')
+            ->leftJoin('pasien_tni as pt', 'rp.no_rkm_medis', '=', 'pt.no_rkm_medis')
+            ->leftJoin('pasien_polri as pp', 'rp.no_rkm_medis', '=', 'pp.no_rkm_medis')
+            ->leftJoin('golongan_tni as gt', 'pt.golongan_tni', '=', 'gt.id')
+            ->leftJoin('golongan_polri as gp', 'pp.golongan_polri', '=', 'gp.id')
+            ->where(function ($q) {
+                $q->whereNotNull('pt.no_rkm_medis')
+                  ->orWhereNotNull('pp.no_rkm_medis');
+            })
+            ->whereBetween('rp.tgl_registrasi', [$startDate, $endDate])
+            ->where(function ($q) {
+                $q->where('rp.status_lanjut', '!=', 'Ralan')
+                  ->orWhereNotIn('rp.stts', ['Batal', 'Belum']);
+            })
+            ->selectRaw("
+                CASE 
+                    WHEN gt.id IN (1, 2, 3) OR gp.id = 1 THEN 'Militer / Anggota Aktif'
+                    WHEN gt.id IN (8, 9, 10) OR gp.id = 2 THEN 'ASN / PNS'
+                    WHEN gt.id IN (5, 6, 7) OR gp.id = 3 THEN 'Keluarga Personel'
+                    WHEN gt.id IN (4, 11, 12) OR gp.id = 4 THEN 'Purnawirawan'
+                    ELSE 'Lainnya'
+                END as kategori,
+                COUNT(*) as total,
+                SUM(CASE WHEN rp.status_lanjut = 'Ralan' AND (rp.kd_poli != 'IGDK' OR rp.kd_poli IS NULL) THEN 1 ELSE 0 END) as poli,
+                SUM(CASE WHEN rp.status_lanjut = 'Ralan' AND rp.kd_poli = 'IGDK' THEN 1 ELSE 0 END) as igd,
+                SUM(CASE WHEN rp.status_lanjut = 'Ranap' THEN 1 ELSE 0 END) as ranap,
+                SUM(CASE WHEN pt.no_rkm_medis IS NOT NULL THEN 1 ELSE 0 END) as tni,
+                SUM(CASE WHEN pp.no_rkm_medis IS NOT NULL THEN 1 ELSE 0 END) as polri
+            ")
+            ->groupBy('kategori')
+            ->orderByDesc('total')
+            ->get();
+
+        $dinasSatuan = $conn->table('reg_periksa as rp')
+            ->join('pasien_tni as pt', 'rp.no_rkm_medis', '=', 'pt.no_rkm_medis')
+            ->leftJoin('satuan_tni as st', 'pt.satuan_tni', '=', 'st.id')
+            ->whereBetween('rp.tgl_registrasi', [$startDate, $endDate])
+            ->where(function ($q) {
+                $q->where('rp.status_lanjut', '!=', 'Ralan')
+                  ->orWhereNotIn('rp.stts', ['Batal', 'Belum']);
+            })
+            ->selectRaw("
+                COALESCE(st.nama_satuan, 'Lainnya') as nama_satuan,
+                COUNT(*) as total,
+                SUM(CASE WHEN rp.status_lanjut = 'Ralan' AND (rp.kd_poli != 'IGDK' OR rp.kd_poli IS NULL) THEN 1 ELSE 0 END) as poli,
+                SUM(CASE WHEN rp.status_lanjut = 'Ralan' AND rp.kd_poli = 'IGDK' THEN 1 ELSE 0 END) as igd,
+                SUM(CASE WHEN rp.status_lanjut = 'Ranap' THEN 1 ELSE 0 END) as ranap
+            ")
+            ->groupBy('nama_satuan')
+            ->orderByDesc('total')
+            ->take(8)
+            ->get();
+
+        // 9. Tren Harian (Daily Points)
         $dailyPoints = $conn->table('reg_periksa as rp')
             ->whereBetween('rp.tgl_registrasi', [$startDate, $endDate])
+            ->where(function ($q) {
+                $q->where('rp.status_lanjut', '!=', 'Ralan')
+                  ->orWhereNotIn('rp.stts', ['Batal', 'Belum']);
+            })
             ->selectRaw("
                 rp.tgl_registrasi as tanggal,
                 count(*) as total,
@@ -211,6 +293,24 @@ class MedicalServicesReportRepository implements MedicalServicesReportInterface
                 'dirujuk' => (int) ($ranapDischarges->dirujuk ?? 0),
                 'meninggal' => (int) ($ranapDischarges->meninggal ?? 0),
                 'top_wards' => $bangsalBreakdown,
+            ],
+            'dinas' => [
+                'total' => (int) ($regSummary->dinas_total ?? 0),
+                'pasien' => (int) ($regSummary->dinas_pasien ?? 0),
+                'poli' => (int) ($regSummary->dinas_poli ?? 0),
+                'igd' => (int) ($regSummary->dinas_igd ?? 0),
+                'ranap' => (int) ($regSummary->dinas_ranap ?? 0),
+                'tni' => (int) ($regSummary->dinas_tni ?? 0),
+                'tni_poli' => (int) ($regSummary->dinas_tni_poli ?? 0),
+                'tni_igd' => (int) ($regSummary->dinas_tni_igd ?? 0),
+                'tni_ranap' => (int) ($regSummary->dinas_tni_ranap ?? 0),
+                'polri' => (int) ($regSummary->dinas_polri ?? 0),
+                'polri_poli' => (int) ($regSummary->dinas_polri_poli ?? 0),
+                'polri_igd' => (int) ($regSummary->dinas_polri_igd ?? 0),
+                'polri_ranap' => (int) ($regSummary->dinas_polri_ranap ?? 0),
+                'pct_dinas' => $totAll > 0 ? round(((int) ($regSummary->dinas_total ?? 0) / $totAll) * 100, 1) : 0,
+                'categories' => $dinasCategories,
+                'satuan' => $dinasSatuan,
             ],
             'cara_bayar' => $caraBayarRows,
             'charts' => [

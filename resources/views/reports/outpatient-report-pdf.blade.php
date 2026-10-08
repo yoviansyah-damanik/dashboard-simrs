@@ -102,13 +102,10 @@
     </style>
 </head>
 <body>
-    <footer>
-        Dokumen ini dibuat otomatis melalui {{ config('app.name') }} milik {{ config('app.hospital_name') }} pada {{ now()->format('d/m/Y H:i:s') }}.
-    </footer>
+    @include('reports.partials.header')
 
-    <div class="header">
-        <h2>{{ config('app.hospital_name', 'RUMAH SAKIT') }}</h2>
-        <h3>LAPORAN REKAPITULASI & DATA PASIEN RAWAT JALAN</h3>
+    <div style="text-align: center; margin-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 13px; font-weight: bold; color: #0f172a; text-transform: uppercase;">LAPORAN REKAPITULASI & DATA PASIEN RAWAT JALAN</h3>
     </div>
 
     <div class="meta-info">
@@ -126,7 +123,7 @@
                 (Laki-laki: {{ number_format($summary['total_pria'], 0, ',', '.') }}, Perempuan: {{ number_format($summary['total_wanita'], 0, ',', '.') }})
             </div>
             <div class="meta-cell" style="text-align: right;">
-                <strong>Kategori:</strong> Baru: {{ number_format($summary['total_baru'], 0, ',', '.') }} | Lama: {{ number_format($summary['total_lama'], 0, ',', '.') }} | Dinas: {{ number_format($summary['total_dinas'], 0, ',', '.') }}
+                <strong>Kategori:</strong> Baru: {{ number_format($summary['total_baru'], 0, ',', '.') }} | Lama: {{ number_format($summary['total_lama'], 0, ',', '.') }} | TNI: {{ number_format($summary['total_tni'] ?? 0, 0, ',', '.') }} | POLRI: {{ number_format($summary['total_polri'] ?? 0, 0, ',', '.') }}
             </div>
         </div>
     </div>
@@ -146,7 +143,8 @@
                 <th style="width: 35px; text-align: center;">Lama</th>
                 <th style="width: 40px; text-align: center;">BPJS</th>
                 <th style="width: 35px; text-align: center;">Umum</th>
-                <th style="width: 35px; text-align: center;">Dinas</th>
+                <th style="width: 32px; text-align: center;">TNI</th>
+                <th style="width: 32px; text-align: center;">POLRI</th>
             </tr>
         </thead>
         <tbody>
@@ -162,11 +160,12 @@
                     <td style="text-align: center;">{{ number_format($poly['lama'], 0, ',', '.') }}</td>
                     <td style="text-align: center;">{{ number_format($poly['bpjs'], 0, ',', '.') }}</td>
                     <td style="text-align: center;">{{ number_format($poly['umum'], 0, ',', '.') }}</td>
-                    <td style="text-align: center;">{{ number_format($poly['dinas'], 0, ',', '.') }}</td>
+                    <td style="text-align: center;">{{ number_format($poly['tni'] ?? 0, 0, ',', '.') }}</td>
+                    <td style="text-align: center;">{{ number_format($poly['polri'] ?? 0, 0, ',', '.') }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="11" style="text-align: center; color: #94a3b8;">Tidak ada data poliklinik ditemukan.</td>
+                    <td colspan="12" style="text-align: center; color: #94a3b8;">Tidak ada data poliklinik ditemukan.</td>
                 </tr>
             @endforelse
         </tbody>
@@ -237,7 +236,45 @@
                     <td colspan="7" style="text-align: center; color: #94a3b8;">Tidak ada data demografi kelompok umur ditemukan.</td>
                 </tr>
             @endforelse
-        </tbody>
-    </table>
+    <!-- Rekapitulasi Pasien Dinas (TNI / POLRI) -->
+    @if (!empty($dinasBreakdown))
+        <div class="section-title">4. Rekapitulasi Pasien Dinas Rawat Jalan (TNI / POLRI)</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 25px; text-align: center;">No</th>
+                    <th>Poliklinik / Unit</th>
+                    <th style="width: 55px; text-align: center;">Total Dinas</th>
+                    <th style="width: 45px; text-align: center;">Proporsi</th>
+                    <th style="width: 50px; text-align: center;">TNI</th>
+                    <th style="width: 50px; text-align: center;">POLRI</th>
+                    <th style="width: 45px; text-align: center;">Laki-laki</th>
+                    <th style="width: 45px; text-align: center;">Perempuan</th>
+                    <th style="width: 40px; text-align: center;">Baru</th>
+                    <th style="width: 40px; text-align: center;">Lama</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($dinasBreakdown['polyclinics'] ?? [] as $index => $dp)
+                    <tr>
+                        <td style="text-align: center;">{{ $index + 1 }}</td>
+                        <td><strong>{{ $dp['nm_poli'] }}</strong> ({{ $dp['kd_poli'] }})</td>
+                        <td style="text-align: center; font-weight: bold; color: #7c3aed;">{{ number_format($dp['total'], 0, ',', '.') }}</td>
+                        <td style="text-align: center;">{{ $dp['percent'] }}%</td>
+                        <td style="text-align: center;">{{ number_format($dp['tni'], 0, ',', '.') }}</td>
+                        <td style="text-align: center;">{{ number_format($dp['polri'], 0, ',', '.') }}</td>
+                        <td style="text-align: center;">{{ number_format($dp['pria'], 0, ',', '.') }}</td>
+                        <td style="text-align: center;">{{ number_format($dp['wanita'], 0, ',', '.') }}</td>
+                        <td style="text-align: center;">{{ number_format($dp['baru'], 0, ',', '.') }}</td>
+                        <td style="text-align: center;">{{ number_format($dp['lama'], 0, ',', '.') }}</td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="10" style="text-align: center; color: #94a3b8;">Tidak ada data pasien dinas ditemukan.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    @endif
 </body>
 </html>

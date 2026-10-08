@@ -1,9 +1,101 @@
 [
     {
-        "version": "1.0.0",
+        "version": "2.0.0",
+        "date": "2026-10-08",
+        "title": "Major Release: Modul Rekap Morbiditas & Prosedur Medis, SPM, Rekapitulasi Pasien Dinas TNI / POLRI",
+        "badge": "Major Release",
+        "type": "major",
         "changeLog": [
-            "Penambahan modul pasien. Data pasien dan rekap.",
-            "Penambahan modul pendaftaran. Data pendaftaran dan rekap."
+            "Pemisahan eksplisit data pasien dinas antara entitas TNI dan POLRI di seluruh modul aplikasi (Rawat Jalan, Rawat Inap, Ringkasan Pelayanan Medis, Gawat Darurat, Beranda, serta ekspor CSV, Excel, dan PDF laporan).",
+            "Penambahan tab dan agregasi Rekapitulasi Pasien Dinas (TNI / POLRI) pada modul Laporan Pasien Rawat Jalan (Ralan), Rawat Inap (Ranap), dan Ringkasan Pelayanan Medis.",
+            "Klasifikasi kategori personel dinas komprehensif (Militer/Anggota Aktif, ASN/PNS, Keluarga Personel, Purnawirawan) dan sebaran top kesatuan.",
+            "Penambahan modul Rekap Data Tindakan & Prosedur Medis (ICD-9-CM) dengan visualisasi 3 mode, filter kategori bab, drilldown pasien, dan ekspor PDF formal.",
+            "Penambahan modul Rekap Data Penyakit & Morbiditas (ICD-10) lengkap dengan surveilans kasus khusus (ISK, ISPA, TBC, Diare, DBD, Tifoid, Hipertensi, DM, Dispepsia, IDO) serta proporsi kasus baru vs lama.",
+            "Penambahan modul SPM (Standar Pelayanan Minimal) Rumah Sakit beserta visualisasi kepatuhan indikator dan integrasi ikon navigasi.",
+            "Standarisasi pelaporan Rawat Jalan (Ralan) di seluruh modul dengan pemisahan eksplisit antara Poliklinik (Poli) dan Gawat Darurat (IGD).",
+            "Penerapan aturan konsistensi status registrasi periksa (pengecualian status 'Batal' dan 'Belum' pada data Rawat Jalan).",
+            "Pembaruan arsitektur cetak laporan: Larangan keras screen printing (window.print) dan penerapan cetak PDF data berbasis server menggunakan DomPDF.",
+            "Perbaikan mesin visualisasi grafik Chart.js: Mode Bertumpuk (Stacked), Berdampingan (Grouped), dan Total Kasus dengan sinkronisasi real-time Livewire event.",
+            "Penyelarasan antarmuka modal drilldown pasien dengan modifier positioning !mt-0 untuk visibilitas optimal.",
+            "Penambahan halaman resmi Change Log dan pelacakan riwayat versi aplikasi sistem.",
+            "Perapian elemen branding sidebar dan penambahan indikator badge versi aplikasi beserta tautan change log pada halaman login."
+        ]
+    },
+    {
+        "version": "1.5.0",
+        "date": "2026-09-15",
+        "title": "Matriks Indikator Penunjang & Pelaporan Mutu RS",
+        "badge": "Feature Update",
+        "type": "minor",
+        "changeLog": [
+            "Penambahan Matriks Indikator Penunjang terintegrasi untuk Laboratorium, Radiologi, dan Farmasi.",
+            "Integrasi indikator mutu rumah sakit: INM (Indikator Nasional Mutu), IKP (Insiden Keselamatan Pasien), dan PPI.",
+            "Peningkatan filter analitik periode tahunan dan tren bulanan komparatif.",
+            "Pengoptimalan sistem kueri agregasi database SIMRS untuk performa kueri skala besar."
+        ]
+    },
+    {
+        "version": "1.4.0",
+        "date": "2026-08-20",
+        "title": "Penunjang Medis & Manajemen Jadwal Operasi",
+        "badge": "Feature Update",
+        "type": "minor",
+        "changeLog": [
+            "Penambahan modul Rekapitulasi Pelayanan Laboratorium (PK, PA, MB) dan pemantauan nilai kritis.",
+            "Penambahan modul Rekapitulasi Pelayanan Radiologi dan rincian pemeriksaan diagnostik.",
+            "Penambahan modul Jadwal dan Rekapitulasi Tindakan Operasi (Kamar Operasi / OK).",
+            "Penambahan modul Rekapitulasi Resep dan Manajemen Stok Obat Farmasi.",
+            "Penyelarasan hak akses (Role & Permission) berbasis Spatie Laravel Permission."
+        ]
+    },
+    {
+        "version": "1.3.0",
+        "date": "2026-07-10",
+        "title": "Matriks Indikator Efisiensi Tempat Tidur & Rawat Inap",
+        "badge": "Feature Update",
+        "type": "minor",
+        "changeLog": [
+            "Implementasi Matriks Indikator Barber-Johnson (BOR, ALOS, TOI, BTO, NDR, GDR).",
+            "Monitoring kapasitas tempat tidur (Bed Occupancy) dan status ketersediaan kamar rawat inap real-time.",
+            "Penyempurnaan modul pelaporan Rawat Inap dan sensus harian pasien.",
+            "Peningkatan tema antarmuka: Dukungan penuh Dark Mode dan perbaikan kontras UI."
+        ]
+    },
+    {
+        "version": "1.2.0",
+        "date": "2026-06-01",
+        "title": "Pelaporan Rawat Jalan, Poliklinik & IGD",
+        "badge": "Feature Update",
+        "type": "minor",
+        "changeLog": [
+            "Penambahan modul Laporan & Rekapitulasi Pelayanan Rawat Jalan.",
+            "Pemantauan beban kunjungan per poliklinik spesialis dan dokter penanggung jawab (DPJP).",
+            "Pencatatan pelayanan kegawatdaruratan Instalasi Gawat Darurat (IGD).",
+            "Ekspor data laporan tabel ke format spreadsheet dan dokumen cetak."
+        ]
+    },
+    {
+        "version": "1.1.0",
+        "date": "2026-04-15",
+        "title": "Pendaftaran, Antrean & Demografi Pasien",
+        "badge": "Enhancement",
+        "type": "minor",
+        "changeLog": [
+            "Penambahan modul registrasi dan rekapitulasi pendaftaran pasien baru vs lama.",
+            "Distribusi demografi pengunjung berdasarkan kelompok umur, jenis kelamin, wilayah, dan jenis penjamin (BPJS, Umum, Asuransi Swasta).",
+            "Integrasi pencarian cepat rekam medis pasien."
+        ]
+    },
+    {
+        "version": "1.0.0",
+        "date": "2026-01-01",
+        "title": "Inisialisasi Sistem Dashboard SIMRS",
+        "badge": "Initial Release",
+        "type": "major",
+        "changeLog": [
+            "Inisialisasi fondasi sistem dashboard SIMRS berbasis Laravel dan Livewire.",
+            "Modul dasar data pasien, penjamin, dan rekapitulasi pendaftaran awal.",
+            "Sistem autentikasi pengguna, manajemen hak akses, dan tata letak navigasi utama."
         ]
     }
 ]

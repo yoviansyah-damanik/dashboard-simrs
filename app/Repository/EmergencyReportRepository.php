@@ -67,6 +67,10 @@ class EmergencyReportRepository implements EmergencyReportInterface
                     $q->whereNotNull('pt.no_rkm_medis')
                       ->orWhereNotNull('pp.no_rkm_medis');
                 });
+            } elseif ($payType === 'TNI') {
+                $query->whereNotNull('pt.no_rkm_medis');
+            } elseif ($payType === 'POLRI') {
+                $query->whereNotNull('pp.no_rkm_medis');
             } else {
                 $query->where('rp.kd_pj', $payType);
             }
@@ -130,7 +134,9 @@ class EmergencyReportRepository implements EmergencyReportInterface
                 sum(case when rp.stts = 'Belum' then 1 else 0 end) as total_belum,
                 sum(case when pj.png_jawab like '%BPJS%' then 1 else 0 end) as total_bpjs,
                 sum(case when pj.png_jawab like '%UMUM%' then 1 else 0 end) as total_umum,
-                sum(case when pt.no_rkm_medis is not null or pp.no_rkm_medis is not null then 1 else 0 end) as total_dinas
+                sum(case when pt.no_rkm_medis is not null or pp.no_rkm_medis is not null then 1 else 0 end) as total_dinas,
+                sum(case when pt.no_rkm_medis is not null then 1 else 0 end) as total_tni,
+                sum(case when pp.no_rkm_medis is not null then 1 else 0 end) as total_polri
             ")
             ->first();
 
@@ -160,6 +166,8 @@ class EmergencyReportRepository implements EmergencyReportInterface
             'total_bpjs' => $row ? (int) $row->total_bpjs : 0,
             'total_umum' => $row ? (int) $row->total_umum : 0,
             'total_dinas' => $row ? (int) $row->total_dinas : 0,
+            'total_tni' => $row ? (int) $row->total_tni : 0,
+            'total_polri' => $row ? (int) $row->total_polri : 0,
         ];
     }
 
@@ -337,6 +345,7 @@ class EmergencyReportRepository implements EmergencyReportInterface
             'rp.status_lanjut',
             'd.nm_dokter',
             'pj.png_jawab',
+            \Illuminate\Support\Facades\DB::raw("CASE WHEN pt.no_rkm_medis IS NOT NULL THEN 'TNI' WHEN pp.no_rkm_medis IS NOT NULL THEN 'POLRI' ELSE 'UMUM' END as status_dinas"),
             'p.alamat',
         ])
         ->orderByDesc('rp.tgl_registrasi')

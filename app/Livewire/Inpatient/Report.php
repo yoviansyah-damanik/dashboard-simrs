@@ -45,6 +45,8 @@ class Report extends Component
     #[Url]
     public $limit = 25;
 
+    public $activeTab = 'daftar_pasien';
+
     public bool $showCharts = true;
 
     public $selectedMonth;
@@ -53,6 +55,11 @@ class Report extends Component
     public function toggleCharts(): void
     {
         $this->showCharts = !$this->showCharts;
+    }
+
+    public function switchTab(string $tab): void
+    {
+        $this->activeTab = $tab;
     }
 
     public function mount()
@@ -201,7 +208,17 @@ class Report extends Component
     #[Computed]
     public function payTypes(): array
     {
-        return FilterHelper::getPayTypes();
+        return [
+            ['title' => 'Semua Penjamin', 'value' => 'semua'],
+            ['title' => 'BPJS (Semua)', 'value' => 'BPJS'],
+            ['title' => 'UMUM / Mandiri', 'value' => 'UMUM'],
+            ['title' => 'DINAS (Semua: TNI & POLRI)', 'value' => 'DINAS'],
+            ['title' => '• Pasien Dinas TNI', 'value' => 'TNI'],
+            ['title' => '• Pasien Dinas POLRI', 'value' => 'POLRI'],
+            ...collect(FilterHelper::getPayTypes())
+                ->reject(fn($item) => $item['value'] === 'semua')
+                ->toArray()
+        ];
     }
 
     #[Computed]
@@ -270,6 +287,18 @@ class Report extends Component
             startDate: $this->startDate,
             endDate: $this->endDate,
             payType: $this->payType,
+            statusPulang: $this->statusPulang,
+            ward: $this->ward,
+            search: $this->search
+        );
+    }
+
+    #[Computed]
+    public function dinasBreakdown(): array
+    {
+        return InpatientReportRepository::getDinasBreakdown(
+            startDate: $this->startDate,
+            endDate: $this->endDate,
             statusPulang: $this->statusPulang,
             ward: $this->ward,
             search: $this->search
@@ -409,6 +438,7 @@ class Report extends Component
                 'Tgl Masuk',
                 'Tgl Keluar',
                 'Penjamin',
+                'Status Dinas',
                 'DPJP Ranap'
             ]);
 
@@ -426,6 +456,7 @@ class Report extends Component
                     Carbon::parse($patient->tgl_masuk)->format('d/m/Y'),
                     $tglKeluar,
                     $patient->png_jawab ?? '-',
+                    $patient->status_dinas ?? '-',
                     $patient->dpjp_ranap ?? '-'
                 ]);
             }
@@ -472,6 +503,7 @@ class Report extends Component
             'endDate' => $this->endDate,
             'payTypeTitle' => $selectedPayTypeTitle,
             'summary' => $this->summary(),
+            'dinasBreakdown' => $this->dinasBreakdown,
         ])->setPaper('a4', 'landscape');
 
         $filename = $this->getExportFilename('pdf');
@@ -519,12 +551,12 @@ class Report extends Component
 
         // Judul Laporan
         $sheet->setCellValue('A1', config('app.hospital_name', 'RUMAH SAKIT'));
-        $sheet->mergeCells('A1:I1');
+        $sheet->mergeCells('A1:J1');
         $sheet->getStyle('A1')->getFont()->setSize(14)->setBold(true);
         $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
         $sheet->setCellValue('A2', 'LAPORAN PASIEN RAWAT INAP');
-        $sheet->mergeCells('A2:I2');
+        $sheet->mergeCells('A2:J2');
         $sheet->getStyle('A2')->getFont()->setSize(11)->setBold(true)->getColor()->setRGB('475569');
         $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
@@ -534,21 +566,21 @@ class Report extends Component
         $sheet->getStyle('A4')->getFont()->setBold(true)->setSize(9.5);
 
         $sheet->setCellValue('G4', 'Penjamin: ' . $selectedPayTypeTitle);
-        $sheet->mergeCells('G4:I4');
+        $sheet->mergeCells('G4:J4');
         $sheet->getStyle('G4')->getFont()->setBold(true)->setSize(9.5);
         $sheet->getStyle('G4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
-        $sheet->setCellValue('A5', 'Total Pasien: ' . number_format($summary['total_pasien'] ?? count($patients), 0, ',', '.') . ' orang (Sudah Pulang: ' . number_format($summary['sudah_pulang'] ?? 0, 0, ',', '.') . ', Masih Dirawat: ' . number_format($summary['masih_dirawat'] ?? 0, 0, ',', '.') . ')');
+        $sheet->setCellValue('A5', 'Total Pasien: ' . number_format($summary['total_pasien'] ?? count($patients), 0, ',', '.') . ' orang (Sudah Pulang: ' . number_format($summary['sudah_pulang'] ?? 0, 0, ',', '.') . ', Masih Dirawat: ' . number_format($summary['masih_dirawat'] ?? 0, 0, ',', '.') . ') | TNI: ' . number_format($summary['total_tni'] ?? 0, 0, ',', '.') . ' | POLRI: ' . number_format($summary['total_polri'] ?? 0, 0, ',', '.'));
         $sheet->mergeCells('A5:F5');
         $sheet->getStyle('A5')->getFont()->setSize(9);
 
         $sheet->setCellValue('G5', 'Dicetak pada: ' . now()->format('d/m/Y H:i:s'));
-        $sheet->mergeCells('G5:I5');
+        $sheet->mergeCells('G5:J5');
         $sheet->getStyle('G5')->getFont()->setSize(9);
         $sheet->getStyle('G5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
         // Header Tabel
-        $headers = ['No', 'No. Rawat', 'No. RM', 'Nama Pasien', 'Bangsal', 'Tgl Masuk', 'Tgl Keluar', 'Penjamin', 'DPJP Ranap'];
+        $headers = ['No', 'No. Rawat', 'No. RM', 'Nama Pasien', 'Bangsal', 'Tgl Masuk', 'Tgl Keluar', 'Penjamin', 'Status Dinas', 'DPJP Ranap'];
         $sheet->fromArray($headers, null, 'A7');
         $sheet->getRowDimension(7)->setRowHeight(25);
 
@@ -564,7 +596,7 @@ class Report extends Component
                 'allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '0F172A']]
             ]
         ];
-        $sheet->getStyle('A7:I7')->applyFromArray($headerStyle);
+        $sheet->getStyle('A7:J7')->applyFromArray($headerStyle);
 
         // Data Baris
         $row = 8;
@@ -579,13 +611,15 @@ class Report extends Component
             $sheet->setCellValue('F' . $row, Carbon::parse($patient->tgl_masuk)->format('d/m/Y'));
             $sheet->setCellValue('G' . $row, $isMasihDirawat ? 'Masih Dirawat' : Carbon::parse($patient->tgl_keluar)->format('d/m/Y'));
             $sheet->setCellValue('H' . $row, $patient->png_jawab ?? '-');
-            $sheet->setCellValue('I' . $row, $patient->dpjp_ranap ?? '-');
+            $sheet->setCellValue('I' . $row, $patient->status_dinas ?? '-');
+            $sheet->setCellValue('J' . $row, $patient->dpjp_ranap ?? '-');
 
             $sheet->getStyle('A' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('B' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('C' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('F' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('G' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $sheet->getStyle('I' . $row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
             // Indikator visual pasien masih dirawat
             if ($isMasihDirawat) {
@@ -601,7 +635,7 @@ class Report extends Component
                 if (!$isMasihDirawat) {
                     $sheet->getStyle('G' . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
                 }
-                $sheet->getStyle('H' . $row . ':I' . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
+                $sheet->getStyle('H' . $row . ':J' . $row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F8FAFC');
             }
 
             $row++;
@@ -609,7 +643,7 @@ class Report extends Component
 
         // Garis batas sel data
         if ($row > 8) {
-            $sheet->getStyle('A8:I' . ($row - 1))->applyFromArray([
+            $sheet->getStyle('A8:J' . ($row - 1))->applyFromArray([
                 'borders' => [
                     'allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E1']]
                 ],
@@ -623,6 +657,72 @@ class Report extends Component
 
         foreach (range('B', 'I') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Sheet 2: Rekapitulasi Pasien Dinas (TNI / POLRI)
+        $dinasBreakdown = $this->dinasBreakdown;
+        $sheetDinas = $spreadsheet->createSheet();
+        $sheetDinas->setTitle('Rekap Pasien Dinas');
+        $sheetDinas->setShowGridLines(true);
+
+        $sheetDinas->setCellValue('A1', 'REKAPITULASI PASIEN DINAS RAWAT INAP (TNI / POLRI)');
+        $sheetDinas->mergeCells('A1:H1');
+        $sheetDinas->getStyle('A1')->getFont()->setSize(12)->setBold(true);
+
+        $sheetDinas->setCellValue('A2', 'Periode: ' . Carbon::parse($this->startDate)->format('d/m/Y') . ' s/d ' . Carbon::parse($this->endDate)->format('d/m/Y') . ' | Total Dinas: ' . number_format($dinasBreakdown['summary']['total'] ?? 0, 0, ',', '.') . ' (TNI: ' . number_format($dinasBreakdown['summary']['tni'] ?? 0, 0, ',', '.') . ', POLRI: ' . number_format($dinasBreakdown['summary']['polri'] ?? 0, 0, ',', '.') . ')');
+        $sheetDinas->mergeCells('A2:H2');
+        $sheetDinas->getStyle('A2')->getFont()->setSize(9.5)->setItalic(true);
+
+        $headersDinas = ['No', 'Kode Bangsal', 'Nama Bangsal / Ruangan', 'Total Dinas', 'Proporsi (%)', 'TNI', 'POLRI', 'Masih Dirawat', 'Sudah Pulang'];
+        $sheetDinas->fromArray($headersDinas, null, 'A4');
+        $sheetDinas->getStyle('A4:I4')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheetDinas->getStyle('A4:I4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('7C3AED');
+
+        $dinasRow = 5;
+        foreach ($dinasBreakdown['wards'] ?? [] as $idx => $dw) {
+            $sheetDinas->fromArray([
+                $idx + 1,
+                $dw['kd_bangsal'],
+                $dw['nm_bangsal'],
+                $dw['total'],
+                $dw['percent'] . '%',
+                $dw['tni'],
+                $dw['polri'],
+                $dw['masih_dirawat'],
+                $dw['sudah_pulang']
+            ], null, "A{$dinasRow}");
+            $dinasRow++;
+        }
+
+        // Kategori Personel
+        $catRowStart = $dinasRow + 2;
+        $sheetDinas->setCellValue("A{$catRowStart}", 'KATEGORI PERSONEL PASIEN DINAS');
+        $sheetDinas->mergeCells("A{$catRowStart}:G{$catRowStart}");
+        $sheetDinas->getStyle("A{$catRowStart}")->getFont()->setSize(11)->setBold(true);
+
+        $headersCat = ['No', 'Kategori Personel', 'Total Pasien', 'Proporsi (%)', 'TNI', 'POLRI', 'Masih Dirawat', 'Sudah Pulang'];
+        $headerCatRow = $catRowStart + 1;
+        $sheetDinas->fromArray($headersCat, null, "A{$headerCatRow}");
+        $sheetDinas->getStyle("A{$headerCatRow}:H{$headerCatRow}")->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheetDinas->getStyle("A{$headerCatRow}:H{$headerCatRow}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('0284C7');
+
+        $catDataRow = $headerCatRow + 1;
+        foreach ($dinasBreakdown['categories'] ?? [] as $cIdx => $cat) {
+            $sheetDinas->fromArray([
+                $cIdx + 1,
+                $cat['kategori'],
+                $cat['total'],
+                $cat['percent'] . '%',
+                $cat['tni'],
+                $cat['polri'],
+                $cat['masih_dirawat'],
+                $cat['sudah_pulang']
+            ], null, "A{$catDataRow}");
+            $catDataRow++;
+        }
+
+        foreach (range('A', 'I') as $col) {
+            $sheetDinas->getColumnDimension($col)->setAutoSize(true);
         }
 
         $filename = $this->getExportFilename('xlsx');

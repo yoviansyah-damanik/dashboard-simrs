@@ -47,12 +47,18 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <x-button color="default" icon="i-ph-printer" onclick="window.print()">Cetak Ringkasan</x-button>
+            <x-button color="default" icon="i-ph-file-pdf" wire:click="exportPdf" wire:loading.attr="disabled">
+                <span wire:loading.remove wire:target="exportPdf">Cetak PDF Data</span>
+                <span wire:loading wire:target="exportPdf" class="flex items-center gap-1.5">
+                    <span class="icon-[solar--spinner-linear] animate-spin text-sm"></span>
+                    <span>Menyiapkan PDF...</span>
+                </span>
+            </x-button>
         </div>
     </div>
 
     {{-- Executive KPI Summary Banner Cards --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 no-print">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 no-print">
         {{-- Card 1: Total Layanan Medis --}}
         <div class="p-5 bg-gradient-to-br from-emerald-600 to-teal-800 rounded-2xl text-white shadow-md relative overflow-hidden group">
             <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition-transform duration-500"></div>
@@ -119,6 +125,28 @@
             <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium">
                 <span>Masuk: <strong class="text-emerald-600">{{ $summary['ranap_admissions'] }}</strong></span>
                 <span>Keluar: <strong class="text-amber-600">{{ $summary['ranap_discharges'] }}</strong></span>
+            </div>
+        </div>
+
+        {{-- Card 5: Pasien Dinas (TNI / POLRI) --}}
+        <div class="p-5 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm relative overflow-hidden group">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Pasien Dinas</span>
+                <span class="p-2 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-xl">
+                    <span class="icon-[solar--shield-bold-duotone] text-lg"></span>
+                </span>
+            </div>
+            <div class="text-3xl font-black text-purple-700 dark:text-purple-400 tracking-tight mb-1">
+                {{ number_format($dinas['total'], 0, ',', '.') }}
+            </div>
+            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium">
+                <span>Proporsi: <strong class="text-purple-600 dark:text-purple-400">{{ $dinas['pct_dinas'] }}%</strong></span>
+                <span>{{ number_format($dinas['pasien'], 0, ',', '.') }} orang</span>
+            </div>
+            <div class="flex items-center gap-2 mt-2 pt-2 border-t border-stroke/60 dark:border-strokedark/60 text-xs font-semibold">
+                <span class="text-emerald-600 dark:text-emerald-400 font-bold">{{ number_format($dinas['tni'], 0, ',', '.') }} TNI</span>
+                <span class="text-gray-300 dark:text-gray-600">&bull;</span>
+                <span class="text-blue-600 dark:text-blue-400 font-bold">{{ number_format($dinas['polri'], 0, ',', '.') }} POLRI</span>
             </div>
         </div>
     </div>
@@ -234,6 +262,11 @@
                     <span class="icon-[solar--bed-bold-duotone] text-sm"></span>
                     <span>Rawat Inap (Ranap)</span>
                 </button>
+                <button type="button" wire:click="setTab('dinas')"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200 {{ $activeTab === 'dinas' ? 'bg-purple-600 text-white shadow-sm font-bold ring-1 ring-purple-500/20' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white font-medium' }}">
+                    <span class="icon-[solar--shield-bold-duotone] text-sm"></span>
+                    <span>Pasien Dinas</span>
+                </button>
             </div>
         </div>
 
@@ -283,6 +316,42 @@
                             <td class="py-2.5 px-3 text-center text-gray-700 dark:text-gray-300">{{ number_format(round($summary['ranap_kunjungan'] / max(1, $report['period']['days']), 1), 1, ',', '.') }}</td>
                             <td class="py-2.5 px-4 text-center font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-l border-stroke dark:border-strokedark">
                                 {{ number_format(round($summary['total_layanan'] / max(1, $report['period']['days']), 1), 1, ',', '.') }}
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/20 bg-emerald-50/30 dark:bg-emerald-950/20 font-semibold border-t border-emerald-200 dark:border-emerald-800/40">
+                            <td class="py-2.5 px-4 text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5 pl-6">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                <span>Pasien Dinas TNI</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-center text-emerald-700 dark:text-emerald-400">{{ number_format($dinas['tni_poli'] ?? 0, 0, ',', '.') }}</td>
+                            <td class="py-2.5 px-3 text-center text-emerald-700 dark:text-emerald-400">{{ number_format($dinas['tni_igd'] ?? 0, 0, ',', '.') }}</td>
+                            <td class="py-2.5 px-3 text-center text-emerald-700 dark:text-emerald-400">{{ number_format($dinas['tni_ranap'] ?? 0, 0, ',', '.') }}</td>
+                            <td class="py-2.5 px-4 text-center font-bold bg-emerald-100/50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-l border-stroke dark:border-strokedark">
+                                {{ number_format($dinas['tni'], 0, ',', '.') }}
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/20 bg-blue-50/30 dark:bg-blue-950/20 font-semibold">
+                            <td class="py-2.5 px-4 text-blue-800 dark:text-blue-300 flex items-center gap-1.5 pl-6">
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                <span>Pasien Dinas POLRI</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-center text-blue-700 dark:text-blue-400">{{ number_format($dinas['polri_poli'] ?? 0, 0, ',', '.') }}</td>
+                            <td class="py-2.5 px-3 text-center text-blue-700 dark:text-blue-400">{{ number_format($dinas['polri_igd'] ?? 0, 0, ',', '.') }}</td>
+                            <td class="py-2.5 px-3 text-center text-blue-700 dark:text-blue-400">{{ number_format($dinas['polri_ranap'] ?? 0, 0, ',', '.') }}</td>
+                            <td class="py-2.5 px-4 text-center font-bold bg-blue-100/50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border-l border-stroke dark:border-strokedark">
+                                {{ number_format($dinas['polri'], 0, ',', '.') }}
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/20 bg-purple-50/40 dark:bg-purple-950/30 font-bold border-t border-purple-200 dark:border-purple-800/40">
+                            <td class="py-2.5 px-4 text-purple-700 dark:text-purple-400 flex items-center gap-1.5">
+                                <span class="icon-[solar--shield-bold-duotone] text-sm"></span>
+                                <span>Total Pasien Dinas (TNI & POLRI)</span>
+                            </td>
+                            <td class="py-2.5 px-3 text-center text-purple-700 dark:text-purple-400">{{ number_format($dinas['poli'], 0, ',', '.') }}</td>
+                            <td class="py-2.5 px-3 text-center text-purple-700 dark:text-purple-400">{{ number_format($dinas['igd'], 0, ',', '.') }}</td>
+                            <td class="py-2.5 px-3 text-center text-purple-700 dark:text-purple-400">{{ number_format($dinas['ranap'], 0, ',', '.') }}</td>
+                            <td class="py-2.5 px-4 text-center font-black bg-purple-100/60 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border-l border-stroke dark:border-strokedark">
+                                {{ number_format($dinas['total'], 0, ',', '.') }}
                             </td>
                         </tr>
                     </tbody>
@@ -425,6 +494,156 @@
                         @empty
                             <p class="text-xs text-gray-500 text-center py-4">Tidak ada data admisi bangsal pada periode ini.</p>
                         @endforelse
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- TAB 5: PASIEN DINAS (TNI / POLRI) --}}
+        @if ($activeTab === 'dinas')
+            <div class="space-y-6">
+                {{-- Quick Stats Pasien Dinas --}}
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <div class="p-3 bg-purple-50/70 dark:bg-purple-950/20 rounded-xl border border-purple-200 dark:border-purple-800/40">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-300">Total Kunjungan</span>
+                        <div class="text-xl font-black text-purple-800 dark:text-purple-200 mt-0.5">
+                            {{ number_format($dinas['total'], 0, ',', '.') }}
+                        </div>
+                        <span class="text-[10px] text-purple-600 dark:text-purple-400 font-medium">{{ $dinas['pct_dinas'] }}% dari total RS</span>
+                    </div>
+
+                    <div class="p-3 bg-white dark:bg-boxdark rounded-xl border border-stroke dark:border-strokedark">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">Pasien Unik (RM)</span>
+                        <div class="text-xl font-black text-gray-800 dark:text-white mt-0.5">
+                            {{ number_format($dinas['pasien'], 0, ',', '.') }}
+                        </div>
+                        <span class="text-[10px] text-gray-400 font-medium">Orang Berobat</span>
+                    </div>
+
+                    <div class="p-3 bg-sky-50/70 dark:bg-sky-950/20 rounded-xl border border-sky-200 dark:border-sky-800/40">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-sky-700 dark:text-sky-300">Rawat Jalan (Poli)</span>
+                        <div class="text-xl font-black text-sky-800 dark:text-sky-200 mt-0.5">
+                            {{ number_format($dinas['poli'], 0, ',', '.') }}
+                        </div>
+                        <span class="text-[10px] text-sky-600 dark:text-sky-400 font-medium">Poliklinik Spesialis</span>
+                    </div>
+
+                    <div class="p-3 bg-rose-50/70 dark:bg-rose-950/20 rounded-xl border border-rose-200 dark:border-rose-800/40">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-rose-700 dark:text-rose-300">Gawat Darurat (IGD)</span>
+                        <div class="text-xl font-black text-rose-800 dark:text-rose-200 mt-0.5">
+                            {{ number_format($dinas['igd'], 0, ',', '.') }}
+                        </div>
+                        <span class="text-[10px] text-rose-600 dark:text-rose-400 font-medium">Kegawatdaruratan</span>
+                    </div>
+
+                    <div class="p-3 bg-amber-50/70 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800/40">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-300">Rawat Inap (Ranap)</span>
+                        <div class="text-xl font-black text-amber-800 dark:text-amber-200 mt-0.5">
+                            {{ number_format($dinas['ranap'], 0, ',', '.') }}
+                        </div>
+                        <span class="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Dirawat di Bangsal</span>
+                    </div>
+
+                    <div class="p-3 bg-emerald-50/70 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-800/40">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">TNI vs POLRI</span>
+                        <div class="text-sm font-black text-emerald-800 dark:text-emerald-200 mt-1">
+                            {{ number_format($dinas['tni'], 0, ',', '.') }} <span class="text-[10px] font-normal text-gray-500">TNI</span>
+                        </div>
+                        <div class="text-xs font-bold text-blue-600 dark:text-blue-400">
+                            {{ number_format($dinas['polri'], 0, ',', '.') }} <span class="text-[10px] font-normal text-gray-500">POLRI</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {{-- Tabel 1: Rekap Menurut Kategori Personel --}}
+                    <div class="lg:col-span-7 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark p-4">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                            <span class="icon-[solar--users-group-rounded-bold-duotone] text-purple-600 text-base"></span>
+                            <span>Rekapitulasi Pelayanan Pasien Dinas Berdasarkan Kategori Personel</span>
+                        </h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left border-collapse min-w-[500px]">
+                                <thead>
+                                    <tr class="bg-purple-50/60 dark:bg-meta-4/60 text-purple-900 dark:text-purple-300 font-bold border-b border-stroke dark:border-strokedark">
+                                        <th class="py-2.5 px-3">Kategori Personel</th>
+                                        <th class="py-2.5 px-2 text-center text-sky-700 dark:text-sky-400">Poli</th>
+                                        <th class="py-2.5 px-2 text-center text-rose-700 dark:text-rose-400">IGD</th>
+                                        <th class="py-2.5 px-2 text-center text-amber-700 dark:text-amber-400">Ranap</th>
+                                        <th class="py-2.5 px-2 text-center text-emerald-700 dark:text-emerald-400">TNI</th>
+                                        <th class="py-2.5 px-2 text-center text-blue-700 dark:text-blue-400">POLRI</th>
+                                        <th class="py-2.5 px-3 text-center font-black">Total</th>
+                                        <th class="py-2.5 px-2 text-center">Rasio</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 font-medium">
+                                    @php $totDinasCat = 0; @endphp
+                                    @forelse ($dinas['categories'] as $cat)
+                                        @php $totDinasCat += $cat->total; @endphp
+                                        <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/20">
+                                            <td class="py-2 px-3 font-bold text-gray-800 dark:text-white">
+                                                {{ $cat->kategori }}
+                                            </td>
+                                            <td class="py-2 px-2 text-center text-sky-600 dark:text-sky-400 font-semibold">{{ number_format($cat->poli, 0, ',', '.') }}</td>
+                                            <td class="py-2 px-2 text-center text-rose-600 dark:text-rose-400 font-semibold">{{ number_format($cat->igd, 0, ',', '.') }}</td>
+                                            <td class="py-2 px-2 text-center text-amber-600 dark:text-amber-400 font-semibold">{{ number_format($cat->ranap, 0, ',', '.') }}</td>
+                                            <td class="py-2 px-2 text-center text-emerald-600 dark:text-emerald-400 font-semibold">{{ number_format($cat->tni, 0, ',', '.') }}</td>
+                                            <td class="py-2 px-2 text-center text-blue-600 dark:text-blue-400 font-semibold">{{ number_format($cat->polri, 0, ',', '.') }}</td>
+                                            <td class="py-2 px-3 text-center font-black text-purple-700 dark:text-purple-400">
+                                                {{ number_format($cat->total, 0, ',', '.') }}
+                                            </td>
+                                            <td class="py-2 px-2 text-center text-gray-500 font-medium">
+                                                {{ $dinas['total'] > 0 ? round(($cat->total / $dinas['total']) * 100, 1) : 0 }}%
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="8" class="py-6 text-center text-gray-400 italic">Tidak ada kunjungan pasien dinas pada periode ini.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {{-- Tabel 2: Top Kesatuan / Satuan Dinas --}}
+                    <div class="lg:col-span-5 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark p-4">
+                        <h4 class="text-xs font-black uppercase tracking-wider text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                            <span class="icon-[solar--shield-check-bold-duotone] text-purple-600 text-base"></span>
+                            <span>Sebaran Kesatuan / Satuan Pasien Dinas</span>
+                        </h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-xs text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-gray-100 dark:bg-meta-4/60 text-gray-700 dark:text-gray-300 font-bold border-b border-stroke dark:border-strokedark">
+                                        <th class="py-2.5 px-3">Nama Satuan</th>
+                                        <th class="py-2.5 px-2 text-center text-sky-700 dark:text-sky-400">Poli</th>
+                                        <th class="py-2.5 px-2 text-center text-rose-700 dark:text-rose-400">IGD</th>
+                                        <th class="py-2.5 px-2 text-center text-amber-700 dark:text-amber-400">Ranap</th>
+                                        <th class="py-2.5 px-3 text-center font-black">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 font-medium">
+                                    @forelse ($dinas['satuan'] as $sat)
+                                        <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/20">
+                                            <td class="py-2 px-3 font-bold text-gray-800 dark:text-white truncate max-w-[150px]">
+                                                {{ $sat->nama_satuan }}
+                                            </td>
+                                            <td class="py-2 px-2 text-center text-sky-600 dark:text-sky-400 font-semibold">{{ number_format($sat->poli, 0, ',', '.') }}</td>
+                                            <td class="py-2 px-2 text-center text-rose-600 dark:text-rose-400 font-semibold">{{ number_format($sat->igd, 0, ',', '.') }}</td>
+                                            <td class="py-2 px-2 text-center text-amber-600 dark:text-amber-400 font-semibold">{{ number_format($sat->ranap, 0, ',', '.') }}</td>
+                                            <td class="py-2 px-3 text-center font-black text-purple-700 dark:text-purple-400">
+                                                {{ number_format($sat->total, 0, ',', '.') }}
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" class="py-6 text-center text-gray-400 italic">Tidak ada data satuan pasien dinas.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

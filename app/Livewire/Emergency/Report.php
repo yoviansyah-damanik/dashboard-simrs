@@ -366,4 +366,29 @@ class Report extends Component
             'patients' => $this->patients,
         ]);
     }
+
+    /**
+     * Ekspor laporan IGD ke format PDF resmi
+     */
+    public function exportPdf()
+    {
+        set_time_limit(0);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.emergency-report-pdf', [
+            'summary' => $this->summary,
+            'statusBreakdown' => $this->statusBreakdown,
+            'doctorBreakdown' => $this->doctorBreakdown,
+            'payTypeBreakdown' => $this->payTypeBreakdown,
+            'startDate' => \Carbon\Carbon::parse($this->startDate)->translatedFormat('d F Y'),
+            'endDate' => \Carbon\Carbon::parse($this->endDate)->translatedFormat('d F Y'),
+            'printedAt' => now()->translatedFormat('d F Y H:i'),
+            'printedBy' => auth()->user()->name ?? 'Petugas IGD SIMRS',
+        ])->setPaper('a4', 'portrait');
+
+        $filename = 'laporan-igd-' . $this->startDate . '-sd-' . $this->endDate . '.pdf';
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->stream();
+        }, $filename);
+    }
 }

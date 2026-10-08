@@ -182,15 +182,56 @@ Route::middleware('auth')
             return redirect()->route('ancillary.yearly-matrix', ['activeTab' => 'farmasi']);
         })->middleware('permission:indicator-matrix show|pharmacy recap|pharmacy show');
 
-        Route::get('/icd', \App\Livewire\Icd\Recap::class)
-            ->middleware('permission:icd recap')
+        Route::get('/laporan-data-penyakit', \App\Livewire\Icd\Recap::class)
+            ->middleware('permission:icd recap|patient-report show|patient show')
             ->name('icd');
-        Route::get('/icd/icd-10', \App\Livewire\Icd\Icd10::class)
-            ->middleware('permission:icd icd10 show')
+        Route::get('/icd', function () {
+            return redirect()->route('icd');
+        })->middleware('permission:icd recap|patient-report show|patient show');
+        Route::get('/rekap-penyakit', function () {
+            return redirect()->route('icd');
+        })->middleware('permission:icd recap|patient-report show|patient show')
+          ->name('disease.recap');
+        Route::get('/icd/icd-10', function () {
+            return redirect()->route('icd');
+        })->middleware('permission:icd icd10 show|icd recap|patient show')
             ->name('icd.icd10');
-        Route::get('/icd/icd-9', \App\Livewire\Icd\Icd9::class)
-            ->middleware('permission:icd icd9 show')
+        Route::get('/laporan-data-tindakan', \App\Livewire\Icd\ProcedureRecap::class)
+            ->middleware('permission:icd icd9 show|icd recap|patient-report show|patient show')
+            ->name('icd.procedure');
+        Route::get('/icd/icd-9', function () {
+            return redirect()->route('icd.procedure');
+        })->middleware('permission:icd icd9 show|icd recap|patient-report show|patient show')
             ->name('icd.icd9');
+        Route::get('/rekap-tindakan', function () {
+            return redirect()->route('icd.procedure');
+        })->middleware('permission:icd icd9 show|icd recap|patient-report show|patient show')
+          ->name('procedure.recap');
+
+        // MUTU & AKREDITASI
+        Route::prefix('mutu')
+            ->as('mutu.')
+            ->group(function () {
+                Route::get('/inm', \App\Livewire\Inm\Index::class)
+                    ->middleware('permission:mutu.inm|mutu show|indicator-matrix show')
+                    ->name('inm');
+                Route::get('/ikp', \App\Livewire\Mutu\Ikp::class)
+                    ->middleware('permission:mutu.ikp|mutu show|indicator-matrix show')
+                    ->name('ikp');
+                Route::get('/ppi', \App\Livewire\Mutu\Ppi::class)
+                    ->middleware('permission:mutu.ppi|mutu show|indicator-matrix show')
+                    ->name('ppi');
+                Route::get('/spm', \App\Livewire\Mutu\Spm::class)
+                    ->middleware('permission:mutu.spm|mutu show|indicator-matrix show')
+                    ->name('spm');
+                Route::get('/klpcm', \App\Livewire\Mutu\KlpcmReport::class)
+                    ->middleware('permission:mutu.klpcm|mutu show|indicator-matrix show')
+                    ->name('klpcm');
+            });
+
+        Route::get('/inm', function () {
+            return redirect()->route('mutu.inm');
+        })->middleware('permission:mutu.inm|mutu show|indicator-matrix show');
 
         // SIRS ONLINE
         Route::prefix('sirs')
@@ -308,4 +349,10 @@ Route::middleware('auth')
         Route::get('/pengaturan', \App\Livewire\Configuration::class)
             ->middleware('permission:configuration')
             ->name('configuration');
+
+        Route::get('/changelog', \App\Livewire\ChangeLog::class)
+            ->name('changelog');
+        Route::get('/change-log', function () {
+            return redirect()->route('changelog');
+        });
     });

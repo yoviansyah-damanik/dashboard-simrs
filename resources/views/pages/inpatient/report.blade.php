@@ -62,8 +62,12 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <x-button color="default" icon="i-ph-printer" onclick="window.print()">
-                Cetak
+            <x-button color="default" icon="i-ph-file-pdf" wire:click="exportPdf" wire:loading.attr="disabled">
+                <span wire:loading.remove wire:target="exportPdf">Cetak PDF Data</span>
+                <span wire:loading wire:target="exportPdf" class="flex items-center gap-1.5">
+                    <span class="icon-[solar--spinner-linear] animate-spin text-sm"></span>
+                    <span>Menyiapkan PDF...</span>
+                </span>
             </x-button>
             <x-button color="green" icon="i-ph-file-xls" wire:click="exportExcel">
                 Excel
@@ -71,14 +75,11 @@
             <x-button color="primary" icon="i-ph-file-csv" wire:click="exportCsv">
                 CSV
             </x-button>
-            <x-button color="red" icon="i-ph-file-pdf" wire:click="exportPdf">
-                PDF
-            </x-button>
         </div>
     </div>
 
     {{-- Ringkasan Statistik --}}
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {{-- Total Pasien --}}
         <div
             class="bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm p-4 flex items-center gap-4">
@@ -118,6 +119,27 @@
                 <p class="text-2xl font-black text-emerald-600">
                     {{ number_format($summary['sudah_pulang'], 0, ',', '.') }}
                 </p>
+            </div>
+        </div>
+
+        {{-- Pasien Dinas (TNI / POLRI) --}}
+        <div
+            class="bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm p-4 flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest">Pasien Dinas</p>
+                    <p class="text-2xl font-black text-purple-700 dark:text-purple-300">
+                        {{ number_format($summary['total_dinas'] ?? 0, 0, ',', '.') }}
+                    </p>
+                </div>
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-purple-600 bg-purple-500/10">
+                    <span class="icon-[solar--shield-bold-duotone] text-2xl"></span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 mt-2 pt-2 border-t border-stroke/60 dark:border-strokedark/60 text-xs font-semibold">
+                <span class="text-emerald-600 dark:text-emerald-400 font-bold">{{ number_format($summary['total_tni'] ?? 0, 0, ',', '.') }} TNI</span>
+                <span class="text-gray-300 dark:text-gray-600">&bull;</span>
+                <span class="text-blue-600 dark:text-blue-400 font-bold">{{ number_format($summary['total_polri'] ?? 0, 0, ',', '.') }} POLRI</span>
             </div>
         </div>
 
@@ -297,120 +319,359 @@
         </div>
     @endif
 
-    {{-- Tabel Laporan --}}
-    <div class="bg-white dark:bg-boxdark rounded-3xl border border-stroke dark:border-strokedark shadow-sm overflow-hidden">
-        {{-- Judul Formal Laporan --}}
-        <div class="px-6 pt-6 pb-4 border-b border-stroke dark:border-strokedark text-center">
-            <h3 class="text-base font-black text-gray-800 dark:text-white uppercase tracking-widest">
-                Laporan Pasien Rawat Inap
-            </h3>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium">
-                Periode Tanggal Masuk:
-                <span class="font-bold text-gray-700 dark:text-gray-200">
-                    {{ \Carbon\Carbon::parse($startDate)->translatedFormat('d F Y') }}
-                </span>
-                s/d
-                <span class="font-bold text-gray-700 dark:text-gray-200">
-                    {{ \Carbon\Carbon::parse($endDate)->translatedFormat('d F Y') }}
-                </span>
-                &bull; Penjamin:
-                <span class="font-bold text-primary">
-                    {{ $activePayType['title'] ?? 'Semua' }}
-                </span>
-            </p>
-        </div>
+    {{-- Segmented Tab Navigation --}}
+    <div class="p-1.5 bg-gray-100 dark:bg-meta-4/60 rounded-2xl border border-stroke/50 dark:border-strokedark/50 inline-flex flex-wrap gap-1.5 no-print">
+        <button type="button" wire:click="switchTab('daftar_pasien')"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer {{ $activeTab === 'daftar_pasien' ? 'bg-white dark:bg-boxdark text-primary font-black shadow-sm ring-1 ring-black/5 dark:ring-white/10' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white font-semibold hover:bg-gray-200/50 dark:hover:bg-meta-4' }}">
+            <span class="icon-[solar--bed-bold-duotone] text-base {{ $activeTab === 'daftar_pasien' ? 'text-primary' : '' }}"></span>
+            <span>Daftar Pasien Rawat Inap</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $activeTab === 'daftar_pasien' ? 'bg-primary/10 text-primary' : 'bg-gray-200 dark:bg-meta-4 text-gray-600 dark:text-gray-300' }}">
+                {{ number_format($summary['total_pasien'], 0, ',', '.') }}
+            </span>
+        </button>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="bg-gray-50 dark:bg-meta-4 text-xs font-black text-gray-500 dark:text-gray-300 uppercase tracking-wider border-b border-stroke dark:border-strokedark">
-                        <th class="px-4 py-3.5 text-center w-12">No</th>
-                        <th class="px-4 py-3.5 text-left whitespace-nowrap">No. Rawat</th>
-                        <th class="px-4 py-3.5 text-left whitespace-nowrap">No. RM</th>
-                        <th class="px-4 py-3.5 text-left min-w-[200px]">Nama Pasien</th>
-                        <th class="px-4 py-3.5 text-left min-w-[180px]">Bangsal</th>
-                        <th class="px-4 py-3.5 text-center whitespace-nowrap">Tgl Masuk</th>
-                        <th class="px-4 py-3.5 text-center whitespace-nowrap">Tgl Keluar</th>
-                        <th class="px-4 py-3.5 text-left min-w-[150px]">Penjamin</th>
-                        <th class="px-4 py-3.5 text-left min-w-[240px]">DPJP Ranap</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-stroke dark:divide-strokedark">
-                    @forelse ($patients as $index => $patient)
-                        @php
-                            $isMasihDirawat = ($patient->tgl_keluar == '0000-00-00' || empty($patient->tgl_keluar));
-                            $rowNumber = ($patients instanceof \Illuminate\Pagination\LengthAwarePaginator)
-                                ? ($patients->firstItem() + $index)
-                                : ($index + 1);
-                        @endphp
-                        <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/40 transition-colors">
-                            <td class="px-4 py-3.5 text-center font-bold text-gray-500 text-xs">
-                                {{ $rowNumber }}
-                            </td>
-                            <td class="px-4 py-3.5 font-mono text-xs font-bold text-primary whitespace-nowrap">
-                                {{ $patient->no_rawat }}
-                            </td>
-                            <td class="px-4 py-3.5 font-mono text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                                {{ $patient->no_rkm_medis }}
-                            </td>
-                            <td class="px-4 py-3.5 font-bold text-gray-800 dark:text-white">
-                                {{ $patient->nm_pasien }}
-                            </td>
-                            <td class="px-4 py-3.5 text-gray-700 dark:text-gray-300 text-xs font-medium">
-                                {{ $patient->nm_bangsal }}
-                            </td>
-                            <td class="px-4 py-3.5 text-center text-xs font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                                {{ \Carbon\Carbon::parse($patient->tgl_masuk)->format('d/m/Y') }}
-                            </td>
-                            <td class="px-4 py-3.5 text-center whitespace-nowrap">
-                                @if ($isMasihDirawat)
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                        Masih Dirawat
-                                    </span>
-                                @else
-                                    <span class="text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        {{ \Carbon\Carbon::parse($patient->tgl_keluar)->format('d/m/Y') }}
-                                    </span>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3.5 text-xs text-gray-600 dark:text-gray-300">
-                                <span class="inline-block px-2 py-0.5 rounded bg-gray-100 dark:bg-meta-4 font-medium">
-                                    {{ $patient->png_jawab ?? '-' }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3.5 text-xs text-gray-700 dark:text-gray-300">
-                                @if (!empty($patient->dpjp_ranap))
-                                    <div class="flex items-center gap-1.5">
-                                        <span class="icon-[solar--stethoscope-bold-duotone] text-primary text-sm shrink-0"></span>
-                                        <span class="font-medium">{{ $patient->dpjp_ranap }}</span>
-                                    </div>
-                                @else
-                                    <span class="text-gray-400 italic">-</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="9" class="px-6 py-16 text-center">
-                                <div class="flex flex-col items-center justify-center gap-3">
-                                    <span class="icon-[solar--document-text-bold-duotone] text-5xl text-gray-300 dark:text-gray-600"></span>
-                                    <p class="text-gray-500 dark:text-gray-400 font-bold text-sm">Tidak ada data pasien rawat inap yang sesuai.</p>
-                                    <p class="text-gray-400 text-xs">Coba ubah filter periode, bangsal, atau kata kunci pencarian.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        @if ($patients instanceof \Illuminate\Pagination\LengthAwarePaginator && $patients->hasPages())
-            <div class="p-4 border-t border-stroke dark:border-strokedark">
-                {{ $patients->links() }}
-            </div>
-        @endif
+        <button type="button" wire:click="switchTab('rekap_dinas')"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer {{ $activeTab === 'rekap_dinas' ? 'bg-white dark:bg-boxdark text-purple-700 dark:text-purple-400 font-black shadow-sm ring-1 ring-black/5 dark:ring-white/10' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white font-semibold hover:bg-gray-200/50 dark:hover:bg-meta-4' }}">
+            <span class="icon-[solar--shield-bold-duotone] text-base {{ $activeTab === 'rekap_dinas' ? 'text-purple-600 dark:text-purple-400' : '' }}"></span>
+            <span>Rekap Pasien Dinas</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $activeTab === 'rekap_dinas' ? 'bg-purple-500/10 text-purple-700 dark:text-purple-300' : 'bg-gray-200 dark:bg-meta-4 text-gray-600 dark:text-gray-300' }}">
+                {{ number_format($this->dinasBreakdown['summary']['total'] ?? 0, 0, ',', '.') }}
+            </span>
+        </button>
     </div>
+
+    {{-- TAB 1: DAFTAR PASIEN RAWAT INAP --}}
+    @if ($activeTab === 'daftar_pasien')
+        <div class="bg-white dark:bg-boxdark rounded-3xl border border-stroke dark:border-strokedark shadow-sm overflow-hidden">
+            {{-- Judul Formal Laporan --}}
+            <div class="px-6 pt-6 pb-4 border-b border-stroke dark:border-strokedark text-center">
+                <h3 class="text-base font-black text-gray-800 dark:text-white uppercase tracking-widest">
+                    Laporan Pasien Rawat Inap
+                </h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 font-medium">
+                    Periode Tanggal Masuk:
+                    <span class="font-bold text-gray-700 dark:text-gray-200">
+                        {{ \Carbon\Carbon::parse($startDate)->translatedFormat('d F Y') }}
+                    </span>
+                    s/d
+                    <span class="font-bold text-gray-700 dark:text-gray-200">
+                        {{ \Carbon\Carbon::parse($endDate)->translatedFormat('d F Y') }}
+                    </span>
+                    &bull; Penjamin:
+                    <span class="font-bold text-primary">
+                        {{ $activePayType['title'] ?? 'Semua' }}
+                    </span>
+                </p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 dark:bg-meta-4 text-xs font-black text-gray-500 dark:text-gray-300 uppercase tracking-wider border-b border-stroke dark:border-strokedark">
+                            <th class="px-4 py-3.5 text-center w-12">No</th>
+                            <th class="px-4 py-3.5 text-left whitespace-nowrap">No. Rawat</th>
+                            <th class="px-4 py-3.5 text-left whitespace-nowrap">No. RM</th>
+                            <th class="px-4 py-3.5 text-left min-w-[200px]">Nama Pasien</th>
+                            <th class="px-4 py-3.5 text-left min-w-[180px]">Bangsal</th>
+                            <th class="px-4 py-3.5 text-center whitespace-nowrap">Tgl Masuk</th>
+                            <th class="px-4 py-3.5 text-center whitespace-nowrap">Tgl Keluar</th>
+                            <th class="px-4 py-3.5 text-left min-w-[150px]">Penjamin</th>
+                            <th class="px-4 py-3.5 text-left min-w-[240px]">DPJP Ranap</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-stroke dark:divide-strokedark">
+                        @forelse ($patients as $index => $patient)
+                            @php
+                                $isMasihDirawat = ($patient->tgl_keluar == '0000-00-00' || empty($patient->tgl_keluar));
+                                $rowNumber = ($patients instanceof \Illuminate\Pagination\LengthAwarePaginator)
+                                    ? ($patients->firstItem() + $index)
+                                    : ($index + 1);
+                            @endphp
+                            <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/40 transition-colors">
+                                <td class="px-4 py-3.5 text-center font-bold text-gray-500 text-xs">
+                                    {{ $rowNumber }}
+                                </td>
+                                <td class="px-4 py-3.5 font-mono text-xs font-bold text-primary whitespace-nowrap">
+                                    {{ $patient->no_rawat }}
+                                </td>
+                                <td class="px-4 py-3.5 font-mono text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                    {{ $patient->no_rkm_medis }}
+                                </td>
+                                <td class="px-4 py-3.5 font-bold text-gray-800 dark:text-white">
+                                    {{ $patient->nm_pasien }}
+                                </td>
+                                <td class="px-4 py-3.5 text-gray-700 dark:text-gray-300 text-xs font-medium">
+                                    {{ $patient->nm_bangsal }}
+                                </td>
+                                <td class="px-4 py-3.5 text-center text-xs font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                                    {{ \Carbon\Carbon::parse($patient->tgl_masuk)->format('d/m/Y') }}
+                                </td>
+                                <td class="px-4 py-3.5 text-center whitespace-nowrap">
+                                    @if ($isMasihDirawat)
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                            Masih Dirawat
+                                        </span>
+                                    @else
+                                        <span class="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                            {{ \Carbon\Carbon::parse($patient->tgl_keluar)->format('d/m/Y') }}
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3.5 text-xs text-gray-600 dark:text-gray-300">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span class="inline-block px-2 py-0.5 rounded bg-gray-100 dark:bg-meta-4 font-medium">
+                                            {{ $patient->png_jawab ?? '-' }}
+                                        </span>
+                                        @if ($patient->status_dinas === 'TNI')
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                                TNI
+                                            </span>
+                                        @elseif ($patient->status_dinas === 'POLRI')
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                                POLRI
+                                            </span>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3.5 text-xs text-gray-700 dark:text-gray-300">
+                                    @if (!empty($patient->dpjp_ranap))
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="icon-[solar--stethoscope-bold-duotone] text-primary text-sm shrink-0"></span>
+                                            <span class="font-medium">{{ $patient->dpjp_ranap }}</span>
+                                        </div>
+                                    @else
+                                        <span class="text-gray-400 italic">-</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="9" class="px-6 py-16 text-center">
+                                    <div class="flex flex-col items-center justify-center gap-3">
+                                        <span class="icon-[solar--document-text-bold-duotone] text-5xl text-gray-300 dark:text-gray-600"></span>
+                                        <p class="text-gray-500 dark:text-gray-400 font-bold text-sm">Tidak ada data pasien rawat inap yang sesuai.</p>
+                                        <p class="text-gray-400 text-xs">Coba ubah filter periode, bangsal, atau kata kunci pencarian.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            @if ($patients instanceof \Illuminate\Pagination\LengthAwarePaginator && $patients->hasPages())
+                <div class="p-4 border-t border-stroke dark:border-strokedark">
+                    {{ $patients->links() }}
+                </div>
+            @endif
+        </div>
+    @endif
+
+    {{-- TAB 2: REKAP PASIEN DINAS (TNI / POLRI) --}}
+    @if ($activeTab === 'rekap_dinas')
+        @php
+            $dinasData = $this->dinasBreakdown;
+            $dinasSum = $dinasData['summary'];
+        @endphp
+        <div class="space-y-6">
+            {{-- Kartu Ringkasan Pasien Dinas Ranap --}}
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div class="p-4 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">Total Pasien Dinas</span>
+                    <div class="text-2xl font-black text-purple-700 dark:text-purple-300 mt-1">
+                        {{ number_format($dinasSum['total'], 0, ',', '.') }}
+                    </div>
+                    <span class="text-[11px] text-gray-400 font-medium">Rawat Inap</span>
+                </div>
+
+                <div class="p-4 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Pasien TNI</span>
+                    <div class="text-2xl font-black text-emerald-700 dark:text-emerald-300 mt-1">
+                        {{ number_format($dinasSum['tni'], 0, ',', '.') }}
+                    </div>
+                    <span class="text-[11px] text-gray-400 font-medium">TNI AD, AL, AU</span>
+                </div>
+
+                <div class="p-4 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">Pasien POLRI</span>
+                    <div class="text-2xl font-black text-blue-700 dark:text-blue-300 mt-1">
+                        {{ number_format($dinasSum['polri'], 0, ',', '.') }}
+                    </div>
+                    <span class="text-[11px] text-gray-400 font-medium">Kepolisian RI</span>
+                </div>
+
+                <div class="p-4 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">Masih Dirawat</span>
+                    <div class="text-2xl font-black text-amber-600 mt-1">
+                        {{ number_format($dinasSum['masih_dirawat'], 0, ',', '.') }}
+                    </div>
+                    <span class="text-[11px] text-gray-400 font-medium">Sedang Berada di Kamar</span>
+                </div>
+
+                <div class="p-4 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-teal-600 dark:text-teal-400">Sudah Pulang</span>
+                    <div class="text-2xl font-black text-teal-600 mt-1">
+                        {{ number_format($dinasSum['sudah_pulang'], 0, ',', '.') }}
+                    </div>
+                    <span class="text-[11px] text-gray-400 font-medium">Keluar / Sembuh</span>
+                </div>
+            </div>
+
+            {{-- Tabel Sebaran Pasien Dinas per Bangsal --}}
+            <div class="bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm overflow-hidden">
+                <div class="px-6 py-5 border-b border-stroke dark:border-strokedark flex items-center justify-between">
+                    <div>
+                        <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                            <span class="icon-[solar--bed-bold-duotone] text-purple-600 dark:text-purple-400 text-lg"></span>
+                            Sebaran Pasien Dinas per Bangsal / Ruangan
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Distribusi pasien rawat inap dinas (TNI & POLRI) di seluruh ruangan perawatan.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-gray-50 dark:bg-meta-4/60 text-xs font-black text-gray-500 dark:text-gray-300 uppercase tracking-wider border-b border-stroke dark:border-strokedark">
+                                <th class="px-4 py-3.5 text-center w-12">No</th>
+                                <th class="px-4 py-3.5 text-left min-w-[200px]">Bangsal / Ruangan</th>
+                                <th class="px-4 py-3.5 text-center min-w-[120px]">Total Dinas</th>
+                                <th class="px-4 py-3.5 text-center min-w-[120px]">Proporsi</th>
+                                <th class="px-4 py-3.5 text-center min-w-[100px]">TNI</th>
+                                <th class="px-4 py-3.5 text-center min-w-[100px]">POLRI</th>
+                                <th class="px-4 py-3.5 text-center min-w-[120px]">Masih Dirawat</th>
+                                <th class="px-4 py-3.5 text-center min-w-[120px]">Sudah Pulang</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-stroke dark:divide-strokedark">
+                            @forelse ($dinasData['wards'] as $idx => $dw)
+                                <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/40 transition-colors">
+                                    <td class="px-4 py-3.5 text-center font-bold text-gray-500 text-xs">
+                                        {{ $idx + 1 }}
+                                    </td>
+                                    <td class="px-4 py-3.5">
+                                        <div class="font-bold text-gray-900 dark:text-white">{{ $dw['nm_bangsal'] }}</div>
+                                        <div class="text-[11px] font-mono text-gray-400">Kode: {{ $dw['kd_bangsal'] }}</div>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-center">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-purple-500/10 text-purple-700 dark:text-purple-300">
+                                            {{ number_format($dw['total'], 0, ',', '.') }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3.5">
+                                        <div class="w-full max-w-[100px] mx-auto">
+                                            <div class="text-right text-[11px] font-bold text-gray-600 dark:text-gray-300 mb-1">
+                                                {{ $dw['percent'] }}%
+                                            </div>
+                                            <div class="w-full bg-gray-100 dark:bg-meta-4 h-1.5 rounded-full overflow-hidden">
+                                                <div class="bg-purple-600 h-full rounded-full" style="width: {{ $dw['percent'] }}%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-center font-bold text-emerald-600 dark:text-emerald-400">
+                                        {{ number_format($dw['tni'], 0, ',', '.') }}
+                                    </td>
+                                    <td class="px-4 py-3.5 text-center font-bold text-blue-600 dark:text-blue-400">
+                                        {{ number_format($dw['polri'], 0, ',', '.') }}
+                                    </td>
+                                    <td class="px-4 py-3.5 text-center font-semibold text-amber-600">
+                                        {{ number_format($dw['masih_dirawat'], 0, ',', '.') }}
+                                    </td>
+                                    <td class="px-4 py-3.5 text-center font-semibold text-teal-600">
+                                        {{ number_format($dw['sudah_pulang'], 0, ',', '.') }}
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="8" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                                        Tidak ada data pasien dinas rawat inap untuk filter yang dipilih.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {{-- 2 Kolom: Kategori Personel & Top Satuan TNI --}}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {{-- Kategori Personel --}}
+                <div class="bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm overflow-hidden">
+                    <div class="px-6 py-5 border-b border-stroke dark:border-strokedark">
+                        <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                            <span class="icon-[solar--users-group-two-rounded-bold-duotone] text-purple-600 dark:text-purple-400 text-lg"></span>
+                            Kategori Personel Dinas Ranap
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-gray-50 dark:bg-meta-4/60 text-xs font-black text-gray-500 dark:text-gray-300 uppercase tracking-wider border-b border-stroke dark:border-strokedark">
+                                    <th class="px-4 py-3 text-left">Kategori</th>
+                                    <th class="px-4 py-3 text-center">Total</th>
+                                    <th class="px-4 py-3 text-center">Proporsi</th>
+                                    <th class="px-4 py-3 text-center">TNI</th>
+                                    <th class="px-4 py-3 text-center">POLRI</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-stroke dark:divide-strokedark">
+                                @forelse ($dinasData['categories'] as $cat)
+                                    <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/40">
+                                        <td class="px-4 py-3 font-bold text-gray-800 dark:text-white">{{ $cat['kategori'] }}</td>
+                                        <td class="px-4 py-3 text-center font-black text-purple-600">{{ number_format($cat['total'], 0, ',', '.') }}</td>
+                                        <td class="px-4 py-3 text-center text-xs font-bold text-gray-500">{{ $cat['percent'] }}%</td>
+                                        <td class="px-4 py-3 text-center font-semibold text-emerald-600">{{ number_format($cat['tni'], 0, ',', '.') }}</td>
+                                        <td class="px-4 py-3 text-center font-semibold text-blue-600">{{ number_format($cat['polri'], 0, ',', '.') }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="px-4 py-8 text-center text-gray-500">Tidak ada data.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{-- Top 10 Satuan TNI --}}
+                <div class="bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm overflow-hidden">
+                    <div class="px-6 py-5 border-b border-stroke dark:border-strokedark">
+                        <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                            <span class="icon-[solar--flag-bold-duotone] text-emerald-600 dark:text-emerald-400 text-lg"></span>
+                            Top Satuan Pasien TNI Rawat Inap
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-gray-50 dark:bg-meta-4/60 text-xs font-black text-gray-500 dark:text-gray-300 uppercase tracking-wider border-b border-stroke dark:border-strokedark">
+                                    <th class="px-4 py-3 text-center w-12">No</th>
+                                    <th class="px-4 py-3 text-left">Nama Kesatuan</th>
+                                    <th class="px-4 py-3 text-center">Total Pasien</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-stroke dark:divide-strokedark">
+                                @forelse ($dinasData['satuan'] as $sIdx => $sat)
+                                    <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/40">
+                                        <td class="px-4 py-3 text-center font-bold text-gray-500 text-xs">{{ $sIdx + 1 }}</td>
+                                        <td class="px-4 py-3 font-bold text-gray-800 dark:text-white">{{ $sat['nama_satuan'] }}</td>
+                                        <td class="px-4 py-3 text-center font-black text-emerald-600">{{ number_format($sat['total'], 0, ',', '.') }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="px-4 py-8 text-center text-gray-500">Tidak ada data kesatuan.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <style>
         @media print {

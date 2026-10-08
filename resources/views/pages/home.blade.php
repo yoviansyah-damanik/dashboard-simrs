@@ -597,15 +597,25 @@
                                 <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400">Total Dinas:</span>
                                 <span class="text-xs font-black text-gray-800 dark:text-white">{{ number_format($this->dinasPatientsTrend['totalDinas']) }}</span>
                             </div>
-                            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200/50 dark:border-blue-500/20">
-                                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-                                <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400">Ralan:</span>
-                                <span class="text-xs font-black text-blue-600 dark:text-blue-400">{{ number_format($this->dinasPatientsTrend['totalRalan']) }}</span>
-                            </div>
                             <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/50 dark:border-emerald-500/20">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400">TNI:</span>
+                                <span class="text-xs font-black text-emerald-600 dark:text-emerald-400">{{ number_format($this->dinasPatientsTrend['totalTni'] ?? 0) }}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200/50 dark:border-blue-500/20">
+                                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400">POLRI:</span>
+                                <span class="text-xs font-black text-blue-600 dark:text-blue-400">{{ number_format($this->dinasPatientsTrend['totalPolri'] ?? 0) }}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-500/10 border border-sky-200/50 dark:border-sky-500/20">
+                                <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                                <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400">Ralan:</span>
+                                <span class="text-xs font-black text-sky-600 dark:text-sky-400">{{ number_format($this->dinasPatientsTrend['totalRalan']) }}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200/50 dark:border-amber-500/20">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                                 <span class="text-[11px] font-bold text-gray-500 dark:text-gray-400">Ranap:</span>
-                                <span class="text-xs font-black text-emerald-600 dark:text-emerald-400">{{ number_format($this->dinasPatientsTrend['totalRanap']) }}</span>
+                                <span class="text-xs font-black text-amber-600 dark:text-amber-400">{{ number_format($this->dinasPatientsTrend['totalRanap']) }}</span>
                             </div>
                             <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200/50 dark:border-rose-500/20">
                                 <span class="w-2 h-2 rounded-full bg-rose-500"></span>
@@ -880,6 +890,240 @@
                         @empty
                             <div class="text-center py-6 text-gray-400 text-xs">Belum ada data diagnosa bulan ini.</div>
                         @endforelse
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section: Mutu Pelayanan & Akreditasi Rumah Sakit (INM & SPM Kemenkes RI) -->
+        @php $mutu = $this->mutuSummary; @endphp
+        <div class="space-y-6">
+            <div class="bg-white dark:bg-boxdark p-6 sm:p-8 rounded-[2.5rem] border border-stroke dark:border-strokedark shadow-sm">
+                <!-- Header Banner -->
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-5 pb-6 border-b border-stroke/70 dark:border-strokedark/70 mb-6">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 shrink-0">
+                            <span class="icon-[solar--diploma-verified-bold-duotone] text-2xl"></span>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h3 class="text-xl font-black text-gray-800 dark:text-white uppercase tracking-tight">Mutu & Akreditasi Rumah Sakit</h3>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                    Standar Kemenkes RI
+                                </span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">
+                                Rekapitulasi Capaian 13 Indikator Nasional Mutu (Permenkes 30/2022) dan Standar Pelayanan Minimal (Kepmenkes 129/2008) Bulan {{ now()->translatedFormat('F Y') }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Action Badges -->
+                    <div class="flex items-center flex-wrap gap-2.5 shrink-0">
+                        <button type="button" wire:click="refreshMutuCache" wire:loading.attr="disabled"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 dark:bg-meta-4/60 dark:hover:bg-meta-4 text-gray-700 dark:text-gray-300 transition"
+                            title="Perbarui Data Mutu">
+                            <span wire:loading.remove wire:target="refreshMutuCache" class="icon-[solar--refresh-circle-bold-duotone] text-base"></span>
+                            <span wire:loading wire:target="refreshMutuCache" class="icon-[solar--spinner-line-duotone] animate-spin text-base"></span>
+                            <span class="text-[11px]">Sync Mutu</span>
+                        </button>
+                        <a href="{{ route('mutu.inm') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition">
+                            <span class="icon-[solar--chart-bold-duotone] text-base"></span>
+                            <span>Detail INM</span>
+                        </a>
+                        <a href="{{ route('mutu.spm') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition">
+                            <span class="icon-[solar--checklist-minimalistic-bold-duotone] text-base"></span>
+                            <span>Detail SPM</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 4 Top Executive Quality Cards Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <!-- 1. Capaian INM Nasional -->
+                    <div class="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent border border-emerald-500/20 dark:bg-meta-4/20 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">13 Indikator INM</span>
+                                <span class="px-2 py-0.5 rounded-full text-[9px] font-black {{ $mutu['inm']['compliance_percent'] >= 80 ? 'bg-emerald-500/15 text-emerald-600' : 'bg-amber-500/15 text-amber-600' }}">
+                                    {{ $mutu['inm']['compliance_percent'] }}% Target
+                                </span>
+                            </div>
+                            <div class="text-3xl font-black text-gray-800 dark:text-white tracking-tight">
+                                {{ $mutu['inm']['average_score'] }}<span class="text-base font-bold text-gray-400">%</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                                Skor Rata-rata Kepatuhan Mutu
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-stroke/50 dark:border-strokedark/50 flex items-center justify-between text-[11px]">
+                            <span class="text-gray-400">Tercapai:</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ $mutu['inm']['achieved'] }} dari {{ $mutu['inm']['total'] }} Indikator</span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Capaian SPM RS -->
+                    <div class="p-5 rounded-2xl bg-gradient-to-br from-blue-500/5 via-transparent to-transparent border border-blue-500/20 dark:bg-meta-4/20 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">Standar Pelayanan (SPM)</span>
+                                <span class="px-2 py-0.5 rounded-full text-[9px] font-black {{ $mutu['spm']['percent'] >= 80 ? 'bg-blue-500/15 text-blue-600' : 'bg-amber-500/15 text-amber-600' }}">
+                                    {{ $mutu['spm']['percent'] }}% SPM
+                                </span>
+                            </div>
+                            <div class="text-3xl font-black text-gray-800 dark:text-white tracking-tight">
+                                {{ $mutu['spm']['achieved'] }}<span class="text-base font-bold text-gray-400">/{{ $mutu['spm']['total'] }}</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                                Indikator Unit Memenuhi SPM
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-stroke/50 dark:border-strokedark/50 flex items-center justify-between text-[11px]">
+                            <span class="text-gray-400">Cakupan:</span>
+                            <span class="font-bold text-blue-600 dark:text-blue-400">5 Unit Pelayanan Utama</span>
+                        </div>
+                    </div>
+
+                    <!-- 3. Keselamatan Pasien (IKP) -->
+                    <a href="{{ route('mutu.ikp') }}" wire:navigate class="p-5 rounded-2xl bg-gradient-to-br from-amber-500/5 via-transparent to-transparent border border-amber-500/20 dark:bg-meta-4/20 flex flex-col justify-between hover:border-amber-500/40 transition group">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">Keselamatan Pasien (IKP)</span>
+                                <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/10 text-emerald-600">
+                                    0 Sentinel
+                                </span>
+                            </div>
+                            <div class="text-3xl font-black text-gray-800 dark:text-white tracking-tight">
+                                {{ $mutu['ikp']['total'] }}<span class="text-base font-bold text-gray-400"> Kasus</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                                Insiden Dilaporkan Bulan Ini
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-stroke/50 dark:border-strokedark/50 flex items-center justify-between text-[11px]">
+                            <span class="text-gray-400">Status Risiko:</span>
+                            <span class="font-bold text-emerald-600 dark:text-emerald-400 group-hover:underline">Terkendali &rarr;</span>
+                        </div>
+                    </a>
+
+                    <!-- 4. Surveilans PPI / HAIs -->
+                    <a href="{{ route('mutu.ppi') }}" wire:navigate class="p-5 rounded-2xl bg-gradient-to-br from-purple-500/5 via-transparent to-transparent border border-purple-500/20 dark:bg-meta-4/20 flex flex-col justify-between hover:border-purple-500/40 transition group">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">Surveilans Infeksi (PPI)</span>
+                                <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-purple-500/10 text-purple-600">
+                                    HAIs
+                                </span>
+                            </div>
+                            <div class="text-3xl font-black text-gray-800 dark:text-white tracking-tight">
+                                {{ $mutu['ppi']['total_infeksi'] }}<span class="text-base font-bold text-gray-400"> Infeksi</span>
+                            </div>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                                Laju Infeksi per 1.000 Hari Pasang
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-stroke/50 dark:border-strokedark/50 flex items-center justify-between text-[11px]">
+                            <span class="text-gray-400">Audit Bundle:</span>
+                            <span class="font-bold text-purple-600 dark:text-purple-400 group-hover:underline">{{ $mutu['ppi']['bundle_rata'] }}% Kepatuhan &rarr;</span>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Dual Columns: 6 INM Priorities + SPM 5 Unit Matrix -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+                    <!-- Kolom 1: 6 Indikator INM Prioritas -->
+                    <div class="p-5 rounded-2xl bg-gray-50/70 dark:bg-meta-4/20 border border-stroke/60 dark:border-strokedark/60">
+                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-stroke/60 dark:border-strokedark/60">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                <h4 class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider">Highlight Indikator Nasional Mutu (INM)</h4>
+                            </div>
+                            <a href="{{ route('mutu.inm') }}" wire:navigate class="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1">
+                                <span>13 INM</span>
+                                <span class="icon-[solar--arrow-right-line-duotone]"></span>
+                            </a>
+                        </div>
+
+                        <div class="space-y-3">
+                            @foreach ($mutu['inm']['key_indicators'] as $ind)
+                                <div class="p-3 rounded-xl bg-white dark:bg-boxdark border border-stroke/50 dark:border-strokedark/50 shadow-2xs">
+                                    <div class="flex items-center justify-between text-xs font-bold mb-1.5">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            <span class="{{ $ind['icon'] ?? 'icon-[solar--shield-check-bold-duotone]' }} text-base {{ $ind['color'] ?? 'text-emerald-500' }} shrink-0"></span>
+                                            <span class="text-gray-800 dark:text-white font-bold truncate text-[11px]" title="{{ $ind['title'] }}">
+                                                {{ $ind['short_label'] ?? $ind['title'] }}
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center gap-2 shrink-0">
+                                            <span class="font-black text-gray-800 dark:text-white text-xs">
+                                                {{ $ind['rate'] }}{{ $ind['unit'] }}
+                                            </span>
+                                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black {{ $ind['is_achieved'] ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400' }}">
+                                                {{ $ind['status_badge'] }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-gray-100 dark:bg-meta-4 rounded-full overflow-hidden">
+                                        <div class="h-full {{ $ind['is_achieved'] ? 'bg-emerald-500' : 'bg-rose-500' }} transition-all duration-500" style="width: {{ min($ind['rate'], 100) }}%"></div>
+                                    </div>
+                                    <div class="flex items-center justify-between text-[10px] text-gray-400 mt-1">
+                                        <span>Target Standar: <strong class="text-gray-600 dark:text-gray-300 font-bold">{{ $ind['standard_label'] }}</strong></span>
+                                        <span>{{ $ind['code'] }}</span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <!-- Kolom 2: SPM per 5 Unit Pelayanan -->
+                    <div class="p-5 rounded-2xl bg-gray-50/70 dark:bg-meta-4/20 border border-stroke/60 dark:border-strokedark/60">
+                        <div class="flex items-center justify-between mb-4 pb-3 border-b border-stroke/60 dark:border-strokedark/60">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                                <h4 class="text-xs font-black text-gray-800 dark:text-white uppercase tracking-wider">Kepatuhan SPM per Unit Pelayanan</h4>
+                            </div>
+                            <a href="{{ route('mutu.spm') }}" wire:navigate class="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                                <span>Semua Unit</span>
+                                <span class="icon-[solar--arrow-right-line-duotone]"></span>
+                            </a>
+                        </div>
+
+                        <div class="space-y-3">
+                            @foreach ($mutu['spm']['sections_summary'] as $sec)
+                                <div class="p-3 rounded-xl bg-white dark:bg-boxdark border border-stroke/50 dark:border-strokedark/50 shadow-2xs">
+                                    <div class="flex items-center justify-between text-xs font-bold mb-1.5">
+                                        <div class="flex items-center gap-2 min-w-0">
+                                            @php
+                                                $unitIcons = [
+                                                    'admisi' => 'icon-[solar--user-id-bold-duotone] text-indigo-500',
+                                                    'igd' => 'icon-[solar--danger-circle-bold-duotone] text-rose-500',
+                                                    'ralan' => 'icon-[solar--stethoscope-bold-duotone] text-blue-500',
+                                                    'ranap' => 'icon-[solar--hospital-bold-duotone] text-emerald-500',
+                                                    'farmasi' => 'icon-[solar--pill-bold-duotone] text-amber-500',
+                                                    'penunjang' => 'icon-[solar--test-tube-bold-duotone] text-purple-500',
+                                                ];
+                                                $unitIcon = $unitIcons[$sec['key']] ?? 'icon-[solar--shield-check-bold-duotone] text-emerald-500';
+                                            @endphp
+                                            <span class="{{ $unitIcon }} text-base shrink-0"></span>
+                                            <span class="text-gray-800 dark:text-white font-bold truncate text-[11px]">
+                                                {{ $sec['unit'] }}
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center gap-2 shrink-0">
+                                            <span class="font-black text-gray-800 dark:text-white text-xs">
+                                                {{ $sec['achieved'] }}/{{ $sec['total'] }}
+                                            </span>
+                                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black {{ $sec['rate'] >= 80 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : ($sec['rate'] > 0 ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400') }}">
+                                                {{ $sec['rate'] }}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-gray-100 dark:bg-meta-4 rounded-full overflow-hidden">
+                                        <div class="h-full {{ $sec['rate'] >= 80 ? 'bg-emerald-500' : ($sec['rate'] > 0 ? 'bg-amber-500' : 'bg-rose-500') }} transition-all duration-500" style="width: {{ $sec['rate'] }}%"></div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
             </div>

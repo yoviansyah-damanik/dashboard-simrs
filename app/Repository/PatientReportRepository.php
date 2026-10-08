@@ -168,6 +168,10 @@ class PatientReportRepository implements PatientReportInterface
             ->leftJoin('pasien_tni as pt', "pt.no_rkm_medis", '=', "{$rp}.no_rkm_medis")
             ->leftJoin('pasien_polri as pp', "pp.no_rkm_medis", '=', "{$rp}.no_rkm_medis")
             ->where($stts, '!=', 'Batal')
+            ->where(function ($q) use ($statusLanjut, $stts) {
+                $q->where($statusLanjut, '!=', 'Ralan')
+                  ->orWhere($stts, '!=', 'Belum');
+            })
             ->when($startDate, fn($q) => $q->where("{$rp}.{$tgl}", '>=', $startDate))
             ->when($endDate,   fn($q) => $q->where("{$rp}.{$tgl}", '<=', $endDate))
             ->selectRaw(implode(', ', $selects))
@@ -257,6 +261,10 @@ class PatientReportRepository implements PatientReportInterface
         $rows = DB::connection(self::KONEKSI)
             ->table($rp)
             ->where("{$rp}.{$stts}", '!=', 'Batal')
+            ->where(function ($q) use ($rp, $statusLanjut, $stts) {
+                $q->where("{$rp}.{$statusLanjut}", '!=', 'Ralan')
+                  ->orWhere("{$rp}.{$stts}", '!=', 'Belum');
+            })
             ->whereBetween("{$rp}.{$tgl}", [$startDate, $endDate])
             ->selectRaw("
                 DATE_FORMAT({$rp}.{$tgl}, '{$format}') as periode,
@@ -348,6 +356,10 @@ class PatientReportRepository implements PatientReportInterface
         $distinctVisitors = DB::connection(self::KONEKSI)
             ->table($rp)
             ->where("{$rp}.{$stts}", '!=', 'Batal')
+            ->where(function ($q) use ($rp, $statusLanjut, $stts) {
+                $q->where("{$rp}.{$statusLanjut}", '!=', 'Ralan')
+                  ->orWhere("{$rp}.{$stts}", '!=', 'Belum');
+            })
             ->whereBetween("{$rp}.{$tgl}", [$startDate, $endDate])
             ->selectRaw("
                 COUNT(DISTINCT {$rp}.{$rm}) as total_p,
@@ -431,6 +443,10 @@ class PatientReportRepository implements PatientReportInterface
             ->leftJoin('pasien_tni as pt', 'pt.no_rkm_medis', '=', "{$rp}.no_rkm_medis")
             ->leftJoin('pasien_polri as pp', 'pp.no_rkm_medis', '=', "{$rp}.no_rkm_medis")
             ->where($stts, '!=', 'Batal')
+            ->where(function ($q) use ($statusLanjut, $stts) {
+                $q->where($statusLanjut, '!=', 'Ralan')
+                  ->orWhere($stts, '!=', 'Belum');
+            })
             ->whereYear("{$rp}.{$tgl}", $year)
             ->selectRaw("
                 MONTH({$rp}.{$tgl}) as bulan,
@@ -456,6 +472,10 @@ class PatientReportRepository implements PatientReportInterface
         $yearDistinct = DB::connection(self::KONEKSI)
             ->table($rp)
             ->where($stts, '!=', 'Batal')
+            ->where(function ($q) use ($statusLanjut, $stts) {
+                $q->where($statusLanjut, '!=', 'Ralan')
+                  ->orWhere($stts, '!=', 'Belum');
+            })
             ->whereYear("{$rp}.{$tgl}", $year)
             ->selectRaw("
                 COUNT(DISTINCT {$rm}) as total_p,

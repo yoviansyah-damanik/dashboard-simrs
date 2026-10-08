@@ -4,10 +4,15 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Computed;
 use Carbon\Carbon;
 use App\Helpers\SirsHelper;
 use App\Services\HospitalIndicatorService;
+use App\Repository\InmReportRepository;
+use App\Repository\SpmReportRepository;
+use App\Repository\IkpReportRepository;
+use App\Repository\PpiReportRepository;
 
 class Home extends Component
 {
@@ -843,6 +848,8 @@ class Home extends Component
                 SUM(CASE WHEN rp.status_lanjut = 'Ralan' AND rp.kd_poli != 'IGDK' THEN 1 ELSE 0 END) as ralan,
                 SUM(CASE WHEN rp.status_lanjut = 'Ranap' THEN 1 ELSE 0 END) as ranap,
                 SUM(CASE WHEN rp.kd_poli = 'IGDK' THEN 1 ELSE 0 END) as igd,
+                SUM(CASE WHEN pt.no_rkm_medis IS NOT NULL THEN 1 ELSE 0 END) as tni,
+                SUM(CASE WHEN pp.no_rkm_medis IS NOT NULL THEN 1 ELSE 0 END) as polri,
                 COUNT(*) as total
             ")
             ->groupBy('bulan')
@@ -863,6 +870,8 @@ class Home extends Component
         $totalRalan = 0;
         $totalRanap = 0;
         $totalIgd = 0;
+        $totalTni = 0;
+        $totalPolri = 0;
         $totalDinas = 0;
 
         foreach ($monthNames as $m => $name) {
@@ -871,6 +880,8 @@ class Home extends Component
             $ranap = isset($monthly[$m]) ? (int) $monthly[$m]->ranap : 0;
             $igd = isset($monthly[$m]) ? (int) $monthly[$m]->igd : 0;
             $tot = isset($monthly[$m]) ? (int) $monthly[$m]->total : 0;
+            $tni = isset($monthly[$m]) ? (int) $monthly[$m]->tni : 0;
+            $polri = isset($monthly[$m]) ? (int) $monthly[$m]->polri : 0;
 
             $ralanData[] = $ralan;
             $ranapData[] = $ranap;
@@ -880,6 +891,8 @@ class Home extends Component
             $totalRalan += $ralan;
             $totalRanap += $ranap;
             $totalIgd += $igd;
+            $totalTni += $tni;
+            $totalPolri += $polri;
             $totalDinas += $tot;
         }
 
@@ -924,6 +937,8 @@ class Home extends Component
             'totalRalan' => $totalRalan,
             'totalRanap' => $totalRanap,
             'totalIgd' => $totalIgd,
+            'totalTni' => $totalTni,
+            'totalPolri' => $totalPolri,
             'totalDinas' => $totalDinas,
         ];
     }
@@ -1027,6 +1042,112 @@ class Home extends Component
             'topSatuan' => $topSatuan,
             'total' => $totalAll,
         ];
+    }
+
+    #[Computed]
+    public function mutuSummary()
+    {
+        $year = Carbon::now()->year;
+        $month = Carbon::now()->month;
+
+        return Cache::remember("home_mutu_executive_summary_{$year}_{$month}", 600, function () use ($year, $month) {
+            $inm = InmReportRepository::getSummary($year, $month);
+            $spm = SpmReportRepository::getSummary($year, $month);
+            $ikp = IkpReportRepository::getSummary($year, $month);
+            $ppi = PpiReportRepository::getSummary($year, $month);
+
+            // Pilih 6 indikator INM representatif untuk kartu ringkasan eksekutif
+            $priorityKeys = [
+                'waktu_tunggu_rajal' => [
+                    'short_label' => 'Waktu Tunggu Ralan',
+                    'icon' => 'icon-[solar--clock-circle-bold-duotone]',
+                    'color' => 'text-blue-500',
+                ],
+                'fornas' => [
+                    'short_label' => 'Kepatuhan Fornas',
+                    'icon' => 'icon-[solar--pill-bold-duotone]',
+                    'color' => 'text-amber-500',
+                ],
+                'sc_emergensi' => [
+                    'short_label' => 'Tanggap SC Darurat',
+                    'icon' => 'icon-[solar--danger-circle-bold-duotone]',
+                    'color' => 'text-rose-500',
+                ],
+                'identifikasi' => [
+                    'short_label' => 'Identifikasi Pasien',
+                    'icon' => 'icon-[solar--user-check-bold-duotone]',
+                    'color' => 'text-emerald-500',
+                ],
+                'pencegahan_jatuh' => [
+                    'short_label' => 'Pencegahan Pasien Jatuh',
+                    'icon' => 'icon-[solar--shield-check-bold-duotone]',
+                    'color' => 'text-cyan-500',
+                ],
+                'visite_dokter' => [
+                    'short_label' => 'Waktu Visite DPJP',
+                    'icon' => 'icon-[solar--stethoscope-bold-duotone]',
+                    'color' => 'text-indigo-500',
+                ],
+            ];
+
+            $keyInm = [];
+            foreach ($priorityKeys as $key => $meta) {
+                if (isset($inm['indicators'][$key])) {
+                    $ind = $inm['indicators'][$key];
+                    $ind['short_label'] = $meta['short_label'];
+                    $ind['icon'] = $meta['icon'];
+                    $ind['color'] = $meta['color'];
+                    $keyInm[] = $ind;
+                }
+            }
+
+            return [
+                'year' => $year,
+                'month' => $month,
+                'inm' => [
+                    'total' => $inm['total_indicators'],
+                    'achieved' => $inm['achieved_count'],
+                    'unachieved' => $inm['unachieved_count'],
+                    'average_score' => $inm['average_score'],
+                    'compliance_percent' => $inm['total_indicators'] > 0 
+                        ? round(($inm['achieved_count'] / $inm['total_indicators']) * 100, 1) 
+                        : 0.0,
+                    'key_indicators' => $keyInm,
+                ],
+                'spm' => [
+                    'total' => $spm['total_indikator'],
+                    'achieved' => $spm['total_tercapai'],
+                    'percent' => $spm['persen_tercapai'],
+                    'sections_summary' => collect($spm['sections'])->map(function ($sec, $key) {
+                        $tot = count($sec['indicators']);
+                        $ach = collect($sec['indicators'])->where('is_achieved', true)->count();
+                        return [
+                            'key' => $key,
+                            'unit' => $sec['unit'],
+                            'total' => $tot,
+                            'achieved' => $ach,
+                            'rate' => $tot > 0 ? round(($ach / $tot) * 100) : 0,
+                        ];
+                    })->values()->toArray(),
+                ],
+                'ikp' => [
+                    'total' => $ikp['counts']['total'],
+                    'sentinel' => $ikp['counts']['sentinel'],
+                    'ktd' => $ikp['counts']['ktd'],
+                ],
+                'ppi' => [
+                    'total_infeksi' => $ppi['total_infeksi'],
+                    'bundle_rata' => $ppi['kepatuhan_bundle_rata'],
+                ],
+            ];
+        });
+    }
+
+    public function refreshMutuCache()
+    {
+        $year = Carbon::now()->year;
+        $month = Carbon::now()->month;
+        Cache::forget("home_mutu_executive_summary_{$year}_{$month}");
     }
 
     public function render()

@@ -19,10 +19,14 @@
     $contactNumber = $setting['kontak'] ?? '081260811173';
     $contactEmail = $setting['email'] ?? 'rumkittnipsp@gmail.com';
     $waNumber = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $contactNumber));
+
+    $allVersions = \App\Helpers\GeneralHelper::getAllVersions();
+    $currentVersion = \App\Helpers\GeneralHelper::getVersion();
 @endphp
 
 <div x-data="{
     showHelp: false,
+    showChangelog: false,
     darkMode: JSON.parse(localStorage.getItem('darkMode')) ?? true
 }" x-init="$watch('darkMode', value => {
     localStorage.setItem('darkMode', JSON.stringify(value));
@@ -307,6 +311,21 @@ document.documentElement.classList.toggle('dark', darkMode);"
                             </span>
                         </button>
                     </div>
+
+                    {{-- Informasi Versi Aplikasi & Tautan Change Log --}}
+                    <div
+                        class="pt-3 border-t border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                        <div class="flex items-center gap-1.5 font-medium">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span>Dashboard SIMRS</span>
+                        </div>
+                        <button type="button" @click="showChangelog = true"
+                            class="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/40 transition cursor-pointer active:scale-95 group"
+                            title="Klik untuk melihat Detail Catatan Rilis & Change Log">
+                            <span class="icon-[solar--history-bold-duotone] text-xs"></span>
+                            <span>{{ $currentVersion['version'] ?? 'v2.0.0' }}</span>
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -371,6 +390,118 @@ document.documentElement.classList.toggle('dark', darkMode);"
             <div class="pt-1">
                 <button type="button" @click="showHelp = false"
                     class="w-full py-2 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold text-xs transition cursor-pointer">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal Dialog Detail Change Log & Riwayat Pembaruan Versi --}}
+    <div x-show="showChangelog" x-cloak
+        class="fixed inset-0 z-50 flex items-center !mt-0 justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md overflow-y-auto"
+        x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+
+        <div @click.away="showChangelog = false"
+            class="relative w-full max-w-2xl sm:max-w-3xl my-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh] text-slate-800 dark:text-slate-100"
+            x-transition:enter="transition ease-out duration-200" x-transition:enter-start="scale-95 opacity-0"
+            x-transition:enter-end="scale-100 opacity-100" x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="scale-100 opacity-100" x-transition:leave-end="scale-95 opacity-0">
+
+            {{-- Modal Header --}}
+            <div
+                class="flex items-center justify-between px-5 py-4 sm:px-6 sm:py-5 border-b border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-white/[0.02]">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                        <span class="icon-[solar--history-bold-duotone] text-xl"></span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3
+                                class="text-sm sm:text-base font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                                Catatan Rilis & Riwayat Versi
+                            </h3>
+                            <span
+                                class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                                {{ $currentVersion['version'] ?? 'v2.0.0' }}
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            Riwayat pembaruan modul, peningkatan performa, dan fitur Dashboard SIMRS
+                        </p>
+                    </div>
+                </div>
+                <button type="button" @click="showChangelog = false"
+                    class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition p-1 cursor-pointer"
+                    title="Tutup Modal">
+                    <span class="icon-[solar--close-circle-bold] text-2xl"></span>
+                </button>
+            </div>
+
+            {{-- Modal Body (Scrollable List) --}}
+            <div class="overflow-y-auto p-5 sm:p-6 space-y-6 divide-y divide-slate-100 dark:divide-white/5">
+                @forelse ($allVersions as $idx => $v)
+                    <div class="{{ $idx > 0 ? 'pt-6' : '' }} space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                                    v{{ ltrim($v['version'], 'v') }}
+                                </span>
+                                @if ($idx === 0)
+                                    <span
+                                        class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-sm shadow-emerald-500/30">
+                                        Versi Aktif
+                                    </span>
+                                @endif
+                                @if (!empty($v['badge']))
+                                    <span
+                                        class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300">
+                                        {{ $v['badge'] }}
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="flex items-center gap-1.5 text-xs text-slate-400">
+                                <span
+                                    class="icon-[solar--calendar-minimalistic-bold-duotone] text-sm text-emerald-600 dark:text-emerald-400"></span>
+                                <span>{{ \Carbon\Carbon::parse($v['date'])->translatedFormat('d F Y') }}</span>
+                            </div>
+                        </div>
+
+                        @if (!empty($v['title']))
+                            <h4 class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                                {{ $v['title'] }}
+                            </h4>
+                        @endif
+
+                        <ul class="space-y-2 pt-1">
+                            @foreach ($v['changeLog'] ?? [] as $item)
+                                <li
+                                    class="flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                    <span
+                                        class="icon-[solar--check-circle-bold-duotone] text-sm text-emerald-500 shrink-0 mt-0.5"></span>
+                                    <span>{{ $item }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @empty
+                    <div class="py-8 text-center text-slate-400 text-xs">
+                        Tidak ada riwayat catatan rilis yang ditemukan.
+                    </div>
+                @endforelse
+            </div>
+
+            {{-- Modal Footer --}}
+            <div
+                class="flex items-center justify-between px-5 py-3 sm:px-6 sm:py-4 border-t border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-white/[0.02] text-xs">
+                <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-[11px]">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span>Total {{ count($allVersions) }} rilis versi tercatat</span>
+                </div>
+                <button type="button" @click="showChangelog = false"
+                    class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white font-bold transition cursor-pointer">
                     Tutup
                 </button>
             </div>

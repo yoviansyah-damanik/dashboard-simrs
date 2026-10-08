@@ -130,4 +130,35 @@ class Summary extends Component
             'endDate' => $this->endDate,
         ])->title('Ringkasan Layanan Penunjang');
     }
+
+    /**
+     * Ekspor ringkasan layanan penunjang medis ke format PDF resmi
+     */
+    public function exportPdf()
+    {
+        set_time_limit(0);
+
+        $report = AncillaryReportRepository::getSummary($this->startDate, $this->endDate);
+        $profil = SirsHelper::getProfilRS();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.ancillary-summary-pdf', [
+            'report' => $report,
+            'summary' => $report['summary'],
+            'farmasi' => $report['farmasi'],
+            'laboratorium' => $report['laboratorium'],
+            'radiologi' => $report['radiologi'],
+            'gizi' => $report['gizi'],
+            'profil' => $profil,
+            'startDate' => Carbon::parse($this->startDate)->translatedFormat('d F Y'),
+            'endDate' => Carbon::parse($this->endDate)->translatedFormat('d F Y'),
+            'printedAt' => now()->translatedFormat('d F Y H:i'),
+            'printedBy' => auth()->user()->name ?? 'Petugas Penunjang Medis SIMRS',
+        ])->setPaper('a4', 'portrait');
+
+        $filename = 'ringkasan-layanan-penunjang-' . $this->startDate . '-sd-' . $this->endDate . '.pdf';
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->stream();
+        }, $filename);
+    }
 }

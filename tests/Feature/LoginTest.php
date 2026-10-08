@@ -13,5 +13,8 @@ class LoginTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('darkMode');
         $response->assertSee('Mode Terang');
+        $response->assertSee('showChangelog', false);
+        $response->assertSee('Catatan Rilis & Riwayat Versi', false);
+        $response->assertSee('v2.0.0', false);
     }
 }

@@ -367,6 +367,20 @@ class Sidebar extends Component
                         'isShown' => auth()->user()->hasAnyPermission(['indicator-matrix show', 'laboratory recap', 'radiology recap', 'pharmacy recap', 'laboratory show', 'radiology show', 'pharmacy show'])
                     ],
                     [
+                        'title' => 'Rekap Data Penyakit',
+                        'href' => route('icd'),
+                        'icon' => 'i-ph-first-aid',
+                        'isActive' => request()->routeIs('icd') || request()->routeIs('icd.icd10') || request()->routeIs('disease.*'),
+                        'isShown' => auth()->user()->hasAnyPermission(['icd recap', 'patient-report show', 'patient show'])
+                    ],
+                    [
+                        'title' => 'Rekap Data Tindakan',
+                        'href' => route('icd.procedure'),
+                        'icon' => 'i-ph-syringe',
+                        'isActive' => request()->routeIs('icd.procedure') || request()->routeIs('icd.icd9') || request()->routeIs('procedure.*'),
+                        'isShown' => auth()->user()->hasAnyPermission(['icd icd9 show', 'icd recap', 'patient-report show', 'patient show'])
+                    ],
+                    [
                         'title' => 'Pendapatan',
                         'icon' => 'i-ph-wallet',
                         'href' => route('financial-report'),
@@ -481,6 +495,46 @@ class Sidebar extends Component
                 ]
             ],
             [
+                'title' => 'Mutu & Akreditasi',
+                'items' => [
+                    [
+                        'title' => 'Indikator Mutu (INM)',
+                        'href' => route('mutu.inm'),
+                        'icon' => 'i-ph-shield-check',
+                        'isActive' => request()->routeIs('mutu.inm'),
+                        'isShown' => auth()->user()->hasAnyPermission(['mutu show', 'mutu.inm', 'indicator-matrix show'])
+                    ],
+                    [
+                        'title' => 'Keselamatan Pasien (IKP)',
+                        'href' => route('mutu.ikp'),
+                        'icon' => 'i-ph-shield-warning',
+                        'isActive' => request()->routeIs('mutu.ikp'),
+                        'isShown' => auth()->user()->hasAnyPermission(['mutu show', 'mutu.ikp', 'indicator-matrix show'])
+                    ],
+                    [
+                        'title' => 'Surveilans PPI & HAIs',
+                        'href' => route('mutu.ppi'),
+                        'icon' => 'i-ph-virus',
+                        'isActive' => request()->routeIs('mutu.ppi'),
+                        'isShown' => auth()->user()->hasAnyPermission(['mutu show', 'mutu.ppi', 'indicator-matrix show'])
+                    ],
+                    [
+                        'title' => 'Standar Pelayanan (SPM)',
+                        'href' => route('mutu.spm'),
+                        'icon' => 'i-ph-certificate',
+                        'isActive' => request()->routeIs('mutu.spm'),
+                        'isShown' => auth()->user()->hasAnyPermission(['mutu show', 'mutu.spm', 'indicator-matrix show'])
+                    ],
+                    [
+                        'title' => 'Rekam Medis (KLPCM)',
+                        'href' => route('mutu.klpcm'),
+                        'icon' => 'i-ph-notepad',
+                        'isActive' => request()->routeIs('mutu.klpcm'),
+                        'isShown' => false
+                    ],
+                ]
+            ],
+            [
                 'title' => 'Lainnya',
                 'items' =>
                     [
@@ -518,6 +572,13 @@ class Sidebar extends Component
                             'icon' => 'i-ph-screwdriver',
                             'isActive' => request()->routeIs('configuration'),
                             'isShown' => auth()->user()->hasPermissionTo('configuration')
+                        ],
+                        [
+                            'title' => 'Catatan Rilis (v2.0.0)',
+                            'href' => route('changelog'),
+                            'icon' => 'i-ph-clock-counter-clockwise',
+                            'isActive' => request()->routeIs('changelog'),
+                            'isShown' => true
                         ],
                     ]
             ]

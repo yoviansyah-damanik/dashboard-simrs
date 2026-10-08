@@ -114,17 +114,18 @@
 
         {{-- Tombol Cetak & Ekspor Dokumen --}}
         <div class="flex items-center gap-2">
-            <x-button color="default" icon="i-ph-printer" onclick="window.print()">
-                Cetak
+            <x-button color="default" icon="i-ph-file-pdf" wire:click="exportPdf" wire:loading.attr="disabled">
+                <span wire:loading.remove wire:target="exportPdf">Cetak PDF Data</span>
+                <span wire:loading wire:target="exportPdf" class="flex items-center gap-1.5">
+                    <span class="icon-[solar--spinner-linear] animate-spin text-sm"></span>
+                    <span>Menyiapkan PDF...</span>
+                </span>
             </x-button>
             <x-button color="green" icon="i-ph-file-xls" wire:click="exportExcel">
                 Excel
             </x-button>
             <x-button color="primary" icon="i-ph-file-csv" wire:click="exportCsv">
                 CSV
-            </x-button>
-            <x-button color="red" icon="i-ph-file-pdf" wire:click="exportPdf">
-                PDF
             </x-button>
         </div>
     </div>
@@ -213,9 +214,14 @@
                     {{ number_format($summaryData['total_umum'], 0, ',', '.') }} Umum
                 </span>
                 <span class="text-gray-300 dark:text-gray-600">&bull;</span>
-                <span class="inline-flex items-center gap-1.5 text-purple-600 dark:text-purple-400 font-bold">
-                    <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-                    {{ number_format($summaryData['total_dinas'], 0, ',', '.') }} Dinas
+                <span class="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    {{ number_format($summaryData['total_tni'] ?? 0, 0, ',', '.') }} TNI
+                </span>
+                <span class="text-gray-300 dark:text-gray-600">&bull;</span>
+                <span class="inline-flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-bold">
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                    {{ number_format($summaryData['total_polri'] ?? 0, 0, ',', '.') }} POLRI
                 </span>
             </div>
         </div>
@@ -305,7 +311,9 @@
                         <option value="semua">Semua Penjamin</option>
                         <option value="BPJS">BPJS (Semua)</option>
                         <option value="UMUM">UMUM / Mandiri</option>
-                        <option value="DINAS">DINAS (TNI / POLRI)</option>
+                        <option value="DINAS">DINAS (Semua: TNI & POLRI)</option>
+                        <option value="TNI">&nbsp;&nbsp;&bull; Pasien Dinas TNI</option>
+                        <option value="POLRI">&nbsp;&nbsp;&bull; Pasien Dinas POLRI</option>
                         <optgroup label="Asuransi / Perusahaan">
                             @foreach ($this->payTypes as $pj)
                                 <option value="{{ $pj->kd_pj }}">{{ $pj->png_jawab }}</option>
@@ -516,6 +524,15 @@
                 {{ count($this->ageGroupBreakdown) }}
             </span>
         </button>
+
+        <button type="button" wire:click="switchTab('rekap_dinas')"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer {{ $activeTab === 'rekap_dinas' ? 'bg-white dark:bg-boxdark text-purple-700 dark:text-purple-400 font-black shadow-sm ring-1 ring-black/5 dark:ring-white/10' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white font-semibold hover:bg-gray-200/50 dark:hover:bg-meta-4' }}">
+            <span class="icon-[solar--shield-bold-duotone] text-base {{ $activeTab === 'rekap_dinas' ? 'text-purple-600 dark:text-purple-400' : '' }}"></span>
+            <span>Rekap Pasien Dinas</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $activeTab === 'rekap_dinas' ? 'bg-purple-500/10 text-purple-700 dark:text-purple-300' : 'bg-gray-200 dark:bg-meta-4 text-gray-600 dark:text-gray-300' }}">
+                {{ $this->dinasBreakdown['summary']['total'] }}
+            </span>
+        </button>
     </div>
 
     {{-- TAB 1: REKAP POLIKLINIK / UNIT --}}
@@ -543,7 +560,7 @@
                             <th class="px-4 py-3.5 text-center min-w-[120px]">Proporsi (%)</th>
                             <th class="px-4 py-3.5 text-center min-w-[130px]">Gender (L / P)</th>
                             <th class="px-4 py-3.5 text-center min-w-[130px]">Kunjungan (Baru / Lama)</th>
-                            <th class="px-4 py-3.5 text-center min-w-[180px]">Penjamin (BPJS / Umum / Dinas)</th>
+                            <th class="px-4 py-3.5 text-center min-w-[200px]">Penjamin (BPJS / Umum / TNI / POLRI)</th>
                             <th class="px-4 py-3.5 text-center min-w-[130px]">Status (Sudah / Belum)</th>
                         </tr>
                     </thead>
@@ -557,6 +574,8 @@
                             $sumBpjs = 0;
                             $sumUmum = 0;
                             $sumDinas = 0;
+                            $sumTni = 0;
+                            $sumPolri = 0;
                             $sumSudah = 0;
                             $sumBelum = 0;
                         @endphp
@@ -570,6 +589,8 @@
                                 $sumBpjs += $item['bpjs'];
                                 $sumUmum += $item['umum'];
                                 $sumDinas += $item['dinas'];
+                                $sumTni += $item['tni'];
+                                $sumPolri += $item['polri'];
                                 $sumSudah += $item['sudah'];
                                 $sumBelum += $item['belum'];
                             @endphp
@@ -622,8 +643,11 @@
                                         <span class="px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400 text-[11px] font-bold">
                                             {{ $item['umum'] }} Um
                                         </span>
-                                        <span class="px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400 text-[11px] font-bold">
-                                            {{ $item['dinas'] }} Din
+                                        <span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-600/20 dark:text-emerald-300 text-[11px] font-bold" title="Pasien Dinas TNI">
+                                            {{ $item['tni'] }} TNI
+                                        </span>
+                                        <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-600/20 dark:text-blue-300 text-[11px] font-bold" title="Pasien Dinas POLRI">
+                                            {{ $item['polri'] }} POLRI
                                         </span>
                                     </div>
                                 </td>
@@ -660,7 +684,7 @@
                                     <span class="text-indigo-600 dark:text-indigo-400">{{ number_format($sumLama, 0, ',', '.') }} Lama</span>
                                 </td>
                                 <td class="px-4 py-4 text-center">
-                                    {{ $sumBpjs }} BPJS &bull; {{ $sumUmum }} Um &bull; {{ $sumDinas }} Din
+                                    {{ $sumBpjs }} BPJS &bull; {{ $sumUmum }} Um &bull; {{ $sumTni }} TNI &bull; {{ $sumPolri }} POLRI
                                 </td>
                                 <td class="px-4 py-4 text-center">
                                     <span class="text-emerald-600 dark:text-emerald-400">{{ $sumSudah }}</span> / 
@@ -890,6 +914,274 @@
                         </tfoot>
                     @endif
                 </table>
+            </div>
+        </div>
+    @endif
+
+    {{-- TAB 4: REKAP PASIEN DINAS (TNI / POLRI) --}}
+    @if ($activeTab === 'rekap_dinas')
+        @php
+            $dinasData = $this->dinasBreakdown;
+            $dinasSum = $dinasData['summary'];
+        @endphp
+        <div class="space-y-6">
+            {{-- Kartu Ringkasan Pasien Dinas --}}
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div class="p-4 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">Total Pasien Dinas</span>
+                    <div class="text-2xl font-black text-purple-700 dark:text-purple-300 mt-1">
+                        {{ number_format($dinasSum['total'], 0, ',', '.') }}
+                    </div>
+                    <span class="text-[11px] text-gray-400 font-medium">Pasien Rawat Jalan</span>
+                </div>
+
+                <div class="p-4 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Pasien TNI</span>
+                    <div class="text-2xl font-black text-emerald-700 dark:text-emerald-300 mt-1">
+                        {{ number_format($dinasSum['tni'], 0, ',', '.') }}
+                    </div>
+                    <span class="text-[11px] text-gray-400 font-medium">TNI AD, AL, AU</span>
+                </div>
+
+                <div class="p-4 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">Pasien POLRI</span>
+                    <div class="text-2xl font-black text-blue-700 dark:text-blue-300 mt-1">
+                        {{ number_format($dinasSum['polri'], 0, ',', '.') }}
+                    </div>
+                    <span class="text-[11px] text-gray-400 font-medium">Kepolisian RI</span>
+                </div>
+
+                <div class="p-4 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">Demografi Gender</span>
+                    <div class="text-lg font-black text-gray-800 dark:text-white mt-1">
+                        <span class="text-blue-600">{{ number_format($dinasSum['pria'], 0, ',', '.') }} L</span> / 
+                        <span class="text-pink-600">{{ number_format($dinasSum['wanita'], 0, ',', '.') }} P</span>
+                    </div>
+                    <span class="text-[11px] text-gray-400 font-medium">Laki-laki / Perempuan</span>
+                </div>
+
+                <div class="p-4 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">Kunjungan</span>
+                    <div class="text-lg font-black text-gray-800 dark:text-white mt-1">
+                        <span class="text-cyan-600">{{ number_format($dinasSum['baru'], 0, ',', '.') }} Baru</span> / 
+                        <span class="text-indigo-600">{{ number_format($dinasSum['lama'], 0, ',', '.') }} Lama</span>
+                    </div>
+                    <span class="text-[11px] text-gray-400 font-medium">Kunjungan Poliklinik</span>
+                </div>
+
+                <div class="p-4 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">Status Pelayanan</span>
+                    <div class="text-lg font-black text-gray-800 dark:text-white mt-1">
+                        <span class="text-emerald-600">{{ number_format($dinasSum['sudah'], 0, ',', '.') }} Sudah</span>
+                    </div>
+                    <span class="text-[11px] text-amber-600 font-medium">{{ number_format($dinasSum['belum'], 0, ',', '.') }} Menunggu</span>
+                </div>
+            </div>
+
+            {{-- Tabel 1: Rekap Pasien Dinas per Poliklinik --}}
+            <div class="bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm overflow-hidden">
+                <div class="px-6 py-5 border-b border-stroke dark:border-strokedark flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                            <span class="icon-[solar--shield-bold-duotone] text-purple-600 dark:text-purple-400 text-lg"></span>
+                            Rekapitulasi Kunjungan Pasien Dinas per Poliklinik / Unit
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Distribusi pelayanan pasien dinas (TNI dan POLRI) pada seluruh poliklinik rawat jalan.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="bg-purple-50/60 dark:bg-meta-4/60 text-xs font-black text-purple-900 dark:text-purple-300 uppercase tracking-wider border-b border-stroke dark:border-strokedark">
+                                <th class="px-4 py-3.5 text-center w-12">No</th>
+                                <th class="px-4 py-3.5 text-left min-w-[200px]">Poliklinik / Unit</th>
+                                <th class="px-4 py-3.5 text-center min-w-[120px]">Total Dinas</th>
+                                <th class="px-4 py-3.5 text-center min-w-[110px]">Proporsi (%)</th>
+                                <th class="px-4 py-3.5 text-center min-w-[140px]">TNI vs POLRI</th>
+                                <th class="px-4 py-3.5 text-center min-w-[130px]">Gender (L / P)</th>
+                                <th class="px-4 py-3.5 text-center min-w-[130px]">Kunjungan (Baru / Lama)</th>
+                                <th class="px-4 py-3.5 text-center min-w-[120px]">Status Layanan</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-stroke dark:divide-strokedark">
+                            @forelse ($dinasData['polyclinics'] as $idx => $p)
+                                <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/40 transition-colors">
+                                    <td class="px-4 py-3.5 text-center font-bold text-gray-500 dark:text-gray-400 text-xs">
+                                        {{ $idx + 1 }}
+                                    </td>
+                                    <td class="px-4 py-3.5">
+                                        <div class="font-bold text-gray-900 dark:text-white">
+                                            {{ $p['nm_poli'] }}
+                                        </div>
+                                        <div class="text-[11px] font-mono text-gray-400">
+                                            {{ $p['kd_poli'] }}
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-center">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-black bg-purple-500/10 text-purple-700 dark:text-purple-400">
+                                            {{ number_format($p['total'], 0, ',', '.') }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3.5">
+                                        <div class="w-full max-w-[100px] mx-auto">
+                                            <div class="flex justify-between text-[11px] font-bold text-gray-600 dark:text-gray-300 mb-1">
+                                                <span>{{ $p['percent'] }}%</span>
+                                            </div>
+                                            <div class="w-full bg-gray-100 dark:bg-meta-4 h-1.5 rounded-full overflow-hidden">
+                                                <div class="bg-purple-600 h-full rounded-full" style="width: {{ $p['percent'] }}%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-center">
+                                        <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ number_format($p['tni'], 0, ',', '.') }} TNI</span>
+                                        <span class="text-gray-300 dark:text-gray-600 mx-1">/</span>
+                                        <span class="font-bold text-blue-600 dark:text-blue-400">{{ number_format($p['polri'], 0, ',', '.') }} POLRI</span>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-center">
+                                        <div class="inline-flex items-center gap-1.5 text-xs font-bold">
+                                            <span class="text-blue-600 dark:text-blue-400">{{ number_format($p['pria'], 0, ',', '.') }} L</span>
+                                            <span class="text-gray-300 dark:text-gray-600">/</span>
+                                            <span class="text-pink-600 dark:text-pink-400">{{ number_format($p['wanita'], 0, ',', '.') }} P</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-center">
+                                        <div class="inline-flex items-center gap-1.5 text-xs font-bold">
+                                            <span class="text-cyan-600 dark:text-cyan-400">{{ number_format($p['baru'], 0, ',', '.') }} Baru</span>
+                                            <span class="text-gray-300 dark:text-gray-600">/</span>
+                                            <span class="text-indigo-600 dark:text-indigo-400">{{ number_format($p['lama'], 0, ',', '.') }} Lama</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3.5 text-center">
+                                        <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                            {{ number_format($p['sudah'], 0, ',', '.') }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="8" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                                        Tidak ada data kunjungan pasien dinas pada periode yang dipilih.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                        @if (count($dinasData['polyclinics']) > 0)
+                            <tfoot>
+                                <tr class="bg-gray-100 dark:bg-meta-4/80 font-black text-xs text-gray-800 dark:text-white uppercase tracking-wider border-t-2 border-stroke dark:border-strokedark">
+                                    <td colspan="2" class="px-4 py-4 text-center">TOTAL PASIEN DINAS</td>
+                                    <td class="px-4 py-4 text-center font-black text-purple-700 dark:text-purple-400 text-sm">
+                                        {{ number_format($dinasSum['total'], 0, ',', '.') }}
+                                    </td>
+                                    <td class="px-4 py-4 text-center">100%</td>
+                                    <td class="px-4 py-4 text-center">
+                                        <span class="text-emerald-600 dark:text-emerald-400">{{ number_format($dinasSum['tni'], 0, ',', '.') }} TNI</span> / 
+                                        <span class="text-blue-600 dark:text-blue-400">{{ number_format($dinasSum['polri'], 0, ',', '.') }} POLRI</span>
+                                    </td>
+                                    <td class="px-4 py-4 text-center">
+                                        <span class="text-blue-600 dark:text-blue-400">{{ number_format($dinasSum['pria'], 0, ',', '.') }} L</span> / 
+                                        <span class="text-pink-600 dark:text-pink-400">{{ number_format($dinasSum['wanita'], 0, ',', '.') }} P</span>
+                                    </td>
+                                    <td class="px-4 py-4 text-center">
+                                        <span class="text-cyan-600 dark:text-cyan-400">{{ number_format($dinasSum['baru'], 0, ',', '.') }} Baru</span> / 
+                                        <span class="text-indigo-600 dark:text-indigo-400">{{ number_format($dinasSum['lama'], 0, ',', '.') }} Lama</span>
+                                    </td>
+                                    <td class="px-4 py-4 text-center text-emerald-600 dark:text-emerald-400 font-black">
+                                        {{ number_format($dinasSum['sudah'], 0, ',', '.') }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        @endif
+                    </table>
+                </div>
+            </div>
+
+            {{-- Grid 2 Kolom: Kategori Golongan & Satuan Dinas --}}
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {{-- Kolom 1: Kategori Personel --}}
+                <div class="lg:col-span-7 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark p-5 shadow-sm">
+                    <h4 class="text-xs font-black uppercase tracking-wider text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                        <span class="icon-[solar--users-group-two-rounded-bold-duotone] text-purple-600 text-base"></span>
+                        <span>Rekapitulasi Kategori Personel Pasien Dinas</span>
+                    </h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 dark:bg-meta-4/60 text-gray-700 dark:text-gray-300 font-bold border-b border-stroke dark:border-strokedark">
+                                    <th class="py-2.5 px-3">Kategori Personel</th>
+                                    <th class="py-2.5 px-2 text-center text-emerald-700 dark:text-emerald-400">TNI</th>
+                                    <th class="py-2.5 px-2 text-center text-blue-700 dark:text-blue-400">POLRI</th>
+                                    <th class="py-2.5 px-2 text-center">L / P</th>
+                                    <th class="py-2.5 px-3 text-center font-black">Total</th>
+                                    <th class="py-2.5 px-2 text-center">Proporsi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 font-medium">
+                                @forelse ($dinasData['categories'] as $cat)
+                                    <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/20">
+                                        <td class="py-2 px-3 font-bold text-gray-800 dark:text-white">
+                                            {{ $cat['kategori'] }}
+                                        </td>
+                                        <td class="py-2 px-2 text-center text-emerald-600 dark:text-emerald-400 font-semibold">{{ number_format($cat['tni'], 0, ',', '.') }}</td>
+                                        <td class="py-2 px-2 text-center text-blue-600 dark:text-blue-400 font-semibold">{{ number_format($cat['polri'], 0, ',', '.') }}</td>
+                                        <td class="py-2 px-2 text-center text-gray-600 dark:text-gray-300">
+                                            {{ number_format($cat['pria'], 0, ',', '.') }} / {{ number_format($cat['wanita'], 0, ',', '.') }}
+                                        </td>
+                                        <td class="py-2 px-3 text-center font-black text-purple-700 dark:text-purple-400">
+                                            {{ number_format($cat['total'], 0, ',', '.') }}
+                                        </td>
+                                        <td class="py-2 px-2 text-center text-gray-500 font-medium">
+                                            {{ $cat['percent'] }}%
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="py-6 text-center text-gray-400 italic">Tidak ada data kategori personel.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{-- Kolom 2: Top Satuan Dinas --}}
+                <div class="lg:col-span-5 bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark p-5 shadow-sm">
+                    <h4 class="text-xs font-black uppercase tracking-wider text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                        <span class="icon-[solar--shield-check-bold-duotone] text-purple-600 text-base"></span>
+                        <span>Sebaran Kesatuan / Satuan Pasien TNI</span>
+                    </h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-100 dark:bg-meta-4/60 text-gray-700 dark:text-gray-300 font-bold border-b border-stroke dark:border-strokedark">
+                                    <th class="py-2.5 px-3">No</th>
+                                    <th class="py-2.5 px-3">Nama Satuan</th>
+                                    <th class="py-2.5 px-3 text-center font-black">Total Kunjungan</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 font-medium">
+                                @forelse ($dinasData['satuan'] as $sIdx => $sat)
+                                    <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/20">
+                                        <td class="py-2 px-3 text-center text-gray-500">{{ $sIdx + 1 }}</td>
+                                        <td class="py-2 px-3 font-bold text-gray-800 dark:text-white truncate max-w-[180px]">
+                                            {{ $sat->nama_satuan }}
+                                        </td>
+                                        <td class="py-2 px-3 text-center font-black text-purple-700 dark:text-purple-400">
+                                            {{ number_format($sat->total, 0, ',', '.') }}
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="py-6 text-center text-gray-400 italic">Tidak ada data satuan tercatat.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     @endif

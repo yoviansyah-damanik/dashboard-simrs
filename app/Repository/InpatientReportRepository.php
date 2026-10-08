@@ -39,11 +39,29 @@ class InpatientReportRepository implements InpatientReportInterface
             ->join('bangsal as b', 'b.kd_bangsal', '=', 'k.kd_bangsal')
             ->join('pasien as p', 'p.no_rkm_medis', '=', 'rp.no_rkm_medis')
             ->leftJoin('penjab as pj', 'pj.kd_pj', '=', 'rp.kd_pj')
+            ->leftJoin('pasien_tni as pt', 'rp.no_rkm_medis', '=', 'pt.no_rkm_medis')
+            ->leftJoin('pasien_polri as pp', 'rp.no_rkm_medis', '=', 'pp.no_rkm_medis')
             ->where('rp.status_lanjut', 'Ranap');
 
         // Filter Penanggung Jawab / Cara Bayar
         if (!empty($payType) && $payType !== 'semua') {
-            $query->where('rp.kd_pj', $payType);
+            if ($payType === 'DINAS') {
+                $query->where(function ($q) {
+                    $q->whereNotNull('pt.no_rkm_medis')
+                      ->orWhereNotNull('pp.no_rkm_medis')
+                      ->orWhere('pj.png_jawab', 'like', '%DINAS%');
+                });
+            } elseif ($payType === 'TNI') {
+                $query->whereNotNull('pt.no_rkm_medis');
+            } elseif ($payType === 'POLRI') {
+                $query->whereNotNull('pp.no_rkm_medis');
+            } elseif ($payType === 'BPJS') {
+                $query->where('pj.png_jawab', 'like', '%BPJS%');
+            } elseif ($payType === 'UMUM') {
+                $query->where('pj.png_jawab', 'like', '%UMUM%');
+            } else {
+                $query->where('rp.kd_pj', $payType);
+            }
         }
 
         // Filter Rentang Tanggal Masuk
@@ -114,6 +132,7 @@ class InpatientReportRepository implements InpatientReportInterface
                 'ki.tgl_masuk',
                 'ki.tgl_keluar',
                 'pj.png_jawab',
+                DB::raw("CASE WHEN pt.no_rkm_medis IS NOT NULL THEN 'TNI' WHEN pp.no_rkm_medis IS NOT NULL THEN 'POLRI' ELSE 'UMUM' END as status_dinas"),
                 DB::raw("(
                     SELECT GROUP_CONCAT(DISTINCT d.nm_dokter ORDER BY d.nm_dokter SEPARATOR ', ')
                     FROM dpjp_ranap dpjp
@@ -157,7 +176,10 @@ class InpatientReportRepository implements InpatientReportInterface
             ->selectRaw("
                 COUNT(DISTINCT ki.no_rawat) AS total_pasien,
                 COUNT(DISTINCT CASE WHEN ki.tgl_keluar <> '0000-00-00' AND ki.tgl_keluar IS NOT NULL THEN ki.no_rawat END) AS sudah_pulang,
-                COUNT(DISTINCT CASE WHEN ki.tgl_keluar = '0000-00-00' OR ki.tgl_keluar IS NULL THEN ki.no_rawat END) AS masih_dirawat
+                COUNT(DISTINCT CASE WHEN ki.tgl_keluar = '0000-00-00' OR ki.tgl_keluar IS NULL THEN ki.no_rawat END) AS masih_dirawat,
+                COUNT(DISTINCT CASE WHEN pt.no_rkm_medis IS NOT NULL OR pp.no_rkm_medis IS NOT NULL THEN ki.no_rawat END) AS total_dinas,
+                COUNT(DISTINCT CASE WHEN pt.no_rkm_medis IS NOT NULL THEN ki.no_rawat END) AS total_tni,
+                COUNT(DISTINCT CASE WHEN pp.no_rkm_medis IS NOT NULL THEN ki.no_rawat END) AS total_polri
             ")
             ->first();
 
@@ -165,6 +187,9 @@ class InpatientReportRepository implements InpatientReportInterface
             'total_pasien' => (int) ($stats->total_pasien ?? 0),
             'sudah_pulang' => (int) ($stats->sudah_pulang ?? 0),
             'masih_dirawat' => (int) ($stats->masih_dirawat ?? 0),
+            'total_dinas' => (int) ($stats->total_dinas ?? 0),
+            'total_tni' => (int) ($stats->total_tni ?? 0),
+            'total_polri' => (int) ($stats->total_polri ?? 0),
         ];
     }
 
@@ -213,6 +238,8 @@ class InpatientReportRepository implements InpatientReportInterface
                 b.kd_bangsal,
                 b.nm_bangsal,
                 count(distinct ki.no_rawat) as total,
+                count(distinct case when pt.no_rkm_medis is not null then ki.no_rawat end) as tni,
+                count(distinct case when pp.no_rkm_medis is not null then ki.no_rawat end) as polri,
                 count(distinct case when p.jk = 'L' then ki.no_rawat end) as pria,
                 count(distinct case when p.jk = 'P' then ki.no_rawat end) as wanita,
                 count(distinct case when ki.tgl_keluar = '0000-00-00' or ki.tgl_keluar is null then ki.no_rawat end) as masih_dirawat,
@@ -229,6 +256,8 @@ class InpatientReportRepository implements InpatientReportInterface
                 'kd_bangsal' => $r->kd_bangsal,
                 'nm_bangsal' => $r->nm_bangsal,
                 'total' => (int) $r->total,
+                'tni' => (int) $r->tni,
+                'polri' => (int) $r->polri,
                 'pria' => (int) $r->pria,
                 'wanita' => (int) $r->wanita,
                 'masih_dirawat' => (int) $r->masih_dirawat,
@@ -315,5 +344,116 @@ class InpatientReportRepository implements InpatientReportInterface
         }
 
         return $items;
+    }
+
+    /**
+     * Mengambil rekapitulasi data pasien dinas rawat inap (per Bangsal, Kategori Personel, dan Satuan).
+     */
+    public static function getDinasBreakdown(
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $statusPulang = 'semua',
+        ?string $ward = null,
+        ?string $search = null
+    ): array {
+        $baseQuery = self::buildQuery($startDate, $endDate, 'DINAS', $statusPulang, $ward, $search);
+
+        // Ringkasan
+        $summaryRow = (clone $baseQuery)
+            ->selectRaw("
+                count(distinct ki.no_rawat) as total,
+                count(distinct case when pt.no_rkm_medis is not null then ki.no_rawat end) as tni,
+                count(distinct case when pp.no_rkm_medis is not null then ki.no_rawat end) as polri,
+                count(distinct case when ki.tgl_keluar = '0000-00-00' or ki.tgl_keluar is null then ki.no_rawat end) as masih_dirawat,
+                count(distinct case when ki.tgl_keluar <> '0000-00-00' and ki.tgl_keluar is not null then ki.no_rawat end) as sudah_pulang
+            ")
+            ->first();
+
+        $totalDinas = $summaryRow ? (int) $summaryRow->total : 0;
+
+        // Sebaran per Bangsal
+        $wardRows = (clone $baseQuery)
+            ->selectRaw("
+                b.kd_bangsal,
+                b.nm_bangsal,
+                count(distinct ki.no_rawat) as total,
+                count(distinct case when pt.no_rkm_medis is not null then ki.no_rawat end) as tni,
+                count(distinct case when pp.no_rkm_medis is not null then ki.no_rawat end) as polri,
+                count(distinct case when ki.tgl_keluar = '0000-00-00' or ki.tgl_keluar is null then ki.no_rawat end) as masih_dirawat,
+                count(distinct case when ki.tgl_keluar <> '0000-00-00' and ki.tgl_keluar is not null then ki.no_rawat end) as sudah_pulang
+            ")
+            ->groupBy('b.kd_bangsal', 'b.nm_bangsal')
+            ->orderByDesc('total')
+            ->get();
+
+        $wards = $wardRows->map(function ($r) use ($totalDinas) {
+            return [
+                'kd_bangsal' => $r->kd_bangsal,
+                'nm_bangsal' => $r->nm_bangsal,
+                'total' => (int) $r->total,
+                'percent' => $totalDinas > 0 ? round(($r->total / $totalDinas) * 100, 1) : 0,
+                'tni' => (int) $r->tni,
+                'polri' => (int) $r->polri,
+                'masih_dirawat' => (int) $r->masih_dirawat,
+                'sudah_pulang' => (int) $r->sudah_pulang,
+            ];
+        })->toArray();
+
+        // Kategori Personel
+        $categoryRows = (clone $baseQuery)
+            ->leftJoin('golongan_tni as gt', 'pt.golongan_tni', '=', 'gt.id')
+            ->leftJoin('golongan_polri as gp', 'pp.golongan_polri', '=', 'gp.id')
+            ->selectRaw("
+                CASE 
+                    WHEN gt.id IN (1, 2, 3) OR gp.id = 1 THEN 'Militer / Anggota Aktif'
+                    WHEN gt.id IN (8, 9, 10) OR gp.id = 2 THEN 'ASN / PNS'
+                    WHEN gt.id IN (5, 6, 7) OR gp.id = 3 THEN 'Keluarga Personel'
+                    WHEN gt.id IN (4, 11, 12) OR gp.id = 4 THEN 'Purnawirawan'
+                    ELSE 'Lainnya'
+                END as kategori,
+                count(distinct ki.no_rawat) as total,
+                count(distinct case when pt.no_rkm_medis is not null then ki.no_rawat end) as tni,
+                count(distinct case when pp.no_rkm_medis is not null then ki.no_rawat end) as polri,
+                count(distinct case when ki.tgl_keluar = '0000-00-00' or ki.tgl_keluar is null then ki.no_rawat end) as masih_dirawat,
+                count(distinct case when ki.tgl_keluar <> '0000-00-00' and ki.tgl_keluar is not null then ki.no_rawat end) as sudah_pulang
+            ")
+            ->groupBy('kategori')
+            ->orderByDesc('total')
+            ->get();
+
+        $categories = $categoryRows->map(function ($r) use ($totalDinas) {
+            return [
+                'kategori' => $r->kategori,
+                'total' => (int) $r->total,
+                'percent' => $totalDinas > 0 ? round(($r->total / $totalDinas) * 100, 1) : 0,
+                'tni' => (int) $r->tni,
+                'polri' => (int) $r->polri,
+                'masih_dirawat' => (int) $r->masih_dirawat,
+                'sudah_pulang' => (int) $r->sudah_pulang,
+            ];
+        })->toArray();
+
+        // Top Satuan Pasien TNI
+        $satuanRows = (clone $baseQuery)
+            ->whereNotNull('pt.no_rkm_medis')
+            ->leftJoin('satuan_tni as sat', 'pt.satuan_tni', '=', 'sat.id')
+            ->selectRaw("COALESCE(sat.nama_satuan, 'Lainnya / Tidak Tercatat') as nama_satuan, count(distinct ki.no_rawat) as total")
+            ->groupBy('nama_satuan')
+            ->orderByDesc('total')
+            ->limit(10)
+            ->get();
+
+        return [
+            'summary' => [
+                'total' => $totalDinas,
+                'tni' => $summaryRow ? (int) $summaryRow->tni : 0,
+                'polri' => $summaryRow ? (int) $summaryRow->polri : 0,
+                'masih_dirawat' => $summaryRow ? (int) $summaryRow->masih_dirawat : 0,
+                'sudah_pulang' => $summaryRow ? (int) $summaryRow->sudah_pulang : 0,
+            ],
+            'wards' => $wards,
+            'categories' => $categories,
+            'satuan' => $satuanRows->toArray(),
+        ];
     }
 }

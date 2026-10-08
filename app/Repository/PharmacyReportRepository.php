@@ -108,6 +108,11 @@ class PharmacyReportRepository implements PharmacyReportInterface
             $diserahkan = ($r ? (int) $r->diserahkan : 0) + $resepPulang;
             $belumDiserahkan = $r ? (int) $r->belum_diserahkan : 0;
             $waktuTunggu = $r && $r->avg_waktu_tunggu !== null ? (float) $r->avg_waktu_tunggu : 0;
+            // Gunakan Waktu Tunggu Farmasi dari referensi_mobilejkn_bpjs_taskid (task6 - task5) jika tersedia
+            $farmasiTask = \App\Helpers\TaskidHelper::getWaktuTungguFarmasi($year, $m);
+            if ($farmasiTask['total'] > 0) {
+                $waktuTunggu = $farmasiTask['avg_menit'];
+            }
 
             $itemObat = ($it ? (int) $it->total_item_obat : 0) + ($pul ? (int) $pul->total_item_pulang : 0);
             $qtyObat = ($it ? (float) $it->total_qty_obat : 0) + ($pul ? (float) $pul->total_qty_pulang : 0);

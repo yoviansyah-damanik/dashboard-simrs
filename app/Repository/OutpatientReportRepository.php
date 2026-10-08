@@ -46,7 +46,7 @@ class OutpatientReportRepository implements OutpatientReportInterface
             ->leftJoin('pasien_polri as pp', 'rp.no_rkm_medis', '=', 'pp.no_rkm_medis')
             ->where('rp.status_lanjut', 'Ralan')
             ->where('rp.kd_poli', '!=', 'IGDK')
-            ->where('rp.stts', '!=', 'Batal');
+            ->whereNotIn('rp.stts', ['Batal', 'Belum']);
 
         // Filter Rentang Tanggal Registrasi
         if (!empty($startDate) && !empty($endDate)) {
@@ -68,10 +68,15 @@ class OutpatientReportRepository implements OutpatientReportInterface
                 $query->where('pj.png_jawab', 'like', '%BPJS%');
             } elseif ($payType === 'UMUM') {
                 $query->where('pj.png_jawab', 'like', '%UMUM%');
+            } elseif ($payType === 'TNI') {
+                $query->whereNotNull('pt.no_rkm_medis');
+            } elseif ($payType === 'POLRI') {
+                $query->whereNotNull('pp.no_rkm_medis');
             } elseif ($payType === 'DINAS') {
                 $query->where(function ($q) {
                     $q->whereNotNull('pt.no_rkm_medis')
-                      ->orWhereNotNull('pp.no_rkm_medis');
+                      ->orWhereNotNull('pp.no_rkm_medis')
+                      ->orWhere('pj.png_jawab', 'like', '%DINAS%');
                 });
             } else {
                 $query->where('rp.kd_pj', $payType);
@@ -130,6 +135,8 @@ class OutpatientReportRepository implements OutpatientReportInterface
                 sum(case when pj.png_jawab like '%BPJS%' then 1 else 0 end) as total_bpjs,
                 sum(case when pj.png_jawab like '%UMUM%' then 1 else 0 end) as total_umum,
                 sum(case when pt.no_rkm_medis is not null or pp.no_rkm_medis is not null then 1 else 0 end) as total_dinas,
+                sum(case when pt.no_rkm_medis is not null then 1 else 0 end) as total_tni,
+                sum(case when pp.no_rkm_medis is not null then 1 else 0 end) as total_polri,
                 sum(case when rp.stts = 'Sudah' then 1 else 0 end) as total_sudah,
                 sum(case when rp.stts = 'Belum' then 1 else 0 end) as total_belum
             ")
@@ -150,6 +157,8 @@ class OutpatientReportRepository implements OutpatientReportInterface
             'total_bpjs' => $row ? (int) $row->total_bpjs : 0,
             'total_umum' => $row ? (int) $row->total_umum : 0,
             'total_dinas' => $row ? (int) $row->total_dinas : 0,
+            'total_tni' => $row ? (int) $row->total_tni : 0,
+            'total_polri' => $row ? (int) $row->total_polri : 0,
             'total_sudah' => $row ? (int) $row->total_sudah : 0,
             'total_belum' => $row ? (int) $row->total_belum : 0,
         ];
@@ -176,6 +185,8 @@ class OutpatientReportRepository implements OutpatientReportInterface
                 sum(case when pj.png_jawab like '%BPJS%' then 1 else 0 end) as bpjs,
                 sum(case when pj.png_jawab like '%UMUM%' then 1 else 0 end) as umum,
                 sum(case when pt.no_rkm_medis is not null or pp.no_rkm_medis is not null then 1 else 0 end) as dinas,
+                sum(case when pt.no_rkm_medis is not null then 1 else 0 end) as tni,
+                sum(case when pp.no_rkm_medis is not null then 1 else 0 end) as polri,
                 sum(case when rp.stts = 'Sudah' then 1 else 0 end) as sudah,
                 sum(case when rp.stts = 'Belum' then 1 else 0 end) as belum
             ")
@@ -198,6 +209,8 @@ class OutpatientReportRepository implements OutpatientReportInterface
                 'bpjs' => (int) $r->bpjs,
                 'umum' => (int) $r->umum,
                 'dinas' => (int) $r->dinas,
+                'tni' => (int) $r->tni,
+                'polri' => (int) $r->polri,
                 'sudah' => (int) $r->sudah,
                 'belum' => (int) $r->belum,
             ];
@@ -366,6 +379,132 @@ class OutpatientReportRepository implements OutpatientReportInterface
             'total' => $rows->map(fn($r) => (int) $r->total)->toArray(),
             'pria' => $rows->map(fn($r) => (int) $r->pria)->toArray(),
             'wanita' => $rows->map(fn($r) => (int) $r->wanita)->toArray(),
+        ];
+    }
+
+    /**
+     * Mengambil rekapitulasi data pasien dinas rawat jalan (per Poliklinik, Kategori Personel, dan Satuan).
+     */
+    public static function getDinasBreakdown(
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $poly = null,
+        ?string $gender = null
+    ): array {
+        $baseQuery = self::buildQuery($startDate, $endDate, $poly, 'DINAS', null, $gender);
+
+        $summaryRow = (clone $baseQuery)
+            ->selectRaw("
+                count(*) as total,
+                sum(case when pt.no_rkm_medis is not null then 1 else 0 end) as tni,
+                sum(case when pp.no_rkm_medis is not null then 1 else 0 end) as polri,
+                sum(case when p.jk = 'L' then 1 else 0 end) as pria,
+                sum(case when p.jk = 'P' then 1 else 0 end) as wanita,
+                sum(case when rp.stts_daftar = 'Baru' then 1 else 0 end) as baru,
+                sum(case when rp.stts_daftar = 'Lama' then 1 else 0 end) as lama,
+                sum(case when rp.stts = 'Sudah' then 1 else 0 end) as sudah,
+                sum(case when rp.stts = 'Belum' then 1 else 0 end) as belum
+            ")
+            ->first();
+
+        $totalDinas = $summaryRow ? (int) $summaryRow->total : 0;
+
+        $polyRows = (clone $baseQuery)
+            ->selectRaw("
+                poli.kd_poli,
+                poli.nm_poli,
+                count(*) as total,
+                sum(case when pt.no_rkm_medis is not null then 1 else 0 end) as tni,
+                sum(case when pp.no_rkm_medis is not null then 1 else 0 end) as polri,
+                sum(case when p.jk = 'L' then 1 else 0 end) as pria,
+                sum(case when p.jk = 'P' then 1 else 0 end) as wanita,
+                sum(case when rp.stts_daftar = 'Baru' then 1 else 0 end) as baru,
+                sum(case when rp.stts_daftar = 'Lama' then 1 else 0 end) as lama,
+                sum(case when rp.stts = 'Sudah' then 1 else 0 end) as sudah,
+                sum(case when rp.stts = 'Belum' then 1 else 0 end) as belum
+            ")
+            ->groupBy('poli.kd_poli', 'poli.nm_poli')
+            ->orderByDesc('total')
+            ->get();
+
+        $polyclinics = $polyRows->map(function ($r) use ($totalDinas) {
+            return [
+                'kd_poli' => $r->kd_poli,
+                'nm_poli' => $r->nm_poli,
+                'total' => (int) $r->total,
+                'percent' => $totalDinas > 0 ? round(($r->total / $totalDinas) * 100, 1) : 0,
+                'tni' => (int) $r->tni,
+                'polri' => (int) $r->polri,
+                'pria' => (int) $r->pria,
+                'wanita' => (int) $r->wanita,
+                'baru' => (int) $r->baru,
+                'lama' => (int) $r->lama,
+                'sudah' => (int) $r->sudah,
+                'belum' => (int) $r->belum,
+            ];
+        })->toArray();
+
+        $categoryRows = (clone $baseQuery)
+            ->leftJoin('golongan_tni as gt', 'pt.golongan_tni', '=', 'gt.id')
+            ->leftJoin('golongan_polri as gp', 'pp.golongan_polri', '=', 'gp.id')
+            ->selectRaw("
+                CASE 
+                    WHEN gt.id IN (1, 2, 3) OR gp.id = 1 THEN 'Militer / Anggota Aktif'
+                    WHEN gt.id IN (8, 9, 10) OR gp.id = 2 THEN 'ASN / PNS'
+                    WHEN gt.id IN (5, 6, 7) OR gp.id = 3 THEN 'Keluarga Personel'
+                    WHEN gt.id IN (4, 11, 12) OR gp.id = 4 THEN 'Purnawirawan'
+                    ELSE 'Lainnya'
+                END as kategori,
+                count(*) as total,
+                sum(case when pt.no_rkm_medis is not null then 1 else 0 end) as tni,
+                sum(case when pp.no_rkm_medis is not null then 1 else 0 end) as polri,
+                sum(case when p.jk = 'L' then 1 else 0 end) as pria,
+                sum(case when p.jk = 'P' then 1 else 0 end) as wanita,
+                sum(case when rp.stts_daftar = 'Baru' then 1 else 0 end) as baru,
+                sum(case when rp.stts_daftar = 'Lama' then 1 else 0 end) as lama
+            ")
+            ->groupBy('kategori')
+            ->orderByDesc('total')
+            ->get();
+
+        $categories = $categoryRows->map(function ($r) use ($totalDinas) {
+            return [
+                'kategori' => $r->kategori,
+                'total' => (int) $r->total,
+                'percent' => $totalDinas > 0 ? round(($r->total / $totalDinas) * 100, 1) : 0,
+                'tni' => (int) $r->tni,
+                'polri' => (int) $r->polri,
+                'pria' => (int) $r->pria,
+                'wanita' => (int) $r->wanita,
+                'baru' => (int) $r->baru,
+                'lama' => (int) $r->lama,
+            ];
+        })->toArray();
+
+        $satuanRows = (clone $baseQuery)
+            ->whereNotNull('pt.no_rkm_medis')
+            ->leftJoin('satuan_tni as sat', 'pt.satuan_tni', '=', 'sat.id')
+            ->selectRaw("COALESCE(sat.nama_satuan, 'Lainnya / Tidak Tercatat') as nama_satuan, count(*) as total")
+            ->groupBy('nama_satuan')
+            ->orderByDesc('total')
+            ->limit(10)
+            ->get();
+
+        return [
+            'summary' => [
+                'total' => $totalDinas,
+                'tni' => $summaryRow ? (int) $summaryRow->tni : 0,
+                'polri' => $summaryRow ? (int) $summaryRow->polri : 0,
+                'pria' => $summaryRow ? (int) $summaryRow->pria : 0,
+                'wanita' => $summaryRow ? (int) $summaryRow->wanita : 0,
+                'baru' => $summaryRow ? (int) $summaryRow->baru : 0,
+                'lama' => $summaryRow ? (int) $summaryRow->lama : 0,
+                'sudah' => $summaryRow ? (int) $summaryRow->sudah : 0,
+                'belum' => $summaryRow ? (int) $summaryRow->belum : 0,
+            ],
+            'polyclinics' => $polyclinics,
+            'categories' => $categories,
+            'satuan' => $satuanRows->toArray(),
         ];
     }
 }

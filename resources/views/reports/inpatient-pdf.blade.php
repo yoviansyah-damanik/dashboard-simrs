@@ -26,13 +26,11 @@
     </style>
 </head>
 <body>
-    <footer>
-        Data diperoleh melalui {{ config('app.name') }} milik {{ config('app.hospital_name') }} pada {{ now()->format('d/m/Y H:i:s') }}.
-    </footer>
-    <div class="header">
-        <h2>DATA PASIEN RAWAT INAP</h2>
-        <p>Periode: {{ $startDate }} s/d {{ $endDate }}</p>
-        <p>Dicetak pada: {{ now()->format('d/m/Y H:i') }}</p>
+    @include('reports.partials.header')
+
+    <div style="text-align: center; margin-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 13px; font-weight: bold; color: #0f172a; text-transform: uppercase;">DATA PASIEN RAWAT INAP</h3>
+        <p style="margin: 3px 0 0 0; font-size: 9px; color: #475569;">Periode: {{ $startDate }} s/d {{ $endDate }} | Dicetak: {{ now()->format('d/m/Y H:i') }}</p>
     </div>
 
     <table>

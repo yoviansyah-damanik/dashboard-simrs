@@ -4,29 +4,40 @@ namespace App\Helpers;
 
 class GeneralHelper
 {
+    public static function getAllVersions(): array
+    {
+        $path = base_path('version.json');
+        if (!file_exists($path)) {
+            return [];
+        }
+
+        $json = file_get_contents($path);
+        if ($json === false) {
+            return [];
+        }
+
+        $data = json_decode($json, true);
+        return is_array($data) ? $data : [];
+    }
+
     public static function getVersion()
     {
-        $json = file_get_contents(base_path('version.json'), 'version.json');
-        // Check if the file was read successfully
-        if ($json === false) {
-            die('Error reading the JSON file');
+        $versions = self::getAllVersions();
+        if (empty($versions)) {
+            return [
+                'version' => 'v1.0.0',
+                'changeLog' => [],
+            ];
         }
 
-        // Decode the JSON file
-        $json_data = json_decode($json, true);
-
-        // Check if the JSON was decoded successfully
-        if ($json_data === null) {
-            die('Error decoding the JSON file');
-        }
-
-        $versions = collect($json_data);
-        $lastVersion = $versions->sortByDesc('version')
-            ->first();
+        $lastVersion = $versions[0] ?? [
+            'version' => '1.0.0',
+            'changeLog' => [],
+        ];
 
         return [
-            'version' => 'v' . $lastVersion['version'],
-            'changeLog' => $lastVersion['changeLog'],
+            'version' => 'v' . ltrim($lastVersion['version'] ?? '1.0.0', 'v'),
+            'changeLog' => $lastVersion['changeLog'] ?? [],
         ];
     }
 

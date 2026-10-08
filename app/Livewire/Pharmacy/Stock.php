@@ -121,4 +121,45 @@ class Stock extends Component
             'profil' => $profil,
         ])->title('Rekap Stok Obat Farmasi');
     }
+
+    /**
+     * Ekspor rekapitulasi stok obat ke format PDF resmi
+     */
+    public function exportPdf()
+    {
+        set_time_limit(0);
+
+        $filters = [
+            'search' => $this->search,
+            'status_stok' => $this->statusStok,
+            'depo' => $this->depo,
+            'kategori' => $this->kategori,
+        ];
+
+        $summary = PharmacyStockRepository::getSummary($this->depo, $this->kategori);
+        // Ambil data untuk laporan PDF (maksimal 200 item)
+        $items = PharmacyStockRepository::getPaginated(
+            $filters,
+            200,
+            $this->sortField,
+            $this->sortDirection
+        );
+        $profil = SirsHelper::getProfilRS();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.pharmacy-stock-pdf', [
+            'summary' => $summary,
+            'items' => $items,
+            'profil' => $profil,
+            'statusStok' => $this->statusStok,
+            'depo' => $this->depo,
+            'printedAt' => now()->translatedFormat('d F Y H:i'),
+            'printedBy' => auth()->user()->name ?? 'Petugas Farmasi SIMRS',
+        ])->setPaper('a4', 'portrait');
+
+        $filename = 'rekap-stok-obat-' . now()->format('YmdHis') . '.pdf';
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->stream();
+        }, $filename);
+    }
 }

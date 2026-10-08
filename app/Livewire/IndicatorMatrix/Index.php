@@ -46,6 +46,31 @@ class Index extends Component
     }
 
     /**
+     * Ekspor data matriks indikator tahunan ke format PDF resmi
+     */
+    public function exportPdf()
+    {
+        set_time_limit(0);
+
+        $matrix = SirsFacilityRepository::getYearlyIndicatorMatrix($this->tahun);
+        $profil = SirsHelper::getProfilRS();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.indicator-matrix-pdf', [
+            'matrix' => $matrix,
+            'profil' => $profil,
+            'tahun' => $this->tahun,
+            'printedAt' => now()->translatedFormat('d F Y H:i'),
+            'printedBy' => auth()->user()->name ?? 'Petugas Rekam Medis SIMRS',
+        ])->setPaper('a4', 'landscape');
+
+        $filename = 'matriks-indikator-rawat-inap-' . $this->tahun . '.pdf';
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->stream();
+        }, $filename);
+    }
+
+    /**
      * Menyiapkan payload dataset dan benchmark indikator untuk visualisasi grafik.
      */
     protected function prepareChartData(array $matrix): array

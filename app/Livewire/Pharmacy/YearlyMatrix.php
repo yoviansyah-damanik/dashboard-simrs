@@ -47,4 +47,29 @@ class YearlyMatrix extends Component
             'charts' => $matrix['charts'],
         ])->title('Matriks Indikator Tahunan Farmasi');
     }
+
+    /**
+     * Ekspor matriks indikator tahunan farmasi ke format PDF resmi
+     */
+    public function exportPdf()
+    {
+        set_time_limit(0);
+
+        $matrix = PharmacyReportRepository::getYearlyMatrix($this->tahun);
+        $profil = SirsHelper::getProfilRS();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.pharmacy-yearly-matrix-pdf', [
+            'matrix' => $matrix,
+            'profil' => $profil,
+            'tahun' => $this->tahun,
+            'printedAt' => now()->translatedFormat('d F Y H:i'),
+            'printedBy' => auth()->user()->name ?? 'Petugas Farmasi SIMRS',
+        ])->setPaper('a4', 'landscape');
+
+        $filename = 'matriks-indikator-farmasi-' . $this->tahun . '.pdf';
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->stream();
+        }, $filename);
+    }
 }

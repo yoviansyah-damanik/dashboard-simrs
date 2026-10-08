@@ -75,7 +75,13 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <x-button color="default" icon="i-ph-printer" onclick="window.print()">Cetak</x-button>
+            <x-button color="default" icon="i-ph-file-pdf" wire:click="exportPdf" wire:loading.attr="disabled">
+                <span wire:loading.remove wire:target="exportPdf">Cetak PDF Data</span>
+                <span wire:loading wire:target="exportPdf" class="flex items-center gap-1.5">
+                    <span class="icon-[solar--spinner-linear] animate-spin text-sm"></span>
+                    <span>Menyiapkan PDF...</span>
+                </span>
+            </x-button>
         </div>
     </div>
 

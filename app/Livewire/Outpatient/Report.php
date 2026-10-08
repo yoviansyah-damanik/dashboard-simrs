@@ -313,6 +313,17 @@ class Report extends Component
     }
 
     #[Computed]
+    public function dinasBreakdown(): array
+    {
+        return OutpatientReportRepository::getDinasBreakdown(
+            startDate: $this->startDate,
+            endDate: $this->endDate,
+            poly: $this->poly,
+            gender: $this->gender
+        );
+    }
+
+    #[Computed]
     public function chartPayload(): array
     {
         // 1. Tren Kunjungan Harian
@@ -449,7 +460,7 @@ class Report extends Component
             fputcsv($file, ['REKAPITULASI PASIEN RAWAT JALAN PER POLIKLINIK / UNIT']);
             fputcsv($file, ['Periode', Carbon::parse($this->startDate)->format('d/m/Y') . ' s/d ' . Carbon::parse($this->endDate)->format('d/m/Y')]);
             fputcsv($file, []);
-            fputcsv($file, ['No', 'Kode Poli', 'Nama Poliklinik', 'Total Pasien', 'Proporsi (%)', 'Laki-laki', 'Perempuan', 'Pasien Baru', 'Pasien Lama', 'BPJS', 'Umum', 'Dinas', 'Sudah Periksa', 'Belum Periksa']);
+            fputcsv($file, ['No', 'Kode Poli', 'Nama Poliklinik', 'Total Pasien', 'Proporsi (%)', 'Laki-laki', 'Perempuan', 'Pasien Baru', 'Pasien Lama', 'BPJS', 'Umum', 'TNI', 'POLRI', 'Sudah Periksa', 'Belum Periksa']);
 
             foreach ($polyBreakdown as $index => $p) {
                 fputcsv($file, [
@@ -464,7 +475,8 @@ class Report extends Component
                     $p['lama'],
                     $p['bpjs'],
                     $p['umum'],
-                    $p['dinas'],
+                    $p['tni'],
+                    $p['polri'],
                     $p['sudah'],
                     $p['belum'],
                 ]);
@@ -527,11 +539,13 @@ class Report extends Component
         $polyBreakdown = OutpatientReportRepository::getPolyBreakdown($this->startDate, $this->endDate, $this->payType, $this->gender);
         $payTypeBreakdown = OutpatientReportRepository::getPayTypeBreakdown($this->startDate, $this->endDate, $this->poly, $this->gender);
         $ageGroupBreakdown = OutpatientReportRepository::getAgeGroupBreakdown($this->startDate, $this->endDate, $this->poly, $this->payType);
+        $dinasBreakdown = OutpatientReportRepository::getDinasBreakdown($this->startDate, $this->endDate, $this->poly, $this->gender);
 
         $pdf = Pdf::loadView('reports.outpatient-report-pdf', [
             'polyBreakdown' => $polyBreakdown,
             'payTypeBreakdown' => $payTypeBreakdown,
             'ageGroupBreakdown' => $ageGroupBreakdown,
+            'dinasBreakdown' => $dinasBreakdown,
             'startDate' => $this->startDate,
             'endDate' => $this->endDate,
             'summary' => $this->summary(),
@@ -589,10 +603,10 @@ class Report extends Component
         $sheet1->mergeCells('A5:L5');
         $sheet1->getStyle('A5')->getFont()->setSize(9);
 
-        $headersPoli = ['No', 'Kode', 'Nama Poliklinik', 'Total Pasien', 'Proporsi (%)', 'Laki-laki', 'Perempuan', 'Baru', 'Lama', 'BPJS', 'Umum', 'Dinas'];
+        $headersPoli = ['No', 'Kode', 'Nama Poliklinik', 'Total Pasien', 'Proporsi (%)', 'Laki-laki', 'Perempuan', 'Baru', 'Lama', 'BPJS', 'Umum', 'TNI', 'POLRI'];
         $sheet1->fromArray($headersPoli, null, 'A7');
-        $sheet1->getStyle('A7:L7')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
-        $sheet1->getStyle('A7:L7')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('00923F');
+        $sheet1->getStyle('A7:M7')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet1->getStyle('A7:M7')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('00923F');
 
         $rowIdx = 8;
         foreach ($polyBreakdown as $idx => $p) {
@@ -608,7 +622,8 @@ class Report extends Component
                 $p['lama'],
                 $p['bpjs'],
                 $p['umum'],
-                $p['dinas']
+                $p['tni'],
+                $p['polri']
             ], null, "A{$rowIdx}");
             $rowIdx++;
         }
@@ -671,11 +686,46 @@ class Report extends Component
             $ageRow++;
         }
 
+        // Sheet 4: Rekapitulasi Pasien Dinas
+        $dinasBreakdown = OutpatientReportRepository::getDinasBreakdown($this->startDate, $this->endDate, $this->poly, $this->gender);
+        $sheet4 = $spreadsheet->createSheet();
+        $sheet4->setTitle('Rekap Pasien Dinas');
+        $sheet4->setShowGridLines(true);
+
+        $sheet4->setCellValue('A1', 'REKAPITULASI PASIEN DINAS RAWAT JALAN (TNI / POLRI)');
+        $sheet4->mergeCells('A1:L1');
+        $sheet4->getStyle('A1')->getFont()->setSize(12)->setBold(true);
+
+        $headersDinas = ['No', 'Kode Poli', 'Nama Poliklinik', 'Total Dinas', 'Proporsi (%)', 'TNI', 'POLRI', 'Laki-laki', 'Perempuan', 'Baru', 'Lama', 'Sudah Dilayani'];
+        $sheet4->fromArray($headersDinas, null, 'A3');
+        $sheet4->getStyle('A3:L3')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet4->getStyle('A3:L3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('7C3AED');
+
+        $dinasRow = 4;
+        foreach ($dinasBreakdown['polyclinics'] as $idx => $dp) {
+            $sheet4->fromArray([
+                $idx + 1,
+                $dp['kd_poli'],
+                $dp['nm_poli'],
+                $dp['total'],
+                $dp['percent'] . '%',
+                $dp['tni'],
+                $dp['polri'],
+                $dp['pria'],
+                $dp['wanita'],
+                $dp['baru'],
+                $dp['lama'],
+                $dp['sudah']
+            ], null, "A{$dinasRow}");
+            $dinasRow++;
+        }
+
         // Auto size columns
-        foreach (range('A', 'L') as $col) {
+        foreach (range('A', 'M') as $col) {
             $sheet1->getColumnDimension($col)->setAutoSize(true);
             $sheet2->getColumnDimension($col)->setAutoSize(true);
             $sheet3->getColumnDimension($col)->setAutoSize(true);
+            $sheet4->getColumnDimension($col)->setAutoSize(true);
         }
 
         $filename = $this->getExportFilename('xlsx');

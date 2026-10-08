@@ -23,14 +23,14 @@ class Summary extends Component
     public int $selectedYear = 0;
 
     #[Url]
-    public string $activeTab = 'overview'; // 'overview' | 'poli' | 'igd' | 'ranap'
+    public string $activeTab = 'overview'; // 'overview' | 'poli' | 'igd' | 'ranap' | 'dinas'
 
     public function mount(): void
     {
         $this->selectedMonth = (int) date('n');
         $this->selectedYear = (int) date('Y');
 
-        if (!in_array($this->activeTab, ['overview', 'poli', 'igd', 'ranap'])) {
+        if (!in_array($this->activeTab, ['overview', 'poli', 'igd', 'ranap', 'dinas'])) {
             $this->activeTab = 'overview';
         }
 
@@ -57,7 +57,7 @@ class Summary extends Component
 
     public function setTab(string $tab): void
     {
-        if (in_array($tab, ['overview', 'poli', 'igd', 'ranap'])) {
+        if (in_array($tab, ['overview', 'poli', 'igd', 'ranap', 'dinas'])) {
             $this->activeTab = $tab;
         }
     }
@@ -122,6 +122,7 @@ class Summary extends Component
             'outpatient' => $report['outpatient'],
             'emergency' => $report['emergency'],
             'inpatient' => $report['inpatient'],
+            'dinas' => $report['dinas'],
             'caraBayar' => $report['cara_bayar'],
             'charts' => $report['charts'],
             'profil' => $profil,
@@ -130,5 +131,37 @@ class Summary extends Component
             'startDate' => $this->startDate,
             'endDate' => $this->endDate,
         ])->title('Ringkasan Layanan Medis');
+    }
+
+    /**
+     * Ekspor ringkasan layanan medis ke format PDF resmi
+     */
+    public function exportPdf()
+    {
+        set_time_limit(0);
+
+        $report = MedicalServicesReportRepository::getSummary($this->startDate, $this->endDate);
+        $profil = SirsHelper::getProfilRS();
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports.medical-services-summary-pdf', [
+            'report' => $report,
+            'summary' => $report['summary'],
+            'outpatient' => $report['outpatient'],
+            'emergency' => $report['emergency'],
+            'inpatient' => $report['inpatient'],
+            'dinas' => $report['dinas'],
+            'caraBayar' => $report['cara_bayar'],
+            'profil' => $profil,
+            'startDate' => Carbon::parse($this->startDate)->translatedFormat('d F Y'),
+            'endDate' => Carbon::parse($this->endDate)->translatedFormat('d F Y'),
+            'printedAt' => now()->translatedFormat('d F Y H:i'),
+            'printedBy' => auth()->user()->name ?? 'Petugas Pelayanan Medis SIMRS',
+        ])->setPaper('a4', 'portrait');
+
+        $filename = 'ringkasan-layanan-medis-' . $this->startDate . '-sd-' . $this->endDate . '.pdf';
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->stream();
+        }, $filename);
     }
 }

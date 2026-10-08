@@ -30,10 +30,16 @@
             </div>
 
             <div class="flex items-center gap-2">
-                <button type="button" onclick="window.print()"
+                <button type="button" wire:click="exportPdf" wire:loading.attr="disabled"
                     class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-boxdark border border-stroke dark:border-strokedark text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-meta-4/40 shadow-sm transition">
-                    <span class="icon-[solar--printer-bold-duotone] text-base text-gray-500"></span>
-                    <span>Cetak Laporan</span>
+                    <span wire:loading.remove wire:target="exportPdf" class="flex items-center gap-1.5">
+                        <span class="icon-[solar--file-text-bold-duotone] text-base text-rose-500"></span>
+                        <span>Cetak PDF Data</span>
+                    </span>
+                    <span wire:loading wire:target="exportPdf" class="flex items-center gap-1.5">
+                        <span class="icon-[solar--spinner-linear] animate-spin text-sm"></span>
+                        <span>Menyiapkan PDF...</span>
+                    </span>
                 </button>
             </div>
         </div>

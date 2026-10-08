@@ -69,8 +69,14 @@
         </div>
 
         <div class="flex items-center gap-2">
+            <x-button color="default" icon="i-ph-file-pdf" wire:click="exportPdf" wire:loading.attr="disabled">
+                <span wire:loading.remove wire:target="exportPdf">Cetak PDF Data</span>
+                <span wire:loading wire:target="exportPdf" class="flex items-center gap-1.5">
+                    <span class="icon-[solar--spinner-linear] animate-spin text-sm"></span>
+                    <span>Menyiapkan PDF...</span>
+                </span>
+            </x-button>
             <x-button color="default" icon="i-ph-file-xls" wire:click="exportExcel">Ekspor Excel</x-button>
-            <x-button color="default" icon="i-ph-printer" onclick="window.print()">Cetak</x-button>
         </div>
     </div>
 
@@ -388,7 +394,20 @@
                                     {{ Carbon\Carbon::parse($p->tgl_registrasi)->format('d/m/Y') }} {{ $p->jam_reg }}
                                 </td>
                                 <td class="py-2.5 px-3 text-gray-800 dark:text-gray-200">{{ $p->nm_dokter }}</td>
-                                <td class="py-2.5 px-3 text-gray-700 dark:text-gray-300">{{ $p->png_jawab }}</td>
+                                <td class="py-2.5 px-3 text-gray-700 dark:text-gray-300">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <span>{{ $p->png_jawab }}</span>
+                                        @if (isset($p->status_dinas) && $p->status_dinas === 'TNI')
+                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                                TNI
+                                            </span>
+                                        @elseif (isset($p->status_dinas) && $p->status_dinas === 'POLRI')
+                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                                POLRI
+                                            </span>
+                                        @endif
+                                    </div>
+                                </td>
                                 <td class="py-2.5 px-3 text-center">
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold 
                                         {{ $p->stts === 'Sudah' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400' : '' }}

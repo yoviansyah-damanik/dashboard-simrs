@@ -92,16 +92,22 @@
         @page {
             margin: 1.2cm 1cm 1.8cm 1cm;
         }
+        .section-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-top: 20px;
+            margin-bottom: 6px;
+            border-left: 3px solid #7c3aed;
+            padding-left: 6px;
+        }
     </style>
 </head>
 <body>
-    <footer>
-        Dokumen ini dibuat otomatis melalui {{ config('app.name') }} milik {{ config('app.hospital_name') }} pada {{ now()->format('d/m/Y H:i:s') }}.
-    </footer>
+    @include('reports.partials.header')
 
-    <div class="header">
-        <h2>{{ config('app.hospital_name', 'RUMAH SAKIT') }}</h2>
-        <h3>LAPORAN PASIEN RAWAT INAP</h3>
+    <div style="text-align: center; margin-bottom: 12px;">
+        <h3 style="margin: 0; font-size: 13px; font-weight: bold; color: #0f172a; text-transform: uppercase;">LAPORAN PASIEN RAWAT INAP</h3>
     </div>
 
     <div class="meta-info">
@@ -119,6 +125,8 @@
                 <strong>Total Pasien:</strong> {{ number_format($summary['total_pasien'] ?? count($patients), 0, ',', '.') }} orang
                 (Sudah Pulang: {{ number_format($summary['sudah_pulang'] ?? 0, 0, ',', '.') }},
                 Masih Dirawat: {{ number_format($summary['masih_dirawat'] ?? 0, 0, ',', '.') }})
+                | <strong>TNI:</strong> {{ number_format($summary['total_tni'] ?? 0, 0, ',', '.') }}
+                | <strong>POLRI:</strong> {{ number_format($summary['total_polri'] ?? 0, 0, ',', '.') }}
             </div>
             <div class="meta-cell" style="text-align: right;">
                 <strong>Dicetak pada:</strong> {{ now()->format('d/m/Y H:i') }} WIB
@@ -136,7 +144,7 @@
                 <th>Bangsal</th>
                 <th style="width: 65px; text-align: center;">Tgl Masuk</th>
                 <th style="width: 65px; text-align: center;">Tgl Keluar</th>
-                <th style="width: 90px;">Penjamin</th>
+                <th style="width: 95px;">Penjamin</th>
                 <th>DPJP Ranap</th>
             </tr>
         </thead>
@@ -161,7 +169,14 @@
                             {{ \Carbon\Carbon::parse($patient->tgl_keluar)->format('d/m/Y') }}
                         @endif
                     </td>
-                    <td>{{ $patient->png_jawab ?? '-' }}</td>
+                    <td>
+                        {{ $patient->png_jawab ?? '-' }}
+                        @if($patient->status_dinas === 'TNI')
+                            <span style="display: inline-block; padding: 1px 4px; font-size: 8px; font-weight: bold; background: #dcfce7; color: #166534; border-radius: 3px;">TNI</span>
+                        @elseif($patient->status_dinas === 'POLRI')
+                            <span style="display: inline-block; padding: 1px 4px; font-size: 8px; font-weight: bold; background: #dbeafe; color: #1e40af; border-radius: 3px;">POLRI</span>
+                        @endif
+                    </td>
                     <td>{{ $patient->dpjp_ranap ?? '-' }}</td>
                 </tr>
             @empty
@@ -173,5 +188,74 @@
             @endforelse
         </tbody>
     </table>
+
+    {{-- Rekapitulasi Pasien Dinas (TNI / POLRI) --}}
+    @if (!empty($dinasBreakdown) && !empty($dinasBreakdown['wards']))
+        <div style="page-break-inside: avoid;">
+            <div class="section-title">Rekapitulasi Pasien Dinas Rawat Inap (TNI / POLRI) per Bangsal</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 25px; text-align: center;">No</th>
+                        <th>Bangsal / Ruangan</th>
+                        <th style="width: 60px; text-align: center;">Total Dinas</th>
+                        <th style="width: 50px; text-align: center;">Proporsi</th>
+                        <th style="width: 55px; text-align: center;">TNI</th>
+                        <th style="width: 55px; text-align: center;">POLRI</th>
+                        <th style="width: 70px; text-align: center;">Masih Dirawat</th>
+                        <th style="width: 70px; text-align: center;">Sudah Pulang</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($dinasBreakdown['wards'] as $index => $dw)
+                        <tr>
+                            <td style="text-align: center;">{{ $index + 1 }}</td>
+                            <td><strong>{{ $dw['nm_bangsal'] }}</strong> ({{ $dw['kd_bangsal'] }})</td>
+                            <td style="text-align: center; font-weight: bold; color: #7c3aed;">{{ number_format($dw['total'], 0, ',', '.') }}</td>
+                            <td style="text-align: center;">{{ $dw['percent'] }}%</td>
+                            <td style="text-align: center;">{{ number_format($dw['tni'], 0, ',', '.') }}</td>
+                            <td style="text-align: center;">{{ number_format($dw['polri'], 0, ',', '.') }}</td>
+                            <td style="text-align: center;">{{ number_format($dw['masih_dirawat'], 0, ',', '.') }}</td>
+                            <td style="text-align: center;">{{ number_format($dw['sudah_pulang'], 0, ',', '.') }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        @if (!empty($dinasBreakdown['categories']))
+            <div style="page-break-inside: avoid; margin-top: 15px;">
+                <div class="section-title" style="border-left-color: #0284c7;">Distribusi Kategori Personel Pasien Dinas Rawat Inap</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 25px; text-align: center;">No</th>
+                            <th>Kategori Personel</th>
+                            <th style="width: 60px; text-align: center;">Total Pasien</th>
+                            <th style="width: 50px; text-align: center;">Proporsi</th>
+                            <th style="width: 55px; text-align: center;">TNI</th>
+                            <th style="width: 55px; text-align: center;">POLRI</th>
+                            <th style="width: 70px; text-align: center;">Masih Dirawat</th>
+                            <th style="width: 70px; text-align: center;">Sudah Pulang</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($dinasBreakdown['categories'] as $cIdx => $cat)
+                            <tr>
+                                <td style="text-align: center;">{{ $cIdx + 1 }}</td>
+                                <td><strong>{{ $cat['kategori'] }}</strong></td>
+                                <td style="text-align: center; font-weight: bold; color: #0284c7;">{{ number_format($cat['total'], 0, ',', '.') }}</td>
+                                <td style="text-align: center;">{{ $cat['percent'] }}%</td>
+                                <td style="text-align: center;">{{ number_format($cat['tni'], 0, ',', '.') }}</td>
+                                <td style="text-align: center;">{{ number_format($cat['polri'], 0, ',', '.') }}</td>
+                                <td style="text-align: center;">{{ number_format($cat['masih_dirawat'], 0, ',', '.') }}</td>
+                                <td style="text-align: center;">{{ number_format($cat['sudah_pulang'], 0, ',', '.') }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    @endif
 </body>
 </html>

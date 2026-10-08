@@ -48,6 +48,10 @@ Route::middleware('auth')
             ->name('medical-non-personnel');
 
         // LAYANAN MEDIS
+        Route::get('/layanan-medis/ringkasan', \App\Livewire\MedicalServices\Summary::class)
+            ->middleware('permission:outpatient show|inpatient show|emergency show|patient-report show|indicator-matrix show')
+            ->name('medical-services.summary');
+
         Route::prefix('pendaftaran')
             ->as('registered-patient')
 
@@ -100,12 +104,25 @@ Route::middleware('auth')
                 Route::get('/rekap', \App\Livewire\Emergency\Recap::class)
                     ->middleware('permission:emergency recap')
                     ->name('.recap');
+                Route::get('/laporan', \App\Livewire\Emergency\Report::class)
+                    ->middleware('permission:emergency report')
+                    ->name('.report');
             });
 
         // LAYANAN PENUNJANG MEDIS
-        Route::get('/gizi', \App\Livewire\Nutrition\Index::class)
-            ->middleware('permission:nutrition show')
-            ->name('nutrition');
+        Route::get('/penunjang/ringkasan', \App\Livewire\Ancillary\Summary::class)
+            ->middleware('permission:laboratory show|radiology show|pharmacy show|nutrition show|laboratory recap|radiology recap|pharmacy recap|indicator-matrix show')
+            ->name('ancillary.summary');
+
+        Route::prefix('gizi')
+            ->group(function () {
+                Route::get('/', \App\Livewire\Nutrition\Index::class)
+                    ->middleware('permission:nutrition show')
+                    ->name('nutrition');
+                Route::get('/rekap', \App\Livewire\Nutrition\Recap::class)
+                    ->middleware('permission:nutrition show|nutrition recap')
+                    ->name('nutrition.recap');
+            });
 
         Route::prefix('laboratorium')
             ->as('laboratory')
@@ -137,6 +154,9 @@ Route::middleware('auth')
                 Route::get('/rekap', \App\Livewire\Pharmacy\Recap::class)
                     ->middleware('permission:pharmacy recap')
                     ->name('.recap');
+                Route::get('/stok', \App\Livewire\Pharmacy\Stock::class)
+                    ->middleware('permission:pharmacy show|pharmacy recap')
+                    ->name('.stock');
             });
 
         // LAPORAN
@@ -150,10 +170,17 @@ Route::middleware('auth')
             ->middleware('permission:indicator-matrix show')
             ->name('indicator-matrix');
         Route::get('/laporan-indikator-penunjang', \App\Livewire\Ancillary\YearlyMatrix::class)
-            ->middleware('permission:indicator-matrix show|laboratory recap|radiology recap|laboratory show|radiology show')
+            ->middleware('permission:indicator-matrix show|laboratory recap|radiology recap|pharmacy recap|nutrition recap|laboratory show|radiology show|pharmacy show|nutrition show')
             ->name('ancillary.yearly-matrix');
         Route::get('/penunjang/matriks-tahunan', \App\Livewire\Ancillary\YearlyMatrix::class)
-            ->middleware('permission:indicator-matrix show|laboratory recap|radiology recap|laboratory show|radiology show');
+            ->middleware('permission:indicator-matrix show|laboratory recap|radiology recap|pharmacy recap|nutrition recap|laboratory show|radiology show|pharmacy show|nutrition show');
+        Route::get('/laporan-indikator-farmasi', function () {
+            return redirect()->route('ancillary.yearly-matrix', ['activeTab' => 'farmasi']);
+        })->middleware('permission:indicator-matrix show|pharmacy recap|pharmacy show')
+          ->name('pharmacy.yearly-matrix');
+        Route::get('/farmasi/matriks-tahunan', function () {
+            return redirect()->route('ancillary.yearly-matrix', ['activeTab' => 'farmasi']);
+        })->middleware('permission:indicator-matrix show|pharmacy recap|pharmacy show');
 
         Route::get('/icd', \App\Livewire\Icd\Recap::class)
             ->middleware('permission:icd recap')

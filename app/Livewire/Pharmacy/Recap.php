@@ -242,13 +242,46 @@ class Recap extends Component
 
         $topObat = (clone $this->obatBaseQuery())
             ->join('databarang as db', 'dpo.kode_brng', '=', 'db.kode_brng')
-            ->select('db.nama_brng', DB::raw('sum(dpo.jml) as qty'), DB::raw('count(distinct dpo.no_rawat) as pemakaian'))
-            ->groupBy('db.nama_brng')
+            ->where('db.status', '1')
+            ->select('db.kode_brng', 'db.nama_brng', DB::raw('sum(dpo.jml) as qty'), DB::raw('count(distinct dpo.no_rawat) as pemakaian'))
+            ->groupBy('db.kode_brng', 'db.nama_brng')
             ->orderByDesc('qty')
             ->take(10)
             ->get();
 
+        // Ambil stok terkini dan stok minimal untuk menandai status ketersediaan obat
+        $topKodeBrng = $topObat->pluck('kode_brng')->filter()->toArray();
+
+        $stockData = !empty($topKodeBrng)
+            ? DB::connection('simrs')->table('gudangbarang')
+                ->whereIn('kode_brng', $topKodeBrng)
+                ->select('kode_brng', DB::raw('coalesce(sum(stok), 0) as total_stok'))
+                ->groupBy('kode_brng')
+                ->pluck('total_stok', 'kode_brng')
+            : collect();
+
+        $minStockData = !empty($topKodeBrng)
+            ? DB::connection('simrs')->table('databarang')
+                ->whereIn('kode_brng', $topKodeBrng)
+                ->where('status', '1')
+                ->pluck('stokminimal', 'kode_brng')
+            : collect();
+
+        $topObat = $topObat->map(function ($item) use ($stockData, $minStockData) {
+            $currentStock = (float) ($stockData[$item->kode_brng] ?? 0);
+            $minStock = (float) ($minStockData[$item->kode_brng] ?? 0);
+
+            $item->current_stock = $currentStock;
+            $item->min_stock = $minStock;
+            $item->is_habis = $currentStock <= 0;
+            $item->is_akan_habis = $currentStock > 0 && $currentStock <= $minStock;
+            $item->is_aman = $currentStock > $minStock;
+
+            return $item;
+        });
+
         $trend = $this->trendStats((clone $this->obatBaseQuery()), 'dpo.tgl_perawatan', 'dpo.jml');
+        $trendTop10 = $this->top10TrendStats($topKodeBrng, $topObat);
 
         return [
             'total_qty' => $totalQty ?? 0,
@@ -275,7 +308,100 @@ class Recap extends Component
                         'tension' => 0.4,
                     ]],
                 ],
+                'trend_top10' => $trendTop10,
             ],
+        ];
+    }
+
+    /**
+     * Hitung tren penggunaan harian/bulanan/tahunan untuk 10 obat paling sering digunakan.
+     */
+    private function top10TrendStats(array $topKodeBrng, $topObat)
+    {
+        if (empty($topKodeBrng) || $topObat->isEmpty()) {
+            return [
+                'labels' => [],
+                'datasets' => [],
+            ];
+        }
+
+        $hasRange = $this->startDate && $this->endDate;
+        $spanInDays = $hasRange ? Carbon::parse($this->startDate)->diffInDays(Carbon::parse($this->endDate)) : null;
+
+        $dateColumn = 'dpo.tgl_perawatan';
+        $timeQuery = (clone $this->obatBaseQuery())
+            ->whereIn('dpo.kode_brng', $topKodeBrng);
+
+        if (!$hasRange) {
+            $rawPoints = $timeQuery
+                ->selectRaw("YEAR($dateColumn) as time_key, cast(YEAR($dateColumn) as char) as label, dpo.kode_brng, sum(dpo.jml) as total")
+                ->groupBy('time_key', 'label', 'dpo.kode_brng')
+                ->orderBy('time_key')
+                ->get();
+        } elseif ($spanInDays > 60) {
+            $rawPoints = $timeQuery
+                ->selectRaw("DATE_FORMAT($dateColumn, '%Y-%m') as time_key, DATE_FORMAT($dateColumn, '%b %Y') as label, dpo.kode_brng, sum(dpo.jml) as total")
+                ->groupBy('time_key', 'label', 'dpo.kode_brng')
+                ->orderBy('time_key')
+                ->get();
+        } else {
+            $rawPoints = $timeQuery
+                ->selectRaw("$dateColumn as time_key, DATE_FORMAT($dateColumn, '%d/%m') as label, dpo.kode_brng, sum(dpo.jml) as total")
+                ->groupBy('time_key', 'label', 'dpo.kode_brng')
+                ->orderBy('time_key')
+                ->get();
+        }
+
+        // Susun daftar label unik dan berurutan
+        $uniqueTimePoints = $rawPoints->pluck('label', 'time_key')->unique();
+        $labels = $uniqueTimePoints->values()->toArray();
+        $timeKeys = $uniqueTimePoints->keys()->toArray();
+
+        // 10 warna kontras dan modern untuk masing-masing garis tren obat
+        $colors = [
+            '#4f46e5', // Indigo
+            '#06b6d4', // Cyan
+            '#10b981', // Emerald
+            '#f59e0b', // Amber
+            '#ef4444', // Red
+            '#8b5cf6', // Violet
+            '#ec4899', // Pink
+            '#14b8a6', // Teal
+            '#f97316', // Orange
+            '#3b82f6', // Blue
+        ];
+
+        // Petakan [kode_brng][time_key] => total
+        $lookup = [];
+        foreach ($rawPoints as $point) {
+            $lookup[$point->kode_brng][$point->time_key] = (float) $point->total;
+        }
+
+        $datasets = [];
+        $colorIndex = 0;
+        foreach ($topObat as $obat) {
+            $color = $colors[$colorIndex % count($colors)];
+            $seriesData = [];
+            foreach ($timeKeys as $tk) {
+                $seriesData[] = (float) ($lookup[$obat->kode_brng][$tk] ?? 0);
+            }
+
+            $datasets[] = [
+                'label' => $obat->nama_brng,
+                'data' => $seriesData,
+                'borderColor' => $color,
+                'backgroundColor' => $color,
+                'tension' => 0.3,
+                'fill' => false,
+                'pointRadius' => 3,
+                'borderWidth' => 2,
+            ];
+            $colorIndex++;
+        }
+
+        return [
+            'labels' => $labels,
+            'datasets' => $datasets,
         ];
     }
 

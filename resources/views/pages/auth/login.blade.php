@@ -314,7 +314,7 @@ document.documentElement.classList.toggle('dark', darkMode);"
 
     {{-- Modal Dialog Bantuan IT & Kontak Darurat --}}
     <div x-show="showHelp" x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+        class="fixed inset-0 z-50 flex items-center !mt-0 justify-center p-4 bg-black/80 backdrop-blur-md"
         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0"
         x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">

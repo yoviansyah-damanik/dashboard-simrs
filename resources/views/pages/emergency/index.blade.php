@@ -1,5 +1,5 @@
 <x-content>
-    <x-breadcrumb title="Instalasi Gawat Darurat (IGD)" :items="[['title' => 'Instalasi Gawat Darurat (IGD)']]" />
+    <x-breadcrumb title="Gawat Darurat" :items="[['title' => 'Gawat Darurat'], ['title' => 'Data Pasien']]" />
 
     <div class="flex flex-col gap-3 lg:flex-row">
         <x-form.input type="search" block class="flex-1" wire:model.live.debounce.750ms="search"
@@ -20,11 +20,7 @@
     @if ($patients->count() > 0)
         <div class="space-y-4">
             @foreach ($patients as $patient)
-                @if ($patient['pendaftaran']['status_lanjut'] == \App\Models\RegisteredPatient::STATUS_RANAP)
-                    <x-inpatient-item :$patient />
-                @else
-                    <x-registered-patient-item :$patient />
-                @endif
+                <x-registered-patient-item :$patient />
             @endforeach
         </div>
     @else

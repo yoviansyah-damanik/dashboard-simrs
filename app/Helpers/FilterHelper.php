@@ -201,6 +201,11 @@ class FilterHelper
         ];
     }
 
+    public static function getStatus()
+    {
+        return self::getServiceStatuses();
+    }
+
     public static function getAdvanceStatus()
     {
         return [
@@ -235,7 +240,7 @@ class FilterHelper
         ];
     }
 
-    public static function getPolyclinics()
+    public static function getPolyclinics(bool $excludeIgd = false)
     {
         return [
             [
@@ -243,6 +248,9 @@ class FilterHelper
                 'value' => 'semua'
             ],
             ...collect(PolyclinicRepository::getAll(limit: 0, withRelations: false))
+                ->when($excludeIgd, function ($collection) {
+                    return $collection->reject(fn($type) => $type['kode_poliklinik'] === RegisteredPatient::KODE_IGD);
+                })
                 ->map(function ($type) {
                     return [
                         'title' => $type['nama_poliklinik'],

@@ -67,26 +67,34 @@ class Sidebar extends Component
                 ]
             ],
             [
+                'title' => 'Pendaftaran',
+                'items' => [
+                    [
+                        'title' => 'Data Pasien',
+                        'href' => route('registered-patient'),
+                        'icon' => 'i-ph-address-book',
+                        'isActive' => request()->routeIs('registered-patient'),
+                        'isShown' => auth()->user()->hasPermissionTo('registered-patient show')
+                    ],
+                    [
+                        'title' => 'Rekap Pendaftaran',
+                        'href' => route('registered-patient.recap'),
+                        'icon' => 'i-ph-chart-bar',
+                        'isActive' => request()->routeIs('registered-patient.recap'),
+                        'isShown' => auth()->user()->hasPermissionTo('registered-patient recap')
+                    ]
+                ]
+            ],
+            [
                 'title' => 'Layanan Medis',
                 'items' =>
                     [
                         [
-                            'title' => 'Pendaftaran',
-                            'icon' => 'i-ph-address-book',
-                            'items' => [
-                                [
-                                    'title' => 'Data Pasien',
-                                    'href' => route('registered-patient'),
-                                    'isActive' => request()->routeIs('registered-patient'),
-                                    'isShown' => auth()->user()->hasPermissionTo('registered-patient show')
-                                ],
-                                [
-                                    'title' => 'Rekap Pendaftaran',
-                                    'href' => route('registered-patient.recap'),
-                                    'isActive' => request()->routeIs('registered-patient.recap'),
-                                    'isShown' => auth()->user()->hasPermissionTo('registered-patient recap')
-                                ]
-                            ]
+                            'title' => 'Ringkasan',
+                            'href' => route('medical-services.summary'),
+                            'icon' => 'i-ph-chart-pie-slice',
+                            'isActive' => request()->routeIs('medical-services.summary'),
+                            'isShown' => auth()->user()->hasAnyPermission(['outpatient show', 'inpatient show', 'emergency show', 'patient-report show', 'indicator-matrix show'])
                         ],
                         [
                             'title' => 'Rawat Inap',
@@ -137,6 +145,30 @@ class Sidebar extends Component
                             ]
                         ],
                         [
+                            'title' => 'Gawat Darurat',
+                            'icon' => 'i-ph-ambulance',
+                            'items' => [
+                                [
+                                    'title' => 'Data Pasien',
+                                    'href' => route('emergency'),
+                                    'isActive' => request()->routeIs('emergency'),
+                                    'isShown' => auth()->user()->hasPermissionTo('emergency show')
+                                ],
+                                [
+                                    'title' => 'Rekap',
+                                    'href' => route('emergency.recap'),
+                                    'isActive' => request()->routeIs('emergency.recap'),
+                                    'isShown' => auth()->user()->hasPermissionTo('emergency recap')
+                                ],
+                                [
+                                    'title' => 'Laporan',
+                                    'href' => route('emergency.report'),
+                                    'isActive' => request()->routeIs('emergency.report'),
+                                    'isShown' => auth()->user()->hasPermissionTo('emergency report')
+                                ]
+                            ]
+                        ],
+                        [
                             'title' => 'Jadwal Operasi',
                             'icon' => 'i-medical-icon-i-pathology',
                             'items' => [
@@ -178,6 +210,13 @@ class Sidebar extends Component
                 'title' => 'Layanan Penunjang Medis',
                 'items' =>
                     [
+                        [
+                            'title' => 'Ringkasan',
+                            'href' => route('ancillary.summary'),
+                            'icon' => 'i-ph-chart-pie-slice',
+                            'isActive' => request()->routeIs('ancillary.summary'),
+                            'isShown' => auth()->user()->hasAnyPermission(['laboratory show', 'radiology show', 'pharmacy show', 'nutrition show', 'laboratory recap', 'radiology recap', 'pharmacy recap', 'indicator-matrix show'])
+                        ],
                         [
                             'title' => 'Laboratorium',
                             'icon' => 'i-medical-icon-i-pathology',
@@ -229,15 +268,32 @@ class Sidebar extends Component
                                     'href' => route('pharmacy.recap'),
                                     'isActive' => request()->routeIs('pharmacy.recap'),
                                     'isShown' => auth()->user()->hasPermissionTo('pharmacy recap')
+                                ],
+                                [
+                                    'title' => 'Rekap Stok Obat',
+                                    'href' => route('pharmacy.stock'),
+                                    'isActive' => request()->routeIs('pharmacy.stock'),
+                                    'isShown' => auth()->user()->hasAnyPermission(['pharmacy show', 'pharmacy recap'])
                                 ]
                             ]
                         ],
                         [
                             'title' => 'Gizi',
-                            'href' => route('nutrition'),
                             'icon' => 'i-medical-icon-i-nutrition',
-                            'isActive' => request()->routeIs('nutrition'),
-                            'isShown' => auth()->user()->hasPermissionTo('nutrition show')
+                            'items' => [
+                                [
+                                    'title' => 'Permintaan Diet',
+                                    'href' => route('nutrition'),
+                                    'isActive' => request()->routeIs('nutrition'),
+                                    'isShown' => auth()->user()->hasPermissionTo('nutrition show')
+                                ],
+                                [
+                                    'title' => 'Rekap Permintaan Diet',
+                                    'href' => route('nutrition.recap'),
+                                    'isActive' => request()->routeIs('nutrition.recap'),
+                                    'isShown' => auth()->user()->hasAnyPermission(['nutrition show', 'nutrition recap'])
+                                ]
+                            ]
                         ],
                         // [
                         //     'title' => 'ICD',
@@ -307,8 +363,8 @@ class Sidebar extends Component
                         'title' => 'Matriks Indikator Penunjang',
                         'href' => route('ancillary.yearly-matrix'),
                         'icon' => 'i-ph-chart-pie-slice',
-                        'isActive' => request()->routeIs('ancillary.yearly-matrix'),
-                        'isShown' => auth()->user()->hasAnyPermission(['indicator-matrix show', 'laboratory recap', 'radiology recap', 'laboratory show', 'radiology show'])
+                        'isActive' => request()->routeIs('ancillary.yearly-matrix') || request()->routeIs('pharmacy.yearly-matrix'),
+                        'isShown' => auth()->user()->hasAnyPermission(['indicator-matrix show', 'laboratory recap', 'radiology recap', 'pharmacy recap', 'laboratory show', 'radiology show', 'pharmacy show'])
                     ],
                     [
                         'title' => 'Pendapatan',

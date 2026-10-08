@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Livewire\Ancillary;
+namespace App\Livewire\Pharmacy;
 
 use App\Helpers\SirsHelper;
-use App\Repository\AncillaryReportRepository;
+use App\Repository\PharmacyReportRepository;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 
@@ -13,29 +13,29 @@ class YearlyMatrix extends Component
     public int $tahun = 0;
 
     #[Url]
-    public string $activeTab = 'all'; // 'all' | 'lab' | 'rad' | 'farmasi' | 'gizi'
+    public string $activeTab = 'summary'; // 'summary' | 'care_setting' | 'prescription_type' | 'quality'
 
     public function mount(): void
     {
         $this->tahun = $this->tahun ?: (int) now()->year;
-        if (!in_array($this->activeTab, ['all', 'lab', 'rad', 'farmasi', 'gizi'])) {
-            $this->activeTab = 'all';
+        if (!in_array($this->activeTab, ['summary', 'care_setting', 'prescription_type', 'quality'])) {
+            $this->activeTab = 'summary';
         }
     }
 
     public function setTab(string $tab): void
     {
-        if (in_array($tab, ['all', 'lab', 'rad', 'farmasi', 'gizi'])) {
+        if (in_array($tab, ['summary', 'care_setting', 'prescription_type', 'quality'])) {
             $this->activeTab = $tab;
         }
     }
 
     public function render()
     {
-        $matrix = AncillaryReportRepository::getYearlyMatrix($this->tahun);
+        $matrix = PharmacyReportRepository::getYearlyMatrix($this->tahun);
         $profil = SirsHelper::getProfilRS();
 
-        return view('pages.ancillary.yearly-matrix', [
+        return view('pages.pharmacy.yearly-matrix', [
             'matrix' => $matrix,
             'profil' => $profil,
             'tahun' => $this->tahun,
@@ -45,6 +45,6 @@ class YearlyMatrix extends Component
             'totals' => $matrix['totals'],
             'averages' => $matrix['averages'],
             'charts' => $matrix['charts'],
-        ])->title('Matriks Indikator Tahunan Layanan Penunjang');
+        ])->title('Matriks Indikator Tahunan Farmasi');
     }
 }

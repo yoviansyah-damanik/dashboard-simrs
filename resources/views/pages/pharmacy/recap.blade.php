@@ -266,15 +266,151 @@
                                         :datasets="$this->summary['charts']['jenis_resep']['datasets']" />
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Tren & Analisis 10 Obat Paling Sering Digunakan -->
+                    <div
+                        class="bg-gray-50/50 dark:bg-meta-4/5 p-6 rounded-3xl border border-stroke dark:border-strokedark space-y-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                                    <span class="icon-[solar--ranking-bold-duotone] text-xl"></span>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-black text-gray-800 dark:text-white uppercase tracking-widest">
+                                        Tren 10 Obat Paling Sering Digunakan
+                                    </h3>
+                                    <p class="text-xs font-semibold text-gray-500 mt-0.5">
+                                        Grafik pergerakan konsumsi waktu ke waktu beserta indikator status stok sisa
+                                    </p>
+                                </div>
+                            </div>
+                            <a href="{{ route('pharmacy.stock') }}" 
+                                class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-black uppercase tracking-wider text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-all self-start sm:self-auto">
+                                <span class="icon-[solar--box-minimalistic-bold-duotone] text-base"></span>
+                                Buka Rekap Stok Farmasi
+                                <span class="icon-[solar--arrow-right-line-duotone] text-sm"></span>
+                            </a>
+                        </div>
+
+                        <!-- Multi-Line Chart: Tren 10 Obat -->
+                        <div
+                            class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                                <h4 class="text-sm font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                                    <span class="icon-[solar--graph-new-bold-duotone] text-indigo-500"></span>
+                                    Dinamika Tren Pemakaian 10 Obat (Multi-Series)
+                                </h4>
+                                <span class="text-xs text-gray-400 font-medium hidden sm:inline">
+                                    Klik legenda obat untuk menampilkan atau menyembunyikan garis
+                                </span>
+                            </div>
+                            <div class="h-96" wire:ignore wire:key="chart-pharm-top10-trend">
+                                <x-chart chartId="chartPharmTop10Trend" chartType="line"
+                                    :labels="$this->drugUsage['charts']['trend_top10']['labels']"
+                                    :datasets="$this->drugUsage['charts']['trend_top10']['datasets']" />
+                            </div>
+                        </div>
+
+                        <!-- 2 Col: Akumulasi Bar Chart + Tabel Peringkat dengan Status Stok -->
+                        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                            <!-- Akumulasi Bar Chart -->
                             <div
-                                class="bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col md:col-span-2">
+                                class="xl:col-span-5 bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col">
                                 <h4
                                     class="text-sm font-black uppercase tracking-widest text-gray-400 mb-6 text-center">
-                                    10 Obat Terbanyak Digunakan</h4>
+                                    Akumulasi Volume Pemakaian (Top 10)
+                                </h4>
                                 <div class="h-96" wire:ignore wire:key="chart-pharm-top-obat">
                                     <x-chart chartId="chartPharmTopObat" chartType="bar" barType="y"
                                         :labels="$this->drugUsage['charts']['top_obat']['labels']"
                                         :datasets="$this->drugUsage['charts']['top_obat']['datasets']" />
+                                </div>
+                            </div>
+
+                            <!-- Tabel Rincian & Status Stok -->
+                            <div
+                                class="xl:col-span-7 bg-white dark:bg-boxdark p-6 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="text-sm font-black uppercase tracking-widest text-gray-400">
+                                        Status Ketersediaan Stok 10 Obat Teratas
+                                    </h4>
+                                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Per Depo / Gudang</span>
+                                </div>
+
+                                <div class="overflow-x-auto flex-1">
+                                    <table class="w-full text-left border-collapse">
+                                        <thead>
+                                            <tr class="border-b border-stroke dark:border-strokedark text-[11px] font-black uppercase tracking-wider text-gray-400">
+                                                <th class="py-2.5 px-2">#</th>
+                                                <th class="py-2.5 px-3">Nama Obat</th>
+                                                <th class="py-2.5 px-3 text-right">Terpakai</th>
+                                                <th class="py-2.5 px-3 text-right">Sisa Stok</th>
+                                                <th class="py-2.5 px-3 text-center">Status Stok</th>
+                                                <th class="py-2.5 px-2 text-center">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 text-xs font-semibold">
+                                            @forelse ($this->drugUsage['top_obat'] as $idx => $obat)
+                                                <tr class="hover:bg-gray-50/80 dark:hover:bg-meta-4/20 transition-colors {{ $obat->is_akan_habis ? 'bg-amber-50/40 dark:bg-amber-950/20' : ($obat->is_habis ? 'bg-rose-50/40 dark:bg-rose-950/20' : '') }}">
+                                                    <td class="py-3 px-2 font-black text-gray-400">
+                                                        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full {{ $idx < 3 ? 'bg-primary/10 text-primary font-bold' : 'text-gray-400' }}">
+                                                            {{ $idx + 1 }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-3 px-3">
+                                                        <div class="font-bold text-gray-800 dark:text-white line-clamp-1">
+                                                            {{ $obat->nama_brng }}
+                                                        </div>
+                                                        <div class="text-[11px] text-gray-400 font-mono">
+                                                            {{ $obat->kode_brng }} &bull; {{ number_format($obat->pemakaian) }} transaksi
+                                                        </div>
+                                                    </td>
+                                                    <td class="py-3 px-3 text-right font-black text-indigo-600 dark:text-indigo-400">
+                                                        {{ number_format($obat->qty) }}
+                                                    </td>
+                                                    <td class="py-3 px-3 text-right">
+                                                        <span class="font-black {{ $obat->is_habis ? 'text-rose-600 dark:text-rose-400' : ($obat->is_akan_habis ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300') }}">
+                                                            {{ number_format($obat->current_stock) }}
+                                                        </span>
+                                                        <div class="text-[10px] text-gray-400">
+                                                            Min: {{ number_format($obat->min_stock) }}
+                                                        </div>
+                                                    </td>
+                                                    <td class="py-3 px-3 text-center">
+                                                        @if ($obat->is_habis)
+                                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                                                Stok Habis
+                                                            </span>
+                                                        @elseif ($obat->is_akan_habis)
+                                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 animate-pulse">
+                                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                                                Akan Habis
+                                                            </span>
+                                                        @else
+                                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                                Aman
+                                                            </span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="py-3 px-2 text-center">
+                                                        <a href="{{ route('pharmacy.stock', ['search' => $obat->kode_brng]) }}" 
+                                                            title="Lihat detail stok obat ini di Rekap Stok"
+                                                            class="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-gray-100 hover:bg-primary hover:text-white dark:bg-meta-4 text-gray-500 transition-colors">
+                                                            <span class="icon-[solar--arrow-right-up-linear] text-sm"></span>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="6" class="text-center py-6 text-gray-400">Belum ada data penggunaan obat pada periode ini.</td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -314,10 +450,34 @@
                     </x-recap.in-figures>
 
                     <x-recap.in-figures title="10 Obat Terbanyak Digunakan">
-                        @foreach ($this->drugUsage['top_obat'] as $item)
-                            <x-box :title="$item->nama_brng" :value="number_format($item->qty)"
-                                icon="icon-[solar--pill-bold-duotone]" />
-                        @endforeach
+                        <div class="col-span-full grid grid-cols-1 md:grid-cols-2 gap-3">
+                            @foreach ($this->drugUsage['top_obat'] as $idx => $item)
+                                <div class="p-4 bg-white dark:bg-boxdark rounded-2xl border {{ $item->is_akan_habis ? 'border-amber-400 bg-amber-50/20' : ($item->is_habis ? 'border-rose-400 bg-rose-50/20' : 'border-stroke dark:border-strokedark') }} flex items-center justify-between gap-4 shadow-sm">
+                                    <div class="flex items-center gap-3">
+                                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl font-black text-xs {{ $idx < 3 ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-meta-4 text-gray-500' }}">
+                                            #{{ $idx + 1 }}
+                                        </span>
+                                        <div>
+                                            <h5 class="text-sm font-bold text-gray-800 dark:text-white">{{ $item->nama_brng }}</h5>
+                                            <p class="text-xs text-gray-400">{{ $item->kode_brng }} &bull; {{ number_format($item->pemakaian) }} transaksi</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-base font-black text-indigo-600 dark:text-indigo-400">{{ number_format($item->qty) }}</span>
+                                        <span class="text-xs text-gray-400 block">Sisa stok: {{ number_format($item->current_stock) }}</span>
+                                        @if ($item->is_akan_habis)
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-amber-600 uppercase tracking-widest mt-1">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Akan Habis
+                                            </span>
+                                        @elseif ($item->is_habis)
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 uppercase tracking-widest mt-1">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Stok Habis
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
                     </x-recap.in-figures>
                 </div>
             @endif
@@ -385,6 +545,7 @@
                         const ctx = canvas.getContext('2d');
                         if (!ctx) return;
                         try {
+                            const isMultiDataset = (data.datasets || []).length > 1;
                             this.chart = new Chart(ctx, {
                                 type: chartType,
                                 data: {
@@ -392,7 +553,18 @@
                                     datasets: (data.datasets || []).map(ds => ({ ...ds }))
                                 },
                                 options: {
-                                    scales: {
+                                    plugins: {
+                                        legend: {
+                                            display: chartType === 'doughnut' || isMultiDataset,
+                                            position: 'top',
+                                            labels: {
+                                                boxWidth: 12,
+                                                padding: 8,
+                                                font: { size: 11, weight: '600' }
+                                            }
+                                        }
+                                    },
+                                    scales: chartType === 'doughnut' ? {} : {
                                         y: { beginAtZero: true },
                                         x: { beginAtZero: true },
                                     },
@@ -443,7 +615,8 @@
 
             handleRefresh('refresh-drug-charts', [
                 { name: 'chartPharmDrugTrend', prop: 'trend' },
-                { name: 'chartPharmTopObat', prop: 'top_obat' }
+                { name: 'chartPharmTopObat', prop: 'top_obat' },
+                { name: 'chartPharmTop10Trend', prop: 'trend_top10' }
             ]);
         </script>
     @endscript

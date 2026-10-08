@@ -90,7 +90,7 @@ class Index extends Component
 
         $this->type = $this->types[0]['value'];
 
-        $this->polyclinics = FilterHelper::getPolyclinics();
+        $this->polyclinics = FilterHelper::getPolyclinics(excludeIgd: true);
 
         $this->polyclinic = $this->polyclinics[0]['value'];
 

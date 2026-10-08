@@ -68,7 +68,7 @@ class Index extends Component
         $this->startDate = Carbon::now()->addDays(-90)->format('Y-m-d');
         $this->endDate = Carbon::now()->format('Y-m-d');
 
-        $this->statusGroup = FilterHelper::getStatus();
+        $this->statusGroup = FilterHelper::getServiceStatuses();
 
         $this->status = $this->statusGroup[0]['value'];
 
@@ -76,7 +76,7 @@ class Index extends Component
 
         $this->payType = $this->payTypes[0]['value'];
 
-        $this->types = FilterHelper::getPayTypes();
+        $this->types = FilterHelper::getTypes();
 
         $this->type = $this->types[0]['value'];
 

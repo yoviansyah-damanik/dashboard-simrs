@@ -97,24 +97,42 @@ class AncillaryRecapTest extends TestCase
         $response = $this->get(route('ancillary.yearly-matrix'));
         $response->assertStatus(200)
             ->assertSee('Matriks Indikator Penunjang')
-            ->assertSee('Total Pemeriksaan')
+            ->assertSee('Total Pelayanan Penunjang')
             ->assertSee('Pasien Terlayani');
 
         Livewire::test(\App\Livewire\Ancillary\YearlyMatrix::class)
             ->assertStatus(200)
-            ->assertSee('Total Pemeriksaan')
+            ->assertSee('Total Pelayanan Penunjang')
             ->assertSee('Pasien Terlayani')
             ->assertSee('Asal Pasien')
-            ->assertSee('Rasio Pelayanan')
+            ->assertSee('Kontribusi Penunjang')
             ->assertSee('Semua Penunjang')
+            ->assertSee('Farmasi')
+            ->assertSee('Laboratorium')
+            ->assertSee('Radiologi')
+            ->assertSee('Gizi')
+            ->set('activeTab', 'farmasi')
+            ->assertStatus(200)
+            ->assertSee('Indikator Farmasi')
+            ->assertSee('Total Lembar Resep')
+            ->assertSee('Resep Pulang')
             ->set('activeTab', 'lab')
             ->assertStatus(200)
             ->assertSee('Indikator Laboratorium')
             ->assertSee('Patologi Klinik (PK)')
+            ->assertSee('Akumulasi Ralan')
             ->set('activeTab', 'rad')
             ->assertStatus(200)
             ->assertSee('Indikator Radiologi')
-            ->assertSee('CR / X-Ray Konvensional');
+            ->assertSee('CR / X-Ray Konvensional')
+            ->assertSee('Akumulasi Ralan')
+            ->set('activeTab', 'gizi')
+            ->assertStatus(200)
+            ->assertSee('Indikator Pelayanan Gizi')
+            ->assertSee('Total Porsi Makanan/Diet Disajikan')
+            ->assertSee('Sarapan Pagi')
+            ->assertSee('Makan Siang')
+            ->assertSee('Makan Sore / Malam');
     }
 
     public function test_ancillary_yearly_matrix_repository_data_structure(): void
@@ -127,10 +145,19 @@ class AncillaryRecapTest extends TestCase
         $this->assertArrayHasKey('averages', $data);
         $this->assertArrayHasKey('summary', $data);
         $this->assertArrayHasKey('charts', $data);
+        $this->assertArrayHasKey('top_diets', $data);
 
         $this->assertCount(12, $data['months']);
         $this->assertArrayHasKey('laboratorium', $data['totals']);
         $this->assertArrayHasKey('radiologi', $data['totals']);
+        $this->assertArrayHasKey('farmasi', $data['totals']);
+        $this->assertArrayHasKey('gizi', $data['totals']);
         $this->assertArrayHasKey('gabungan', $data['totals']);
+
+        $this->assertArrayHasKey('total_pelayanan', $data['summary']);
+        $this->assertArrayHasKey('total_farmasi', $data['summary']);
+        $this->assertArrayHasKey('total_gizi', $data['summary']);
+        $this->assertArrayHasKey('contrib_farmasi_percent', $data['summary']);
+        $this->assertArrayHasKey('contrib_gizi_percent', $data['summary']);
     }
 }

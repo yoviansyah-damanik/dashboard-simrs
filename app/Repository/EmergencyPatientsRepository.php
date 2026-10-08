@@ -252,7 +252,8 @@ class EmergencyPatientsRepository implements EmergencyPatientsInterface
         if (!static::$personResponsibilityData)
             static::$personResponsibilityData = collect(PersonResponsibilityRepository::getAll(limit: 0))->pluck('kode_penanggungjawab')->toArray();
 
-        $result = $result->whereIn(RegisteredPatient::getTableName() . '.' . RegisteredPatient::KODE_PENANGGUNGJAWAB, static::$personResponsibilityData);
+        $result = $result->whereIn(RegisteredPatient::getTableName() . '.' . RegisteredPatient::KODE_PENANGGUNGJAWAB, static::$personResponsibilityData)
+            ->where(RegisteredPatient::getTableName() . '.' . RegisteredPatient::KODE_POLIKLINIK, RegisteredPatient::KODE_IGD);
 
         switch ($type) {
             case 'ageGroup':

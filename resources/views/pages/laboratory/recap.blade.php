@@ -110,7 +110,7 @@
                     <p class="text-xs font-black uppercase tracking-[0.2em] text-emerald-200 mb-1">Pasien Dilayani</p>
                     <div class="flex items-baseline gap-2">
                         <span class="text-3xl lg:text-4xl font-black">{{ number_format($this->summary['unique_patients']) }}</span>
-                        <span class="text-xs font-semibold text-emerald-100">Pasien Unik</span>
+                        <span class="text-xs font-semibold text-emerald-100">Total Pengunjung</span>
                     </div>
                     <p class="text-xs text-emerald-100/80 mt-2 flex items-center gap-1.5 font-medium">
                         <span class="icon-[solar--users-group-two-rounded-bold-duotone] text-sm"></span>

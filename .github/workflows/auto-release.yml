@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - 'version.json'
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 permissions:
@@ -26,33 +28,29 @@ jobs:
         with:
           php-version: '8.2'
 
-      - name: Extract Latest Version and Changelog
-        id: version_info
-        run: php scripts/generate-release-notes.php
-
-      - name: Check if Tag Already Exists
-        id: check_tag
-        run: |
-          TAG="${{ steps.version_info.outputs.tag_name }}"
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag $TAG sudah ada secara lokal."
-          elif git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Tag $TAG sudah ada di remote GitHub."
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Tag $TAG belum ada. Memulai proses pembuatan release."
-          fi
-
-      - name: Create Git Tag & GitHub Release
-        if: steps.check_tag.outputs.exists == 'false' && steps.version_info.outputs.version != ''
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version_info.outputs.tag_name }}
-          name: ${{ steps.version_info.outputs.tag_name }} - ${{ steps.version_info.outputs.release_title }}
-          body_path: RELEASE_NOTES.md
-          draft: false
-          prerelease: false
+      # Membuat GitHub Release untuk setiap versi di version.json yang belum punya release
+      # (diperiksa berdasarkan keberadaan Release, bukan tag).
+      - name: Create Missing GitHub Releases
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSIONS=$(php -r '$j=json_decode(file_get_contents("version.json"),true); foreach(array_reverse($j) as $e){echo $e["version"],"\n";}')
+          LATEST=$(php -r '$j=json_decode(file_get_contents("version.json"),true); echo $j[0]["version"];')
+          for V in $VERSIONS; do
+            TAG="v$V"
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              echo "Release $TAG sudah ada."
+              continue
+            fi
+            php scripts/generate-release-notes.php "$V"
+            TITLE=$(php -r '$j=json_decode(file_get_contents("version.json"),true); foreach($j as $e){ if($e["version"]==$argv[1]){echo $e["title"];}}' "$V")
+            ARGS=()
+            if ! git rev-parse "$TAG" >/dev/null 2>&1 && ! git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
+              # Tag belum ada: arahkan ke commit yang pertama kali memuat versi ini
+              SHA=$(git log -S"\"version\": \"$V\"" --format=%H --reverse -- version.json | head -n 1)
+              ARGS+=(--target "${SHA:-$GITHUB_SHA}")
+            fi
+            LATEST_FLAG=""
+            [ "$V" = "$LATEST" ] && LATEST_FLAG="--latest" || LATEST_FLAG="--latest=false"
+            gh release create "$TAG" "${ARGS[@]}" --title "$TAG - $TITLE" --notes-file RELEASE_NOTES.md $LATEST_FLAG
+          done

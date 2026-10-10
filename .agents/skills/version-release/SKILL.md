@@ -23,4 +23,4 @@ description: >-
 2. Sesuaikan: badge + tabel riwayat `README.md`, serta tes yang memuat nomor versi (`tests/Feature/ChangeLogTest.php`, `LoginTest.php`).
 3. Jalankan `php artisan test tests/Feature/ChangeLogTest.php tests/Feature/LoginTest.php`.
 4. `git add -A; git commit -m "feat: release vX.Y.Z - ringkasan"; git tag vX.Y.Z; git push origin main --tags`.
-5. GitHub Actions `auto-release.yml` membuat Release bernama `vX.Y.Z - <title>` dengan isi dari `scripts/generate-release-notes.php` (label + deskripsi + changelog).
+5. GitHub Actions `auto-release.yml` membuat **GitHub Release** (bukan hanya tag) untuk setiap versi di `version.json` yang belum punya Release (dicek via Release, bukan tag), bernama `vX.Y.Z - <title>` dengan isi dari `scripts/generate-release-notes.php <versi>` (label + deskripsi + changelog). Versi lama tanpa Release otomatis di-backfill. Verifikasi di halaman Releases GitHub.

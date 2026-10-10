@@ -1,6 +1,6 @@
 # Dashboard SIMRS
 
-[![Latest Release](https://img.shields.io/badge/version-v2.1.1-10b981?style=for-the-badge&logo=git&logoColor=white)](https://github.com/yoviansyah-damanik/dashboard-simrs/releases/tag/v2.1.1)
+[![Latest Release](https://img.shields.io/badge/version-v2.1.2-10b981?style=for-the-badge&logo=git&logoColor=white)](https://github.com/yoviansyah-damanik/dashboard-simrs/releases/tag/v2.1.2)
 [![GitHub Release](https://img.shields.io/github/v/release/yoviansyah-damanik/dashboard-simrs?style=for-the-badge&color=2563eb)](https://github.com/yoviansyah-damanik/dashboard-simrs/releases)
 [![Laravel Version](https://img.shields.io/badge/Laravel-11.x-f43f5e?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
 [![Livewire Version](https://img.shields.io/badge/Livewire-3.x-fb7185?style=for-the-badge&logo=livewire&logoColor=white)](https://livewire.laravel.com)
@@ -81,6 +81,7 @@ Dashboard SIMRS menerapkan prinsip **[Semantic Versioning 2.0.0](https://semver.
 
 | Versi | Tanggal | Tipe Rilis | Sorotan Pembaruan | Rilis GitHub |
 |:---:|:---:|:---:|---|:---:|
+| **`v2.1.2`** | 2026-10-10 | `Patch Release` | Workflow membuat GitHub Release (bukan hanya tag) + backfill semua versi | [Release v2.1.2](https://github.com/yoviansyah-damanik/dashboard-simrs/releases/tag/v2.1.2) |
 | **`v2.1.1`** | 2026-10-10 | `Patch Release` | Skill rilis versi (label & deskripsi otomatis), judul sidebar dinamis | [Release v2.1.1](https://github.com/yoviansyah-damanik/dashboard-simrs/releases/tag/v2.1.1) |
 | **`v2.1.0`** | 2026-10-10 | `Minor Release` | Akumulasi Ralan (Poli + IGD), perbaikan grafik invisible, Rekap Diagnosa ICD-10 (Ralan/Ranap/IGD), Rekap Pasien Dinas IGD | [Release v2.1.0](https://github.com/yoviansyah-damanik/dashboard-simrs/releases/tag/v2.1.0) |
 | **`v2.0.0`** | 2026-10-08 | `Major Release` | Pemisahan Pasien Dinas TNI vs POLRI, Modul Rekap Morbiditas (ICD-10) & Tindakan (ICD-9-CM), SPM Rumah Sakit, Ekspor DomPDF terstandarisasi | [Release v2.0.0](https://github.com/yoviansyah-damanik/dashboard-simrs/releases/tag/v2.0.0) |

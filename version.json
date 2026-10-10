@@ -1,5 +1,16 @@
 [
     {
+        "version": "2.1.2",
+        "date": "2026-10-10",
+        "title": "Patch Release: Otomatisasi GitHub Release untuk Setiap Versi",
+        "badge": "Patch Release",
+        "type": "patch",
+        "changeLog": [
+            "Workflow auto-release kini membuat GitHub Release (bukan hanya tag) berdasarkan keberadaan Release, sehingga tag yang dipush manual tetap menghasilkan Release.",
+            "Backfill otomatis GitHub Release untuk seluruh versi di version.json yang belum memiliki Release, lengkap dengan label versi dan deskripsi."
+        ]
+    },
+    {
         "version": "2.1.1",
         "date": "2026-10-10",
         "title": "Patch Release: Skill Rilis Versi & Penyelarasan Label Versi",

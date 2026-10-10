@@ -15,7 +15,17 @@ if (empty($json) || !is_array($json)) {
     exit(1);
 }
 
+// Pilih entri berdasarkan argumen versi (opsional), default entri teratas
+$wanted = ltrim($argv[1] ?? '', 'v');
 $latest = $json[0];
+if ($wanted !== '') {
+    foreach ($json as $entry) {
+        if (ltrim($entry['version'] ?? '', 'v') === $wanted) {
+            $latest = $entry;
+            break;
+        }
+    }
+}
 $version = trim($latest['version'] ?? '');
 $title = trim($latest['title'] ?? "Release v{$version}");
 $badge = trim($latest['badge'] ?? '');

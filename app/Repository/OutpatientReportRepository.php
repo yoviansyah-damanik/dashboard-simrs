@@ -34,7 +34,8 @@ class OutpatientReportRepository implements OutpatientReportInterface
         ?string $doctor = null,
         ?string $gender = null,
         ?string $sttsDaftar = null,
-        ?string $search = null
+        ?string $search = null,
+        ?string $dinasFilter = null
     ) {
         $query = DB::connection(self::CONNECTION)
             ->table('reg_periksa as rp')
@@ -42,8 +43,8 @@ class OutpatientReportRepository implements OutpatientReportInterface
             ->join('poliklinik as poli', 'rp.kd_poli', '=', 'poli.kd_poli')
             ->join('dokter as d', 'rp.kd_dokter', '=', 'd.kd_dokter')
             ->leftJoin('penjab as pj', 'rp.kd_pj', '=', 'pj.kd_pj')
-            ->leftJoin('pasien_tni as pt', 'rp.no_rkm_medis', '=', 'pt.no_rkm_medis')
-            ->leftJoin('pasien_polri as pp', 'rp.no_rkm_medis', '=', 'pp.no_rkm_medis')
+            ->leftJoin('pasien_tni as pt', 'p.no_rkm_medis', '=', 'pt.no_rkm_medis')
+            ->leftJoin('pasien_polri as pp', 'p.no_rkm_medis', '=', 'pp.no_rkm_medis')
             ->where('rp.status_lanjut', 'Ralan')
             ->where('rp.kd_poli', '!=', 'IGDK')
             ->whereNotIn('rp.stts', ['Batal', 'Belum']);
@@ -62,24 +63,25 @@ class OutpatientReportRepository implements OutpatientReportInterface
             $query->where('rp.kd_poli', $poly);
         }
 
-        // Filter Penanggung Jawab / Jenis Bayar
+        // Filter Penanggung Jawab / Jenis Bayar (Murni kd_pj dari tabel penjab, tanpa hardcode)
         if (!empty($payType) && $payType !== 'semua') {
-            if ($payType === 'BPJS') {
-                $query->where('pj.png_jawab', 'like', '%BPJS%');
-            } elseif ($payType === 'UMUM') {
-                $query->where('pj.png_jawab', 'like', '%UMUM%');
-            } elseif ($payType === 'TNI') {
+            $query->where('rp.kd_pj', $payType);
+        }
+
+        // Filter Pasien Dinas (TNI / POLRI murni dari relasi pasien_tni dan pasien_polri)
+        if (!empty($dinasFilter) && $dinasFilter !== 'semua') {
+            if ($dinasFilter === 'TNI') {
                 $query->whereNotNull('pt.no_rkm_medis');
-            } elseif ($payType === 'POLRI') {
+            } elseif ($dinasFilter === 'POLRI') {
                 $query->whereNotNull('pp.no_rkm_medis');
-            } elseif ($payType === 'DINAS') {
+            } elseif ($dinasFilter === 'DINAS') {
                 $query->where(function ($q) {
                     $q->whereNotNull('pt.no_rkm_medis')
-                      ->orWhereNotNull('pp.no_rkm_medis')
-                      ->orWhere('pj.png_jawab', 'like', '%DINAS%');
+                      ->orWhereNotNull('pp.no_rkm_medis');
                 });
-            } else {
-                $query->where('rp.kd_pj', $payType);
+            } elseif ($dinasFilter === 'NON_DINAS' || $dinasFilter === 'UMUM') {
+                $query->whereNull('pt.no_rkm_medis')
+                      ->whereNull('pp.no_rkm_medis');
             }
         }
 
@@ -123,9 +125,10 @@ class OutpatientReportRepository implements OutpatientReportInterface
         ?string $doctor = null,
         ?string $gender = null,
         ?string $sttsDaftar = null,
-        ?string $search = null
+        ?string $search = null,
+        ?string $dinasFilter = null
     ): array {
-        $row = self::buildQuery($startDate, $endDate, $poly, $payType, $doctor, $gender, $sttsDaftar, $search)
+        $row = self::buildQuery($startDate, $endDate, $poly, $payType, $doctor, $gender, $sttsDaftar, $search, $dinasFilter)
             ->selectRaw("
                 count(*) as total_pasien,
                 sum(case when p.jk = 'L' then 1 else 0 end) as total_pria,
@@ -313,9 +316,10 @@ class OutpatientReportRepository implements OutpatientReportInterface
         ?string $gender = null,
         ?string $sttsDaftar = null,
         ?string $search = null,
-        int $limit = self::LIMIT_DEFAULT
+        int $limit = self::LIMIT_DEFAULT,
+        ?string $dinasFilter = null
     ) {
-        $query = self::buildQuery($startDate, $endDate, $poly, $payType, $doctor, $gender, $sttsDaftar, $search)
+        $query = self::buildQuery($startDate, $endDate, $poly, $payType, $doctor, $gender, $sttsDaftar, $search, $dinasFilter)
             ->leftJoin('pangkat_tni as pkt', 'pt.pangkat_tni', '=', 'pkt.id')
             ->leftJoin('satuan_tni as sat', 'pt.satuan_tni', '=', 'sat.id')
             ->select([
@@ -513,5 +517,114 @@ class OutpatientReportRepository implements OutpatientReportInterface
             'categories' => $categories,
             'satuan' => $satuan,
         ];
+    }
+
+    /**
+     * Mengambil rekapitulasi diagnosa pasien (ICD-10) rawat jalan poliklinik.
+     */
+    public static function getDiagnosisBreakdown(
+        ?string $startDate = null,
+        ?string $endDate = null,
+        ?string $poly = null,
+        ?string $doctor = null,
+        ?string $payType = null,
+        ?string $gender = null,
+        int $limit = 50,
+        ?string $dinasFilter = null
+    ): array {
+        $query = DB::connection(self::CONNECTION)
+            ->table('diagnosa_pasien as dp')
+            ->join('penyakit as p', 'dp.kd_penyakit', '=', 'p.kd_penyakit')
+            ->join('reg_periksa as rp', 'dp.no_rawat', '=', 'rp.no_rawat')
+            ->join('pasien as ps', 'rp.no_rkm_medis', '=', 'ps.no_rkm_medis')
+            ->leftJoin('penjab as pj', 'rp.kd_pj', '=', 'pj.kd_pj')
+            ->leftJoin('pasien_tni as pt', 'ps.no_rkm_medis', '=', 'pt.no_rkm_medis')
+            ->leftJoin('pasien_polri as pp', 'ps.no_rkm_medis', '=', 'pp.no_rkm_medis')
+            ->where('rp.status_lanjut', 'Ralan')
+            ->where('rp.kd_poli', '!=', 'IGDK')
+            ->whereNotIn('rp.stts', ['Batal', 'Belum']);
+
+        if (!empty($startDate) && !empty($endDate)) {
+            $query->whereBetween('rp.tgl_registrasi', [$startDate, $endDate]);
+        } elseif (!empty($startDate)) {
+            $query->where('rp.tgl_registrasi', '>=', $startDate);
+        } elseif (!empty($endDate)) {
+            $query->where('rp.tgl_registrasi', '<=', $endDate);
+        }
+
+        if (!empty($poly) && $poly !== 'semua') {
+            $query->where('rp.kd_poli', $poly);
+        }
+
+        if (!empty($doctor) && $doctor !== 'semua') {
+            $query->where('rp.kd_dokter', $doctor);
+        }
+
+        if (!empty($gender) && $gender !== 'semua') {
+            $query->where('ps.jk', $gender);
+        }
+
+        if (!empty($payType) && $payType !== 'semua') {
+            $query->where('rp.kd_pj', $payType);
+        }
+
+        if (!empty($dinasFilter) && $dinasFilter !== 'semua') {
+            if ($dinasFilter === 'TNI') {
+                $query->whereNotNull('pt.no_rkm_medis');
+            } elseif ($dinasFilter === 'POLRI') {
+                $query->whereNotNull('pp.no_rkm_medis');
+            } elseif ($dinasFilter === 'DINAS') {
+                $query->where(function ($q) {
+                    $q->whereNotNull('pt.no_rkm_medis')
+                      ->orWhereNotNull('pp.no_rkm_medis');
+                });
+            } elseif ($dinasFilter === 'NON_DINAS' || $dinasFilter === 'UMUM') {
+                $query->whereNull('pt.no_rkm_medis')
+                      ->whereNull('pp.no_rkm_medis');
+            }
+        }
+
+        $rows = $query->selectRaw("
+            dp.kd_penyakit,
+            p.nm_penyakit,
+            count(*) as total_kasus,
+            sum(case when dp.prioritas = 1 then 1 else 0 end) as primer,
+            sum(case when dp.prioritas > 1 then 1 else 0 end) as sekunder,
+            sum(case when ps.jk = 'L' then 1 else 0 end) as pria,
+            sum(case when ps.jk = 'P' then 1 else 0 end) as wanita,
+            sum(case when dp.status_penyakit = 'Baru' then 1 else 0 end) as kasus_baru,
+            sum(case when dp.status_penyakit = 'Lama' then 1 else 0 end) as kasus_lama,
+            sum(case when pj.png_jawab like '%BPJS%' then 1 else 0 end) as bpjs,
+            sum(case when pj.png_jawab like '%UMUM%' then 1 else 0 end) as umum,
+            sum(case when pt.no_rkm_medis is not null or pp.no_rkm_medis is not null then 1 else 0 end) as dinas
+        ")
+        ->groupBy('dp.kd_penyakit', 'p.nm_penyakit')
+        ->orderByDesc('total_kasus')
+        ->limit($limit)
+        ->get();
+
+        $grandTotal = $rows->sum('total_kasus') ?: 1;
+
+        return $rows->map(function ($r, $idx) use ($grandTotal) {
+            return [
+                'rank' => $idx + 1,
+                'kd_penyakit' => $r->kd_penyakit,
+                'nm_penyakit' => $r->nm_penyakit,
+                'total' => (int) $r->total_kasus,
+                'total_kasus' => (int) $r->total_kasus,
+                'percent' => round(($r->total_kasus / $grandTotal) * 100, 1),
+                'primer' => (int) $r->primer,
+                'sekunder' => (int) $r->sekunder,
+                'pria' => (int) $r->pria,
+                'wanita' => (int) $r->wanita,
+                'baru' => (int) $r->kasus_baru,
+                'lama' => (int) $r->kasus_lama,
+                'kasus_baru' => (int) $r->kasus_baru,
+                'kasus_lama' => (int) $r->kasus_lama,
+                'bpjs' => (int) $r->bpjs,
+                'umum' => (int) $r->umum,
+                'dinas' => (int) $r->dinas,
+            ];
+        })->toArray();
     }
 }

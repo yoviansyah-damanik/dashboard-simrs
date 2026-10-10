@@ -39,6 +39,9 @@ class Report extends Component
     public $payType = 'semua';
 
     #[Url]
+    public $dinasFilter = 'semua';
+
+    #[Url]
     public $doctor = 'semua';
 
     #[Url]
@@ -106,6 +109,11 @@ class Report extends Component
     }
 
     public function updatedPayType()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedDinasFilter()
     {
         $this->resetPage();
     }
@@ -197,6 +205,17 @@ class Report extends Component
     }
 
     #[Computed]
+    public function payTypes(): array
+    {
+        return \Illuminate\Support\Facades\DB::connection('simrs')
+            ->table('penjab')
+            ->select('kd_pj', 'png_jawab')
+            ->orderBy('png_jawab')
+            ->get()
+            ->toArray();
+    }
+
+    #[Computed]
     public function summary()
     {
         return EmergencyReportRepository::getSummary(
@@ -208,7 +227,8 @@ class Report extends Component
             $this->doctor,
             $this->gender,
             $this->sttsDaftar,
-            $this->search
+            $this->search,
+            $this->dinasFilter
         );
     }
 
@@ -218,6 +238,18 @@ class Report extends Component
         return EmergencyReportRepository::getStatusBreakdown(
             $this->startDate,
             $this->endDate,
+            $this->payType,
+            $this->doctor
+        );
+    }
+
+    #[Computed]
+    public function trendData(): array
+    {
+        return EmergencyReportRepository::getTrend(
+            $this->startDate,
+            $this->endDate,
+            $this->statusLanjut,
             $this->payType,
             $this->doctor
         );
@@ -243,15 +275,62 @@ class Report extends Component
     }
 
     #[Computed]
-    public function trendData()
+    public function dinasBreakdown(): array
     {
-        return EmergencyReportRepository::getTrend(
+        return EmergencyReportRepository::getDinasBreakdown(
+            $this->startDate,
+            $this->endDate,
+            $this->payType,
+            $this->doctor,
+            $this->gender
+        );
+    }
+
+    #[Computed]
+    public function diagnosisBreakdown(): array
+    {
+        return EmergencyReportRepository::getDiagnosisBreakdown(
             $this->startDate,
             $this->endDate,
             $this->statusLanjut,
+            $this->doctor,
             $this->payType,
-            $this->doctor
+            $this->gender,
+            50,
+            $this->dinasFilter
         );
+    }
+
+    #[Computed]
+    public function chartPayload(): array
+    {
+        $trend = $this->trendData;
+        $status = $this->statusBreakdown;
+        $pay = array_slice($this->payTypeBreakdown, 0, 5);
+
+        return [
+            'trend' => [
+                'labels' => $trend['labels'] ?? [],
+                'total' => $trend['total'] ?? [],
+                'ranap' => $trend['ranap'] ?? [],
+                'ralan' => $trend['ralan'] ?? [],
+            ],
+            'status' => [
+                'labels' => array_keys($status['by_status'] ?? []),
+                'totals' => array_values($status['by_status'] ?? []),
+            ],
+            'payer' => [
+                'labels' => array_column($pay, 'png_jawab'),
+                'totals' => array_column($pay, 'total'),
+            ],
+        ];
+    }
+
+    public function rendered()
+    {
+        if ($this->showCharts) {
+            $this->dispatch('emergency-charts-updated', payload: $this->chartPayload);
+        }
     }
 
     #[Computed]
@@ -267,7 +346,8 @@ class Report extends Component
             $this->gender,
             $this->sttsDaftar,
             $this->search,
-            $this->limit
+            $this->limit,
+            $this->dinasFilter
         );
     }
 
@@ -283,7 +363,8 @@ class Report extends Component
             $this->gender,
             $this->sttsDaftar,
             $this->search,
-            0
+            0,
+            $this->dinasFilter
         );
 
         $spreadsheet = new Spreadsheet();
@@ -363,6 +444,8 @@ class Report extends Component
             'doctorBreakdown' => $this->doctorBreakdown,
             'payTypeBreakdown' => $this->payTypeBreakdown,
             'trendData' => $this->trendData,
+            'dinasBreakdown' => $this->dinasBreakdown,
+            'diagnosisBreakdown' => $this->diagnosisBreakdown,
             'patients' => $this->patients,
         ]);
     }
@@ -379,6 +462,8 @@ class Report extends Component
             'statusBreakdown' => $this->statusBreakdown,
             'doctorBreakdown' => $this->doctorBreakdown,
             'payTypeBreakdown' => $this->payTypeBreakdown,
+            'dinasBreakdown' => $this->dinasBreakdown,
+            'diagnosisBreakdown' => $this->diagnosisBreakdown,
             'startDate' => \Carbon\Carbon::parse($this->startDate)->translatedFormat('d F Y'),
             'endDate' => \Carbon\Carbon::parse($this->endDate)->translatedFormat('d F Y'),
             'printedAt' => now()->translatedFormat('d F Y H:i'),

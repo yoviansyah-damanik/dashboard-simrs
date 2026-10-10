@@ -45,6 +45,9 @@ class Report extends Component
     #[Url]
     public $limit = 25;
 
+    #[Url]
+    public $dinasFilter = 'semua';
+
     public $activeTab = 'daftar_pasien';
 
     public bool $showCharts = true;
@@ -122,6 +125,11 @@ class Report extends Component
         $this->resetPage();
     }
 
+    public function updatedDinasFilter()
+    {
+        $this->resetPage();
+    }
+
     /**
      * Menyinkronkan tanggal awal dan akhir berdasarkan jenis periode yang dipilih.
      */
@@ -172,6 +180,7 @@ class Report extends Component
         $this->selectedMonth = (int) date('n');
         $this->selectedYear = (int) date('Y');
         $this->payType = 'BPJ';
+        $this->dinasFilter = 'semua';
         $this->statusPulang = 'semua';
         $this->ward = 'semua';
         $this->search = '';
@@ -209,15 +218,22 @@ class Report extends Component
     public function payTypes(): array
     {
         return [
-            ['title' => 'Semua Penjamin', 'value' => 'semua'],
-            ['title' => 'BPJS (Semua)', 'value' => 'BPJS'],
-            ['title' => 'UMUM / Mandiri', 'value' => 'UMUM'],
-            ['title' => 'DINAS (Semua: TNI & POLRI)', 'value' => 'DINAS'],
-            ['title' => '• Pasien Dinas TNI', 'value' => 'TNI'],
-            ['title' => '• Pasien Dinas POLRI', 'value' => 'POLRI'],
+            ['title' => 'Semua Penjab', 'value' => 'semua'],
             ...collect(FilterHelper::getPayTypes())
                 ->reject(fn($item) => $item['value'] === 'semua')
                 ->toArray()
+        ];
+    }
+
+    #[Computed]
+    public function patientTypes(): array
+    {
+        return [
+            ['title' => 'Semua Jenis Pasien', 'value' => 'semua'],
+            ['title' => 'Pasien Dinas (TNI & POLRI)', 'value' => 'DINAS'],
+            ['title' => '• Dinas TNI', 'value' => 'TNI'],
+            ['title' => '• Dinas POLRI', 'value' => 'POLRI'],
+            ['title' => '• Pasien Sipil / Non-Dinas', 'value' => 'NON_DINAS'],
         ];
     }
 
@@ -252,7 +268,8 @@ class Report extends Component
             payType: $this->payType,
             statusPulang: $this->statusPulang,
             ward: $this->ward,
-            search: $this->search
+            search: $this->search,
+            dinasFilter: $this->dinasFilter
         );
     }
 
@@ -272,6 +289,18 @@ class Report extends Component
     public function payTypeBreakdown(): array
     {
         return InpatientReportRepository::getPayTypeBreakdown(
+            startDate: $this->startDate,
+            endDate: $this->endDate,
+            statusPulang: $this->statusPulang,
+            ward: $this->ward,
+            search: $this->search
+        );
+    }
+
+    #[Computed]
+    public function patientTypeBreakdown(): array
+    {
+        return InpatientReportRepository::getPatientTypeBreakdown(
             startDate: $this->startDate,
             endDate: $this->endDate,
             statusPulang: $this->statusPulang,
@@ -306,6 +335,28 @@ class Report extends Component
     }
 
     #[Computed]
+    public function diagnosisBreakdown(): array
+    {
+        return InpatientReportRepository::getDiagnosisBreakdown(
+            startDate: $this->startDate,
+            endDate: $this->endDate,
+            ward: $this->ward,
+            doctor: $this->doctor ?? null,
+            payType: $this->payType,
+            gender: $this->gender ?? null,
+            limit: 50,
+            dinasFilter: $this->dinasFilter
+        );
+    }
+
+    public function rendered()
+    {
+        if ($this->showCharts) {
+            $this->dispatch('inpatient-charts-updated', payload: $this->chartPayload);
+        }
+    }
+
+    #[Computed]
     public function chartPayload(): array
     {
         // 1. Tren Pasien Masuk Harian
@@ -328,7 +379,7 @@ class Report extends Component
         $wardMasih = array_column($wardList, 'masih_dirawat');
         $wardPulang = array_column($wardList, 'sudah_pulang');
 
-        // 3. Distribusi Jenis Bayar / Penjamin (Top 5 + Lainnya)
+        // 3. Distribusi Penjab (Top 5 + Lainnya)
         $topPayers = array_slice($this->payTypeBreakdown, 0, 5);
         $otherPayerCount = array_sum(array_column(array_slice($this->payTypeBreakdown, 5), 'total'));
         $payerLabels = array_map(function ($p) {
@@ -341,7 +392,13 @@ class Report extends Component
             $payerTotals[] = $otherPayerCount;
         }
 
-        // 4. Sebaran Kelompok Umur & Gender SIRS
+        // 4. Distribusi Jenis Pasien (Dinas TNI, Dinas POLRI, Pasien Sipil / Non-Dinas)
+        $patientTypeItems = $this->patientTypeBreakdown['items'] ?? [];
+        $patientTypeLabels = array_column($patientTypeItems, 'label');
+        $patientTypeTotals = array_column($patientTypeItems, 'total');
+        $patientTypeColors = array_column($patientTypeItems, 'color');
+
+        // 5. Sebaran Kelompok Umur & Gender SIRS
         $ageList = $this->ageGroupBreakdown;
         $ageLabels = array_column($ageList, 'nama');
         $agePria = array_column($ageList, 'pria');
@@ -363,6 +420,11 @@ class Report extends Component
             'payer' => [
                 'labels' => $payerLabels,
                 'totals' => $payerTotals,
+            ],
+            'patientType' => [
+                'labels' => $patientTypeLabels,
+                'totals' => $patientTypeTotals,
+                'colors' => $patientTypeColors,
             ],
             'age' => [
                 'labels' => $ageLabels,
@@ -414,7 +476,8 @@ class Report extends Component
             statusPulang: $this->statusPulang,
             ward: $this->ward,
             search: $this->search,
-            limit: 0
+            limit: 0,
+            dinasFilter: $this->dinasFilter
         );
 
         $filename = $this->getExportFilename('csv');
@@ -437,8 +500,8 @@ class Report extends Component
                 'Bangsal',
                 'Tgl Masuk',
                 'Tgl Keluar',
-                'Penjamin',
-                'Status Dinas',
+                'Penjab',
+                'Jenis Pasien',
                 'DPJP Ranap'
             ]);
 
@@ -486,14 +549,23 @@ class Report extends Component
             statusPulang: $this->statusPulang,
             ward: $this->ward,
             search: $this->search,
-            limit: 0
+            limit: 0,
+            dinasFilter: $this->dinasFilter
         );
 
-        $selectedPayTypeTitle = 'Semua Penjamin';
+        $selectedPayTypeTitle = 'Semua Penjab';
         if ($this->payType !== 'semua') {
             $matched = collect($this->payTypes())->firstWhere('value', $this->payType);
             if ($matched) {
                 $selectedPayTypeTitle = $matched['title'];
+            }
+        }
+
+        $selectedPatientTypeTitle = 'Semua Jenis Pasien';
+        if ($this->dinasFilter !== 'semua') {
+            $matchedPt = collect($this->patientTypes())->firstWhere('value', $this->dinasFilter);
+            if ($matchedPt) {
+                $selectedPatientTypeTitle = $matchedPt['title'];
             }
         }
 
@@ -502,8 +574,11 @@ class Report extends Component
             'startDate' => $this->startDate,
             'endDate' => $this->endDate,
             'payTypeTitle' => $selectedPayTypeTitle,
+            'patientTypeTitle' => $selectedPatientTypeTitle,
             'summary' => $this->summary(),
+            'patientTypeBreakdown' => $this->patientTypeBreakdown,
             'dinasBreakdown' => $this->dinasBreakdown,
+            'diagnosisBreakdown' => $this->diagnosisBreakdown,
         ])->setPaper('a4', 'landscape');
 
         $filename = $this->getExportFilename('pdf');
@@ -527,10 +602,11 @@ class Report extends Component
             statusPulang: $this->statusPulang,
             ward: $this->ward,
             search: $this->search,
-            limit: 0
+            limit: 0,
+            dinasFilter: $this->dinasFilter
         );
 
-        $selectedPayTypeTitle = 'Semua Penjamin';
+        $selectedPayTypeTitle = 'Semua Penjab';
         if ($this->payType !== 'semua') {
             $matched = collect($this->payTypes())->firstWhere('value', $this->payType);
             if ($matched) {
@@ -565,7 +641,7 @@ class Report extends Component
         $sheet->mergeCells('A4:F4');
         $sheet->getStyle('A4')->getFont()->setBold(true)->setSize(9.5);
 
-        $sheet->setCellValue('G4', 'Penjamin: ' . $selectedPayTypeTitle);
+        $sheet->setCellValue('G4', 'Penjab: ' . $selectedPayTypeTitle . ' | ' . $selectedPatientTypeTitle);
         $sheet->mergeCells('G4:J4');
         $sheet->getStyle('G4')->getFont()->setBold(true)->setSize(9.5);
         $sheet->getStyle('G4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
@@ -580,7 +656,7 @@ class Report extends Component
         $sheet->getStyle('G5')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
         // Header Tabel
-        $headers = ['No', 'No. Rawat', 'No. RM', 'Nama Pasien', 'Bangsal', 'Tgl Masuk', 'Tgl Keluar', 'Penjamin', 'Status Dinas', 'DPJP Ranap'];
+        $headers = ['No', 'No. Rawat', 'No. RM', 'Nama Pasien', 'Bangsal', 'Tgl Masuk', 'Tgl Keluar', 'Penjab', 'Jenis Pasien', 'DPJP Ranap'];
         $sheet->fromArray($headers, null, 'A7');
         $sheet->getRowDimension(7)->setRowHeight(25);
 
@@ -745,10 +821,13 @@ class Report extends Component
             statusPulang: $this->statusPulang,
             ward: $this->ward,
             search: $this->search,
-            limit: (int) $this->limit
+            limit: (int) $this->limit,
+            dinasFilter: $this->dinasFilter
         );
 
         return view('pages.inpatient.report', [
+            'dinasFilter' => $this->dinasFilter,
+            'patientTypes' => $this->patientTypes(),
             'patients' => $patients,
             'summary' => $this->summary(),
             'period' => $this->period,

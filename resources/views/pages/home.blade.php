@@ -48,8 +48,8 @@
 
         <!-- Section 2: 5 KPI Operational Cards (Hari Ini) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-            <!-- 1. Outpatient Today -->
-            <a href="{{ route('outpatient.recap') }}" wire:navigate class="group relative p-6 bg-white dark:bg-boxdark rounded-[2.2rem] border border-stroke dark:border-strokedark shadow-sm hover:shadow-xl hover:border-emerald-500/40 transition-all duration-300 overflow-hidden">
+            <!-- 1. Outpatient Today (Poli) -->
+            <a href="{{ route('outpatient.recap') }}" wire:navigate class="group relative p-6 bg-white dark:bg-boxdark rounded-[2.2rem] border border-stroke dark:border-strokedark shadow-sm hover:shadow-xl hover:border-emerald-500/40 transition-all duration-300 overflow-hidden flex flex-col justify-between">
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/5 rounded-full group-hover:bg-emerald-500/10 transition-colors"></div>
                 <div class="flex flex-col gap-4 relative z-10">
                     <div class="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform duration-300 shadow-sm">
@@ -58,15 +58,19 @@
                     <div>
                         <h4 class="text-3xl font-black text-gray-800 dark:text-white tracking-tighter">{{ number_format($this->outpatientToday) }}</h4>
                         <div class="flex items-center gap-1.5 mt-1">
-                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Rawat Jalan</span>
+                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Rawat Jalan (Poli)</span>
                             <span class="px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase">Hari Ini</span>
                         </div>
                     </div>
                 </div>
+                <div class="mt-3 pt-3 border-t border-stroke/70 dark:border-strokedark/70 text-[10px] text-gray-500 dark:text-gray-400 flex items-center justify-between relative z-10">
+                    <span>Akumulasi Ralan (Poli+IGD):</span>
+                    <strong class="font-black text-emerald-600 dark:text-emerald-400">{{ number_format($this->outpatientToday + $this->emergencyToday) }}</strong>
+                </div>
             </a>
 
             <!-- 2. Inpatient Active -->
-            <a href="{{ route('inpatient.recap') }}" wire:navigate class="group relative p-6 bg-white dark:bg-boxdark rounded-[2.2rem] border border-stroke dark:border-strokedark shadow-sm hover:shadow-xl hover:border-blue-500/40 transition-all duration-300 overflow-hidden">
+            <a href="{{ route('inpatient.recap') }}" wire:navigate class="group relative p-6 bg-white dark:bg-boxdark rounded-[2.2rem] border border-stroke dark:border-strokedark shadow-sm hover:shadow-xl hover:border-blue-500/40 transition-all duration-300 overflow-hidden flex flex-col justify-between">
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/5 rounded-full group-hover:bg-blue-500/10 transition-colors"></div>
                 <div class="flex flex-col gap-4 relative z-10">
                     <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300 shadow-sm">
@@ -80,10 +84,14 @@
                         </div>
                     </div>
                 </div>
+                <div class="mt-3 pt-3 border-t border-stroke/70 dark:border-strokedark/70 text-[10px] text-gray-500 dark:text-gray-400 flex items-center justify-between relative z-10">
+                    <span>Kamar Terisi:</span>
+                    <strong class="font-black text-blue-600 dark:text-blue-400">{{ $this->roomStats['occupied'] ?? 0 }} TT</strong>
+                </div>
             </a>
 
             <!-- 3. Emergency Today (IGD) -->
-            <a href="{{ route('emergency.recap') }}" wire:navigate class="group relative p-6 bg-white dark:bg-boxdark rounded-[2.2rem] border border-stroke dark:border-strokedark shadow-sm hover:shadow-xl hover:border-rose-500/40 transition-all duration-300 overflow-hidden">
+            <a href="{{ route('emergency.recap') }}" wire:navigate class="group relative p-6 bg-white dark:bg-boxdark rounded-[2.2rem] border border-stroke dark:border-strokedark shadow-sm hover:shadow-xl hover:border-rose-500/40 transition-all duration-300 overflow-hidden flex flex-col justify-between">
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-rose-500/5 rounded-full group-hover:bg-rose-500/10 transition-colors"></div>
                 <div class="flex flex-col gap-4 relative z-10">
                     <div class="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform duration-300 shadow-sm">
@@ -92,10 +100,14 @@
                     <div>
                         <h4 class="text-3xl font-black text-gray-800 dark:text-white tracking-tighter">{{ number_format($this->emergencyToday) }}</h4>
                         <div class="flex items-center gap-1.5 mt-1">
-                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Kunjungan IGD</span>
+                            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Gawat Darurat (IGD)</span>
                             <span class="px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[8px] font-black uppercase">Hari Ini</span>
                         </div>
                     </div>
+                </div>
+                <div class="mt-3 pt-3 border-t border-stroke/70 dark:border-strokedark/70 text-[10px] text-gray-500 dark:text-gray-400 flex items-center justify-between relative z-10">
+                    <span>Akumulasi Ralan (Poli+IGD):</span>
+                    <strong class="font-black text-rose-600 dark:text-rose-400">{{ number_format($this->outpatientToday + $this->emergencyToday) }}</strong>
                 </div>
             </a>
 
@@ -289,7 +301,7 @@
                 </div>
 
                 <!-- Chart Canvas Container -->
-                <div class="h-[310px] w-full relative">
+                <div class="h-[310px] w-full relative" wire:ignore>
                     <div x-show="tab === 'inpatient'" class="w-full h-full" x-data="chartComponent('chartHomeInTrend', 'line', @js($this->inpatientTrend))">
                         <canvas id="chartHomeInTrend" class="w-full h-full"></canvas>
                     </div>
@@ -322,7 +334,7 @@
                     </div>
 
                     <!-- Donut Chart Canvas -->
-                    <div class="relative h-[180px] my-4 flex items-center justify-center" x-data="donutChartComponent('chartPayerDonut', @js($this->payerDistribution))">
+                    <div class="relative h-[180px] my-4 flex items-center justify-center" wire:ignore x-data="donutChartComponent('chartPayerDonut', @js($this->payerDistribution))">
                         <canvas id="chartPayerDonut"></canvas>
                     </div>
                 </div>
@@ -365,16 +377,20 @@
                 <!-- KPI Pills Summary -->
                 <div class="flex flex-wrap items-center gap-2.5">
                     <div class="px-3.5 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs">
-                        <span class="text-[10px] font-bold uppercase text-blue-600 dark:text-blue-400 block">Total Ralan</span>
+                        <span class="text-[10px] font-bold uppercase text-blue-600 dark:text-blue-400 block">Poli (Ralan)</span>
                         <span class="font-black text-blue-700 dark:text-blue-300">{{ number_format($this->yearlyVisitsTrend['totals']['ralan']) }}</span>
                     </div>
-                    <div class="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs">
-                        <span class="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400 block">Total Ranap</span>
-                        <span class="font-black text-emerald-700 dark:text-emerald-300">{{ number_format($this->yearlyVisitsTrend['totals']['ranap']) }}</span>
-                    </div>
                     <div class="px-3.5 py-1.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs">
-                        <span class="text-[10px] font-bold uppercase text-rose-600 dark:text-rose-400 block">Total IGD</span>
+                        <span class="text-[10px] font-bold uppercase text-rose-600 dark:text-rose-400 block">Gawat Darurat (IGD)</span>
                         <span class="font-black text-rose-700 dark:text-rose-300">{{ number_format($this->yearlyVisitsTrend['totals']['igd']) }}</span>
+                    </div>
+                    <div class="px-3.5 py-1.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs">
+                        <span class="text-[10px] font-bold uppercase text-purple-600 dark:text-purple-400 block">Akumulasi Ralan (Poli+IGD)</span>
+                        <span class="font-black text-purple-700 dark:text-purple-300">{{ number_format($this->yearlyVisitsTrend['totals']['ralan'] + $this->yearlyVisitsTrend['totals']['igd']) }}</span>
+                    </div>
+                    <div class="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs">
+                        <span class="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400 block">Rawat Inap (Ranap)</span>
+                        <span class="font-black text-emerald-700 dark:text-emerald-300">{{ number_format($this->yearlyVisitsTrend['totals']['ranap']) }}</span>
                     </div>
                     <div class="px-3.5 py-1.5 rounded-xl bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-xs shadow-sm">
                         <span class="text-[10px] font-bold uppercase opacity-75 block">Akumulasi RS</span>
@@ -384,7 +400,7 @@
             </div>
 
             <!-- Yearly Multi-Line Chart Canvas -->
-            <div class="h-[320px] w-full relative" x-data="chartComponent('chartHomeYearlyTrend', 'line', @js($this->yearlyVisitsTrend))">
+            <div class="h-[320px] w-full relative" wire:ignore x-data="chartComponent('chartHomeYearlyTrend', 'line', @js($this->yearlyVisitsTrend))">
                 <canvas id="chartHomeYearlyTrend" class="w-full h-full"></canvas>
             </div>
         </div>
@@ -1267,12 +1283,44 @@
             // Alpine Component: Line Trend Charts
             Alpine.data('chartComponent', (chartId, chartType, initialData) => ({
                 chart: null,
+                observer: null,
+                data: initialData,
                 init() {
+                    this.observer = new ResizeObserver((entries) => {
+                        for (let entry of entries) {
+                            if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+                                if (!this.chart || this.chart.width === 0 || this.chart.height === 0) {
+                                    this.renderChart(this.data);
+                                } else {
+                                    try { this.chart.resize(); } catch (e) {}
+                                }
+                            }
+                        }
+                    });
+                    this.observer.observe(this.$el);
+
                     this.$nextTick(() => {
-                        this.renderChart(initialData);
+                        if (this.$el.offsetWidth > 0 && this.$el.offsetHeight > 0) {
+                            this.renderChart(this.data);
+                        }
                     });
                 },
+                destroy() {
+                    if (this.observer) {
+                        this.observer.disconnect();
+                        this.observer = null;
+                    }
+                    if (this.chart) {
+                        try { this.chart.destroy(); } catch (e) {}
+                        this.chart = null;
+                    }
+                },
                 renderChart(data) {
+                    if (!data) return;
+                    this.data = data;
+                    if (this.$el.offsetWidth === 0 && this.$el.offsetHeight === 0) {
+                        return;
+                    }
                     const canvas = document.getElementById(chartId);
                     if (!canvas) return;
 
@@ -1297,7 +1345,7 @@
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
-                            animation: { duration: 600, easing: 'easeOutQuart' },
+                            animation: { duration: 500, easing: 'easeOutQuart' },
                             interaction: { mode: 'index', intersect: false },
                             plugins: {
                                 legend: {
@@ -1342,12 +1390,44 @@
             // Alpine Component: Donut Payer Chart
             Alpine.data('donutChartComponent', (chartId, initialData) => ({
                 chart: null,
+                observer: null,
+                data: initialData,
                 init() {
+                    this.observer = new ResizeObserver((entries) => {
+                        for (let entry of entries) {
+                            if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+                                if (!this.chart || this.chart.width === 0 || this.chart.height === 0) {
+                                    this.renderChart(this.data);
+                                } else {
+                                    try { this.chart.resize(); } catch (e) {}
+                                }
+                            }
+                        }
+                    });
+                    this.observer.observe(this.$el);
+
                     this.$nextTick(() => {
-                        this.renderChart(initialData);
+                        if (this.$el.offsetWidth > 0 && this.$el.offsetHeight > 0) {
+                            this.renderChart(this.data);
+                        }
                     });
                 },
+                destroy() {
+                    if (this.observer) {
+                        this.observer.disconnect();
+                        this.observer = null;
+                    }
+                    if (this.chart) {
+                        try { this.chart.destroy(); } catch (e) {}
+                        this.chart = null;
+                    }
+                },
                 renderChart(data) {
+                    if (!data) return;
+                    this.data = data;
+                    if (this.$el.offsetWidth === 0 && this.$el.offsetHeight === 0) {
+                        return;
+                    }
                     const canvas = document.getElementById(chartId);
                     if (!canvas) return;
 
@@ -1371,7 +1451,7 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             cutout: '72%',
-                            animation: { duration: 700, easing: 'easeOutQuart' },
+                            animation: { duration: 600, easing: 'easeOutQuart' },
                             plugins: {
                                 legend: { display: false },
                                 tooltip: {

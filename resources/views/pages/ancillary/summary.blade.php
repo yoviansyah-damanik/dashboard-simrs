@@ -189,7 +189,7 @@
                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                 Tren Harian 4 Unit Layanan Penunjang
             </h4>
-            <div class="relative w-full h-[320px]" x-ref="mainTrendContainer">
+            <div class="relative w-full h-[320px]" x-ref="mainTrendContainer" wire:ignore>
                 <canvas x-ref="mainTrendCanvas"></canvas>
             </div>
         </div>
@@ -199,7 +199,7 @@
             {{-- Sub Chart 1: Proporsi Layanan Penunjang --}}
             <div class="p-4 bg-gray-50 dark:bg-meta-4/30 rounded-2xl border border-stroke/40 dark:border-strokedark/40 flex flex-col items-center">
                 <h5 class="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 text-center">Proporsi 4 Layanan Penunjang</h5>
-                <div class="w-full h-[200px] relative">
+                <div class="w-full h-[200px] relative" wire:ignore>
                     <canvas x-ref="proportionCanvas"></canvas>
                 </div>
             </div>
@@ -207,7 +207,7 @@
             {{-- Sub Chart 2: Asal Pasien --}}
             <div class="p-4 bg-gray-50 dark:bg-meta-4/30 rounded-2xl border border-stroke/40 dark:border-strokedark/40 flex flex-col items-center">
                 <h5 class="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 text-center">Asal Pasien (Poli, IGD, Ranap)</h5>
-                <div class="w-full h-[200px] relative">
+                <div class="w-full h-[200px] relative" wire:ignore>
                     <canvas x-ref="careSettingCanvas"></canvas>
                 </div>
             </div>
@@ -591,155 +591,195 @@
     {{-- Script Chart.js dengan Alpine.js --}}
     @script
         <script>
-            Alpine.data('ancillarySummaryCharts', (chartPayload) => {
-                let mainTrendInstance = null;
-                let proportionInstance = null;
-                let careSettingInstance = null;
+            Alpine.data('ancillarySummaryCharts', (chartPayload) => ({
+                mainTrendInstance: null,
+                proportionInstance: null,
+                careSettingInstance: null,
+                chartPayload: chartPayload,
+                mainChartType: 'line',
+                observers: [],
 
-                return {
-                    chartPayload: chartPayload,
-                    mainChartType: 'line',
+                init() {
+                    this.chartPayload = chartPayload;
+                    this.$nextTick(() => {
+                        this.renderAllCharts();
+                        this.attachObservers();
+                    });
+                },
 
-                    init() {
-                        this.$nextTick(() => {
-                            this.renderAllCharts();
-                        });
-                    },
-
-                    isDark() {
-                        return document.documentElement.classList.contains('dark');
-                    },
-
-                    setMainChartType(type) {
-                        this.mainChartType = type;
-                        this.renderMainTrendChart();
-                    },
-
-                    renderAllCharts() {
-                        this.renderMainTrendChart();
-                        this.renderProportionChart();
-                        this.renderCareSettingChart();
-                    },
-
-                    renderMainTrendChart() {
-                        const canvas = this.$refs.mainTrendCanvas;
-                        if (!canvas) return;
-
-                        if (mainTrendInstance) {
-                            try { mainTrendInstance.destroy(); } catch (e) {}
-                            mainTrendInstance = null;
-                        }
-
-                        const isDark = this.isDark();
-                        const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
-                        const textColor = isDark ? '#94a3b8' : '#64748b';
-
-                        const rawDatasets = this.chartPayload.trend.datasets || [];
-                        const datasets = JSON.parse(JSON.stringify(rawDatasets)).map(ds => {
-                            if (this.mainChartType === 'bar') {
-                                return {
-                                    ...ds,
-                                    borderRadius: 6,
-                                    backgroundColor: ds.borderColor,
-                                };
-                            }
-                            return ds;
-                        });
-
-                        try {
-                            mainTrendInstance = new Chart(canvas, {
-                                type: this.mainChartType,
-                                data: {
-                                    labels: this.chartPayload.trend.labels,
-                                    datasets: datasets
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    animation: { duration: 400 },
-                                    interaction: { mode: 'index', intersect: false },
-                                    plugins: {
-                                        legend: {
-                                            display: true,
-                                            position: 'top',
-                                            labels: {
-                                                color: textColor,
-                                                usePointStyle: true,
-                                                font: { size: 11, weight: '600' }
-                                            }
-                                        }
-                                    },
-                                    scales: {
-                                        x: {
-                                            grid: { display: false },
-                                            ticks: { color: textColor, font: { size: 10, weight: 'bold' } }
-                                        },
-                                        y: {
-                                            beginAtZero: true,
-                                            grid: { color: gridColor },
-                                            ticks: { color: textColor, font: { size: 10 } }
+                attachObservers() {
+                    const refs = ['mainTrendCanvas', 'proportionCanvas', 'careSettingCanvas'];
+                    refs.forEach(refName => {
+                        const canvas = this.$refs[refName];
+                        if (canvas && canvas.parentElement) {
+                            const ro = new ResizeObserver((entries) => {
+                                for (let entry of entries) {
+                                    if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+                                        const instanceMap = {
+                                            'mainTrendCanvas': this.mainTrendInstance,
+                                            'proportionCanvas': this.proportionInstance,
+                                            'careSettingCanvas': this.careSettingInstance,
+                                        };
+                                        const inst = instanceMap[refName];
+                                        if (inst) {
+                                            inst.resize();
+                                        } else {
+                                            this.renderAllCharts();
                                         }
                                     }
                                 }
                             });
-                        } catch (e) {}
-                    },
+                            ro.observe(canvas.parentElement);
+                            this.observers.push(ro);
+                        }
+                    });
+                },
 
-                    renderProportionChart() {
-                        const canvas = this.$refs.proportionCanvas;
-                        if (!canvas) return;
-                        if (proportionInstance) { try { proportionInstance.destroy(); } catch (e) {} }
+                destroy() {
+                    this.observers.forEach(ro => ro.disconnect());
+                    this.observers = [];
+                    this.destroyAll();
+                },
 
-                        const isDark = this.isDark();
-                        const textColor = isDark ? '#94a3b8' : '#64748b';
+                destroyAll() {
+                    if (this.mainTrendInstance) { try { this.mainTrendInstance.destroy(); } catch (e) {} this.mainTrendInstance = null; }
+                    if (this.proportionInstance) { try { this.proportionInstance.destroy(); } catch (e) {} this.proportionInstance = null; }
+                    if (this.careSettingInstance) { try { this.careSettingInstance.destroy(); } catch (e) {} this.careSettingInstance = null; }
+                },
 
-                        try {
-                            proportionInstance = new Chart(canvas, {
-                                type: 'doughnut',
-                                data: JSON.parse(JSON.stringify(this.chartPayload.proportion)),
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    plugins: {
-                                        legend: {
-                                            position: 'bottom',
-                                            labels: { color: textColor, font: { size: 10, weight: 'bold' }, boxWidth: 10 }
-                                        }
-                                    },
-                                    cutout: '65%'
-                                }
-                            });
-                        } catch (e) {}
-                    },
+                isDark() {
+                    return document.documentElement.classList.contains('dark');
+                },
 
-                    renderCareSettingChart() {
-                        const canvas = this.$refs.careSettingCanvas;
-                        if (!canvas) return;
-                        if (careSettingInstance) { try { careSettingInstance.destroy(); } catch (e) {} }
+                setMainChartType(type) {
+                    this.mainChartType = type;
+                    this.renderMainTrendChart();
+                },
 
-                        const isDark = this.isDark();
-                        const textColor = isDark ? '#94a3b8' : '#64748b';
+                renderAllCharts() {
+                    this.renderMainTrendChart();
+                    this.renderProportionChart();
+                    this.renderCareSettingChart();
+                },
 
-                        try {
-                            careSettingInstance = new Chart(canvas, {
-                                type: 'doughnut',
-                                data: JSON.parse(JSON.stringify(this.chartPayload.care_setting)),
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    plugins: {
-                                        legend: {
-                                            position: 'bottom',
-                                            labels: { color: textColor, font: { size: 10, weight: 'bold' }, boxWidth: 10 }
-                                        }
-                                    },
-                                    cutout: '65%'
-                                }
-                            });
-                        } catch (e) {}
+                renderMainTrendChart() {
+                    const canvas = this.$refs.mainTrendCanvas;
+                    if (!canvas) return;
+
+                    if (this.mainTrendInstance) {
+                        try { this.mainTrendInstance.destroy(); } catch (e) {}
+                        this.mainTrendInstance = null;
                     }
-                };
-            });
+
+                    const isDark = this.isDark();
+                    const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+                    const textColor = isDark ? '#94a3b8' : '#64748b';
+
+                    const rawDatasets = this.chartPayload.trend.datasets || [];
+                    const datasets = JSON.parse(JSON.stringify(rawDatasets)).map(ds => {
+                        if (this.mainChartType === 'bar') {
+                            return {
+                                ...ds,
+                                borderRadius: 6,
+                                backgroundColor: ds.borderColor,
+                            };
+                        }
+                        return ds;
+                    });
+
+                    try {
+                        this.mainTrendInstance = new Chart(canvas, {
+                            type: this.mainChartType,
+                            data: {
+                                labels: this.chartPayload.trend.labels,
+                                datasets: datasets
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                animation: { duration: 400 },
+                                interaction: { mode: 'index', intersect: false },
+                                plugins: {
+                                    legend: {
+                                        display: true,
+                                        position: 'top',
+                                        labels: {
+                                            color: textColor,
+                                            usePointStyle: true,
+                                            font: { size: 11, weight: '600' }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        grid: { display: false },
+                                        ticks: { color: textColor, font: { size: 10, weight: 'bold' } }
+                                    },
+                                    y: {
+                                        beginAtZero: true,
+                                        grid: { color: gridColor },
+                                        ticks: { color: textColor, font: { size: 10 } }
+                                    }
+                                }
+                            }
+                        });
+                    } catch (e) {}
+                },
+
+                renderProportionChart() {
+                    const canvas = this.$refs.proportionCanvas;
+                    if (!canvas) return;
+                    if (this.proportionInstance) { try { this.proportionInstance.destroy(); } catch (e) {} this.proportionInstance = null; }
+
+                    const isDark = this.isDark();
+                    const textColor = isDark ? '#94a3b8' : '#64748b';
+
+                    try {
+                        this.proportionInstance = new Chart(canvas, {
+                            type: 'doughnut',
+                            data: JSON.parse(JSON.stringify(this.chartPayload.proportion)),
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: { color: textColor, font: { size: 10, weight: 'bold' }, boxWidth: 10 }
+                                    }
+                                },
+                                cutout: '65%'
+                            }
+                        });
+                    } catch (e) {}
+                },
+
+                renderCareSettingChart() {
+                    const canvas = this.$refs.careSettingCanvas;
+                    if (!canvas) return;
+                    if (this.careSettingInstance) { try { this.careSettingInstance.destroy(); } catch (e) {} this.careSettingInstance = null; }
+
+                    const isDark = this.isDark();
+                    const textColor = isDark ? '#94a3b8' : '#64748b';
+
+                    try {
+                        this.careSettingInstance = new Chart(canvas, {
+                            type: 'doughnut',
+                            data: JSON.parse(JSON.stringify(this.chartPayload.care_setting)),
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: { color: textColor, font: { size: 10, weight: 'bold' }, boxWidth: 10 }
+                                    }
+                                },
+                                cutout: '65%'
+                            }
+                        });
+                    } catch (e) {}
+                }
+            }));
         </script>
     @endscript
 </x-content>

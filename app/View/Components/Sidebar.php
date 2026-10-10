@@ -574,7 +574,7 @@ class Sidebar extends Component
                             'isShown' => auth()->user()->hasPermissionTo('configuration')
                         ],
                         [
-                            'title' => 'Catatan Rilis (v2.0.0)',
+                            'title' => 'Catatan Rilis (' . \App\Helpers\GeneralHelper::getVersion()['version'] . ')',
                             'href' => route('changelog'),
                             'icon' => 'i-ph-clock-counter-clockwise',
                             'isActive' => request()->routeIs('changelog'),

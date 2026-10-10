@@ -37,6 +37,9 @@ class Report extends Component
     public $payType = 'semua';
 
     #[Url]
+    public $dinasFilter = 'semua';
+
+    #[Url]
     public $doctor = 'semua';
 
     #[Url]
@@ -99,6 +102,11 @@ class Report extends Component
     }
 
     public function updatedPayType()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedDinasFilter()
     {
         $this->resetPage();
     }
@@ -275,7 +283,8 @@ class Report extends Component
             doctor: $this->doctor,
             gender: $this->gender,
             sttsDaftar: $this->sttsDaftar,
-            search: $this->search
+            search: $this->search,
+            dinasFilter: $this->dinasFilter
         );
     }
 
@@ -321,6 +330,28 @@ class Report extends Component
             poly: $this->poly,
             gender: $this->gender
         );
+    }
+
+    #[Computed]
+    public function diagnosisBreakdown(): array
+    {
+        return OutpatientReportRepository::getDiagnosisBreakdown(
+            startDate: $this->startDate,
+            endDate: $this->endDate,
+            poly: $this->poly,
+            doctor: $this->doctor,
+            payType: $this->payType,
+            gender: $this->gender,
+            limit: 50,
+            dinasFilter: $this->dinasFilter
+        );
+    }
+
+    public function rendered()
+    {
+        if ($this->showCharts) {
+            $this->dispatch('outpatient-charts-updated', payload: $this->chartPayload);
+        }
     }
 
     #[Computed]
@@ -403,7 +434,8 @@ class Report extends Component
             gender: $this->gender,
             sttsDaftar: $this->sttsDaftar,
             search: $this->search,
-            limit: $this->limit
+            limit: $this->limit,
+            dinasFilter: $this->dinasFilter
         );
     }
 
@@ -540,12 +572,14 @@ class Report extends Component
         $payTypeBreakdown = OutpatientReportRepository::getPayTypeBreakdown($this->startDate, $this->endDate, $this->poly, $this->gender);
         $ageGroupBreakdown = OutpatientReportRepository::getAgeGroupBreakdown($this->startDate, $this->endDate, $this->poly, $this->payType);
         $dinasBreakdown = OutpatientReportRepository::getDinasBreakdown($this->startDate, $this->endDate, $this->poly, $this->gender);
+        $diagnosisBreakdown = OutpatientReportRepository::getDiagnosisBreakdown($this->startDate, $this->endDate, $this->poly, $this->doctor, $this->payType, $this->gender, 30);
 
         $pdf = Pdf::loadView('reports.outpatient-report-pdf', [
             'polyBreakdown' => $polyBreakdown,
             'payTypeBreakdown' => $payTypeBreakdown,
             'ageGroupBreakdown' => $ageGroupBreakdown,
             'dinasBreakdown' => $dinasBreakdown,
+            'diagnosisBreakdown' => $diagnosisBreakdown,
             'startDate' => $this->startDate,
             'endDate' => $this->endDate,
             'summary' => $this->summary(),

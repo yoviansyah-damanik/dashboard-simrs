@@ -92,6 +92,10 @@
                 <span>Rasio: <strong class="text-sky-600 dark:text-sky-400">{{ $summary['pct_poli'] }}%</strong></span>
                 <span>{{ number_format($summary['poli_pasien'], 0, ',', '.') }} pengunjung</span>
             </div>
+            <div class="mt-2 pt-2 border-t border-stroke/60 dark:border-strokedark/60 text-[11px] text-gray-500 dark:text-gray-400 flex items-center justify-between">
+                <span>Total Ralan (Poli+IGD):</span>
+                <span class="font-black text-sky-700 dark:text-sky-400">{{ number_format($summary['ralan_kunjungan'] ?? ($summary['poli_kunjungan'] + $summary['igd_kunjungan']), 0, ',', '.') }}</span>
+            </div>
         </div>
 
         {{-- Card 3: Gawat Darurat (IGD) --}}
@@ -108,6 +112,10 @@
             <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 font-medium">
                 <span>Rasio: <strong class="text-rose-600 dark:text-rose-400">{{ $summary['pct_igd'] }}%</strong></span>
                 <span>{{ number_format($summary['igd_pasien'], 0, ',', '.') }} pengunjung</span>
+            </div>
+            <div class="mt-2 pt-2 border-t border-stroke/60 dark:border-strokedark/60 text-[11px] text-gray-500 dark:text-gray-400 flex items-center justify-between">
+                <span>Total Ralan (Poli+IGD):</span>
+                <span class="font-black text-rose-700 dark:text-rose-400">{{ number_format($summary['ralan_kunjungan'] ?? ($summary['poli_kunjungan'] + $summary['igd_kunjungan']), 0, ',', '.') }}</span>
             </div>
         </div>
 
@@ -194,7 +202,7 @@
                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                 Tren Harian Layanan Medis (Poli, IGD, Ranap)
             </h4>
-            <div class="relative w-full h-[320px]" x-ref="mainTrendContainer">
+            <div class="relative w-full h-[320px]" x-ref="mainTrendContainer" wire:ignore>
                 <canvas x-ref="mainTrendCanvas"></canvas>
             </div>
         </div>
@@ -204,7 +212,7 @@
             {{-- Sub Chart 1: Proporsi Poli vs IGD vs Ranap --}}
             <div class="p-4 bg-gray-50 dark:bg-meta-4/30 rounded-2xl border border-stroke/40 dark:border-strokedark/40 flex flex-col items-center">
                 <h5 class="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 text-center">Proporsi Layanan Medis</h5>
-                <div class="w-full h-[200px] relative">
+                <div class="w-full h-[200px] relative" wire:ignore>
                     <canvas x-ref="proportionCanvas"></canvas>
                 </div>
             </div>
@@ -212,7 +220,7 @@
             {{-- Sub Chart 2: Cara Bayar --}}
             <div class="p-4 bg-gray-50 dark:bg-meta-4/30 rounded-2xl border border-stroke/40 dark:border-strokedark/40 flex flex-col items-center">
                 <h5 class="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 text-center">Distribusi Cara Bayar / Penjamin</h5>
-                <div class="w-full h-[200px] relative">
+                <div class="w-full h-[200px] relative" wire:ignore>
                     <canvas x-ref="caraBayarCanvas"></canvas>
                 </div>
             </div>
@@ -220,7 +228,7 @@
             {{-- Sub Chart 3: Top Poliklinik --}}
             <div class="p-4 bg-gray-50 dark:bg-meta-4/30 rounded-2xl border border-stroke/40 dark:border-strokedark/40 flex flex-col items-center">
                 <h5 class="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 text-center">Poliklinik Rawat Jalan Terbanyak</h5>
-                <div class="w-full h-[200px] relative">
+                <div class="w-full h-[200px] relative" wire:ignore>
                     <canvas x-ref="clinicsCanvas"></canvas>
                 </div>
             </div>
@@ -279,6 +287,7 @@
                             <th class="py-3 px-4">Indikator Komparasi</th>
                             <th class="py-3 px-3 text-center text-sky-700 dark:text-sky-400">Rawat Jalan (Poli)</th>
                             <th class="py-3 px-3 text-center text-rose-700 dark:text-rose-400">Gawat Darurat (IGD)</th>
+                            <th class="py-3 px-3 text-center text-indigo-700 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-950/20 font-black">Total Ralan (Poli + IGD)</th>
                             <th class="py-3 px-3 text-center text-amber-700 dark:text-amber-400">Rawat Inap (Ranap)</th>
                             <th class="py-3 px-4 text-center bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-l border-stroke dark:border-strokedark font-black">Total Layanan Medis</th>
                         </tr>
@@ -288,6 +297,7 @@
                             <td class="py-2.5 px-4 text-emerald-700 dark:text-emerald-400">Total Kunjungan Pasien</td>
                             <td class="py-2.5 px-3 text-center font-bold text-sky-700 dark:text-sky-400">{{ number_format($summary['poli_kunjungan'], 0, ',', '.') }}</td>
                             <td class="py-2.5 px-3 text-center font-bold text-rose-700 dark:text-rose-400">{{ number_format($summary['igd_kunjungan'], 0, ',', '.') }}</td>
+                            <td class="py-2.5 px-3 text-center font-black text-indigo-700 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20">{{ number_format($summary['ralan_kunjungan'] ?? ($summary['poli_kunjungan'] + $summary['igd_kunjungan']), 0, ',', '.') }}</td>
                             <td class="py-2.5 px-3 text-center font-bold text-amber-700 dark:text-amber-400">{{ number_format($summary['ranap_kunjungan'], 0, ',', '.') }}</td>
                             <td class="py-2.5 px-4 text-center font-black bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-l border-stroke dark:border-strokedark">
                                 {{ number_format($summary['total_layanan'], 0, ',', '.') }}
@@ -297,6 +307,7 @@
                             <td class="py-2.5 px-4 text-gray-800 dark:text-gray-200">Total Pengunjung</td>
                             <td class="py-2.5 px-3 text-center text-gray-700 dark:text-gray-300">{{ number_format($summary['poli_pasien'], 0, ',', '.') }}</td>
                             <td class="py-2.5 px-3 text-center text-gray-700 dark:text-gray-300">{{ number_format($summary['igd_pasien'], 0, ',', '.') }}</td>
+                            <td class="py-2.5 px-3 text-center font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20">{{ number_format($summary['ralan_pasien'] ?? ($summary['poli_pasien'] + $summary['igd_pasien']), 0, ',', '.') }}</td>
                             <td class="py-2.5 px-3 text-center text-gray-700 dark:text-gray-300">{{ number_format($summary['ranap_pasien'], 0, ',', '.') }}</td>
                             <td class="py-2.5 px-4 text-center font-bold bg-emerald-50 dark:bg-emerald-950/40 text-gray-800 dark:text-gray-200 border-l border-stroke dark:border-strokedark">
                                 {{ number_format($summary['total_pasien'], 0, ',', '.') }}
@@ -306,6 +317,7 @@
                             <td class="py-2.5 px-4 text-gray-800 dark:text-gray-200">Proporsi / Rasio Pelayanan (%)</td>
                             <td class="py-2.5 px-3 text-center font-semibold text-sky-600 dark:text-sky-400">{{ $summary['pct_poli'] }}%</td>
                             <td class="py-2.5 px-3 text-center font-semibold text-rose-600 dark:text-rose-400">{{ $summary['pct_igd'] }}%</td>
+                            <td class="py-2.5 px-3 text-center font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20">{{ $summary['pct_ralan'] ?? round((($summary['poli_kunjungan'] + $summary['igd_kunjungan']) / max(1, $summary['total_layanan'])) * 100, 1) }}%</td>
                             <td class="py-2.5 px-3 text-center font-semibold text-amber-600 dark:text-amber-400">{{ $summary['pct_ranap'] }}%</td>
                             <td class="py-2.5 px-4 text-center font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-l border-stroke dark:border-strokedark">100%</td>
                         </tr>
@@ -313,6 +325,7 @@
                             <td class="py-2.5 px-4 text-gray-600 dark:text-gray-400">Rata-rata Kunjungan per Hari</td>
                             <td class="py-2.5 px-3 text-center text-gray-700 dark:text-gray-300">{{ number_format(round($summary['poli_kunjungan'] / max(1, $report['period']['days']), 1), 1, ',', '.') }}</td>
                             <td class="py-2.5 px-3 text-center text-gray-700 dark:text-gray-300">{{ number_format(round($summary['igd_kunjungan'] / max(1, $report['period']['days']), 1), 1, ',', '.') }}</td>
+                            <td class="py-2.5 px-3 text-center font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20">{{ number_format(round(($summary['ralan_kunjungan'] ?? ($summary['poli_kunjungan'] + $summary['igd_kunjungan'])) / max(1, $report['period']['days']), 1), 1, ',', '.') }}</td>
                             <td class="py-2.5 px-3 text-center text-gray-700 dark:text-gray-300">{{ number_format(round($summary['ranap_kunjungan'] / max(1, $report['period']['days']), 1), 1, ',', '.') }}</td>
                             <td class="py-2.5 px-4 text-center font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-l border-stroke dark:border-strokedark">
                                 {{ number_format(round($summary['total_layanan'] / max(1, $report['period']['days']), 1), 1, ',', '.') }}
@@ -325,6 +338,7 @@
                             </td>
                             <td class="py-2.5 px-3 text-center text-emerald-700 dark:text-emerald-400">{{ number_format($dinas['tni_poli'] ?? 0, 0, ',', '.') }}</td>
                             <td class="py-2.5 px-3 text-center text-emerald-700 dark:text-emerald-400">{{ number_format($dinas['tni_igd'] ?? 0, 0, ',', '.') }}</td>
+                            <td class="py-2.5 px-3 text-center font-bold text-emerald-800 dark:text-emerald-300 bg-indigo-50/40 dark:bg-indigo-950/20">{{ number_format(($dinas['tni_poli'] ?? 0) + ($dinas['tni_igd'] ?? 0), 0, ',', '.') }}</td>
                             <td class="py-2.5 px-3 text-center text-emerald-700 dark:text-emerald-400">{{ number_format($dinas['tni_ranap'] ?? 0, 0, ',', '.') }}</td>
                             <td class="py-2.5 px-4 text-center font-bold bg-emerald-100/50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border-l border-stroke dark:border-strokedark">
                                 {{ number_format($dinas['tni'], 0, ',', '.') }}
@@ -337,6 +351,7 @@
                             </td>
                             <td class="py-2.5 px-3 text-center text-blue-700 dark:text-blue-400">{{ number_format($dinas['polri_poli'] ?? 0, 0, ',', '.') }}</td>
                             <td class="py-2.5 px-3 text-center text-blue-700 dark:text-blue-400">{{ number_format($dinas['polri_igd'] ?? 0, 0, ',', '.') }}</td>
+                            <td class="py-2.5 px-3 text-center font-bold text-blue-800 dark:text-blue-300 bg-indigo-50/40 dark:bg-indigo-950/20">{{ number_format(($dinas['polri_poli'] ?? 0) + ($dinas['polri_igd'] ?? 0), 0, ',', '.') }}</td>
                             <td class="py-2.5 px-3 text-center text-blue-700 dark:text-blue-400">{{ number_format($dinas['polri_ranap'] ?? 0, 0, ',', '.') }}</td>
                             <td class="py-2.5 px-4 text-center font-bold bg-blue-100/50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border-l border-stroke dark:border-strokedark">
                                 {{ number_format($dinas['polri'], 0, ',', '.') }}
@@ -349,6 +364,7 @@
                             </td>
                             <td class="py-2.5 px-3 text-center text-purple-700 dark:text-purple-400">{{ number_format($dinas['poli'], 0, ',', '.') }}</td>
                             <td class="py-2.5 px-3 text-center text-purple-700 dark:text-purple-400">{{ number_format($dinas['igd'], 0, ',', '.') }}</td>
+                            <td class="py-2.5 px-3 text-center font-black text-purple-800 dark:text-purple-300 bg-indigo-50/40 dark:bg-indigo-950/20">{{ number_format(($dinas['poli'] ?? 0) + ($dinas['igd'] ?? 0), 0, ',', '.') }}</td>
                             <td class="py-2.5 px-3 text-center text-purple-700 dark:text-purple-400">{{ number_format($dinas['ranap'], 0, ',', '.') }}</td>
                             <td class="py-2.5 px-4 text-center font-black bg-purple-100/60 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border-l border-stroke dark:border-strokedark">
                                 {{ number_format($dinas['total'], 0, ',', '.') }}
@@ -662,180 +678,222 @@
     {{-- Script Chart.js dengan Alpine.js --}}
     @script
         <script>
-            Alpine.data('medicalSummaryCharts', (chartPayload) => {
-                let mainTrendInstance = null;
-                let proportionInstance = null;
-                let caraBayarInstance = null;
-                let clinicsInstance = null;
+            Alpine.data('medicalSummaryCharts', (chartPayload) => ({
+                mainTrendInstance: null,
+                proportionInstance: null,
+                caraBayarInstance: null,
+                clinicsInstance: null,
+                chartPayload: chartPayload,
+                mainChartType: 'line',
+                observers: [],
 
-                return {
-                    chartPayload: chartPayload,
-                    mainChartType: 'line',
+                init() {
+                    this.chartPayload = chartPayload;
+                    this.$nextTick(() => {
+                        this.renderAllCharts();
+                        this.attachObservers();
+                    });
+                },
 
-                    init() {
-                        this.$nextTick(() => {
-                            this.renderAllCharts();
-                        });
-                    },
-
-                    isDark() {
-                        return document.documentElement.classList.contains('dark');
-                    },
-
-                    setMainChartType(type) {
-                        this.mainChartType = type;
-                        this.renderMainTrendChart();
-                    },
-
-                    renderAllCharts() {
-                        this.renderMainTrendChart();
-                        this.renderProportionChart();
-                        this.renderCaraBayarChart();
-                        this.renderClinicsChart();
-                    },
-
-                    renderMainTrendChart() {
-                        const canvas = this.$refs.mainTrendCanvas;
-                        if (!canvas) return;
-
-                        if (mainTrendInstance) {
-                            try { mainTrendInstance.destroy(); } catch (e) {}
-                            mainTrendInstance = null;
+                attachObservers() {
+                    const refs = ['mainTrendCanvas', 'proportionCanvas', 'caraBayarCanvas', 'clinicsCanvas'];
+                    refs.forEach(refName => {
+                        const canvas = this.$refs[refName];
+                        if (canvas && canvas.parentElement) {
+                            const ro = new ResizeObserver((entries) => {
+                                for (let entry of entries) {
+                                    if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+                                        const instanceMap = {
+                                            'mainTrendCanvas': this.mainTrendInstance,
+                                            'proportionCanvas': this.proportionInstance,
+                                            'caraBayarCanvas': this.caraBayarInstance,
+                                            'clinicsCanvas': this.clinicsInstance,
+                                        };
+                                        const inst = instanceMap[refName];
+                                        if (inst) {
+                                            inst.resize();
+                                        } else {
+                                            this.renderAllCharts();
+                                        }
+                                    }
+                                }
+                            });
+                            ro.observe(canvas.parentElement);
+                            this.observers.push(ro);
                         }
+                    });
+                },
 
-                        const isDark = this.isDark();
-                        const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
-                        const textColor = isDark ? '#94a3b8' : '#64748b';
+                destroy() {
+                    this.observers.forEach(ro => ro.disconnect());
+                    this.observers = [];
+                    this.destroyAll();
+                },
 
-                        const rawDatasets = this.chartPayload.trend.datasets || [];
-                        const datasets = JSON.parse(JSON.stringify(rawDatasets)).map(ds => {
-                            if (this.mainChartType === 'bar') {
-                                return {
-                                    ...ds,
-                                    borderRadius: 6,
-                                    backgroundColor: ds.borderColor,
-                                };
-                            }
-                            return ds;
-                        });
+                destroyAll() {
+                    if (this.mainTrendInstance) { try { this.mainTrendInstance.destroy(); } catch (e) {} this.mainTrendInstance = null; }
+                    if (this.proportionInstance) { try { this.proportionInstance.destroy(); } catch (e) {} this.proportionInstance = null; }
+                    if (this.caraBayarInstance) { try { this.caraBayarInstance.destroy(); } catch (e) {} this.caraBayarInstance = null; }
+                    if (this.clinicsInstance) { try { this.clinicsInstance.destroy(); } catch (e) {} this.clinicsInstance = null; }
+                },
 
-                        try {
-                            mainTrendInstance = new Chart(canvas, {
-                                type: this.mainChartType,
-                                data: {
-                                    labels: this.chartPayload.trend.labels,
-                                    datasets: datasets
-                                },
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    animation: { duration: 400 },
-                                    interaction: { mode: 'index', intersect: false },
-                                    plugins: {
-                                        legend: {
-                                            display: true,
-                                            position: 'top',
-                                            labels: {
-                                                color: textColor,
-                                                usePointStyle: true,
-                                                font: { size: 11, weight: '600' }
-                                            }
-                                        }
-                                    },
-                                    scales: {
-                                        x: {
-                                            grid: { display: false },
-                                            ticks: { color: textColor, font: { size: 10, weight: 'bold' } }
-                                        },
-                                        y: {
-                                            beginAtZero: true,
-                                            grid: { color: gridColor },
-                                            ticks: { color: textColor, font: { size: 10 } }
-                                        }
-                                    }
-                                }
-                            });
-                        } catch (e) {}
-                    },
+                isDark() {
+                    return document.documentElement.classList.contains('dark');
+                },
 
-                    renderProportionChart() {
-                        const canvas = this.$refs.proportionCanvas;
-                        if (!canvas) return;
-                        if (proportionInstance) { try { proportionInstance.destroy(); } catch (e) {} }
+                setMainChartType(type) {
+                    this.mainChartType = type;
+                    this.renderMainTrendChart();
+                },
 
-                        const isDark = this.isDark();
-                        const textColor = isDark ? '#94a3b8' : '#64748b';
+                renderAllCharts() {
+                    this.renderMainTrendChart();
+                    this.renderProportionChart();
+                    this.renderCaraBayarChart();
+                    this.renderClinicsChart();
+                },
 
-                        try {
-                            proportionInstance = new Chart(canvas, {
-                                type: 'doughnut',
-                                data: JSON.parse(JSON.stringify(this.chartPayload.proportion)),
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    plugins: {
-                                        legend: {
-                                            position: 'bottom',
-                                            labels: { color: textColor, font: { size: 10, weight: 'bold' }, boxWidth: 10 }
-                                        }
-                                    },
-                                    cutout: '65%'
-                                }
-                            });
-                        } catch (e) {}
-                    },
+                renderMainTrendChart() {
+                    const canvas = this.$refs.mainTrendCanvas;
+                    if (!canvas) return;
 
-                    renderCaraBayarChart() {
-                        const canvas = this.$refs.caraBayarCanvas;
-                        if (!canvas) return;
-                        if (caraBayarInstance) { try { caraBayarInstance.destroy(); } catch (e) {} }
-
-                        const isDark = this.isDark();
-                        const textColor = isDark ? '#94a3b8' : '#64748b';
-
-                        try {
-                            caraBayarInstance = new Chart(canvas, {
-                                type: 'bar',
-                                data: JSON.parse(JSON.stringify(this.chartPayload.cara_bayar)),
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    plugins: { legend: { display: false } },
-                                    scales: {
-                                        x: { ticks: { color: textColor, font: { size: 9, weight: 'bold' } }, grid: { display: false } },
-                                        y: { beginAtZero: true, ticks: { color: textColor, font: { size: 9 } } }
-                                    }
-                                }
-                            });
-                        } catch (e) {}
-                    },
-
-                    renderClinicsChart() {
-                        const canvas = this.$refs.clinicsCanvas;
-                        if (!canvas) return;
-                        if (clinicsInstance) { try { clinicsInstance.destroy(); } catch (e) {} }
-
-                        const isDark = this.isDark();
-                        const textColor = isDark ? '#94a3b8' : '#64748b';
-
-                        try {
-                            clinicsInstance = new Chart(canvas, {
-                                type: 'bar',
-                                data: JSON.parse(JSON.stringify(this.chartPayload.clinics)),
-                                options: {
-                                    responsive: true,
-                                    maintainAspectRatio: false,
-                                    plugins: { legend: { display: false } },
-                                    scales: {
-                                        x: { ticks: { color: textColor, font: { size: 9, weight: 'bold' } }, grid: { display: false } },
-                                        y: { beginAtZero: true, ticks: { color: textColor, font: { size: 9 } } }
-                                    }
-                                }
-                            });
-                        } catch (e) {}
+                    if (this.mainTrendInstance) {
+                        try { this.mainTrendInstance.destroy(); } catch (e) {}
+                        this.mainTrendInstance = null;
                     }
-                };
-            });
+
+                    const isDark = this.isDark();
+                    const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+                    const textColor = isDark ? '#94a3b8' : '#64748b';
+
+                    const rawDatasets = this.chartPayload.trend.datasets || [];
+                    const datasets = JSON.parse(JSON.stringify(rawDatasets)).map(ds => {
+                        if (this.mainChartType === 'bar') {
+                            return {
+                                ...ds,
+                                borderRadius: 6,
+                                backgroundColor: ds.borderColor,
+                            };
+                        }
+                        return ds;
+                    });
+
+                    try {
+                        this.mainTrendInstance = new Chart(canvas, {
+                            type: this.mainChartType,
+                            data: {
+                                labels: this.chartPayload.trend.labels,
+                                datasets: datasets
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                animation: { duration: 400 },
+                                interaction: { mode: 'index', intersect: false },
+                                plugins: {
+                                    legend: {
+                                        display: true,
+                                        position: 'top',
+                                        labels: {
+                                            color: textColor,
+                                            usePointStyle: true,
+                                            font: { size: 11, weight: '600' }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        grid: { display: false },
+                                        ticks: { color: textColor, font: { size: 10, weight: 'bold' } }
+                                    },
+                                    y: {
+                                        beginAtZero: true,
+                                        grid: { color: gridColor },
+                                        ticks: { color: textColor, font: { size: 10 } }
+                                    }
+                                }
+                            }
+                        });
+                    } catch (e) {}
+                },
+
+                renderProportionChart() {
+                    const canvas = this.$refs.proportionCanvas;
+                    if (!canvas) return;
+                    if (this.proportionInstance) { try { this.proportionInstance.destroy(); } catch (e) {} this.proportionInstance = null; }
+
+                    const isDark = this.isDark();
+                    const textColor = isDark ? '#94a3b8' : '#64748b';
+
+                    try {
+                        this.proportionInstance = new Chart(canvas, {
+                            type: 'doughnut',
+                            data: JSON.parse(JSON.stringify(this.chartPayload.proportion)),
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: { color: textColor, font: { size: 10, weight: 'bold' }, boxWidth: 10 }
+                                    }
+                                },
+                                cutout: '65%'
+                            }
+                        });
+                    } catch (e) {}
+                },
+
+                renderCaraBayarChart() {
+                    const canvas = this.$refs.caraBayarCanvas;
+                    if (!canvas) return;
+                    if (this.caraBayarInstance) { try { this.caraBayarInstance.destroy(); } catch (e) {} this.caraBayarInstance = null; }
+
+                    const isDark = this.isDark();
+                    const textColor = isDark ? '#94a3b8' : '#64748b';
+
+                    try {
+                        this.caraBayarInstance = new Chart(canvas, {
+                            type: 'bar',
+                            data: JSON.parse(JSON.stringify(this.chartPayload.cara_bayar)),
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    x: { ticks: { color: textColor, font: { size: 9, weight: 'bold' } }, grid: { display: false } },
+                                    y: { beginAtZero: true, ticks: { color: textColor, font: { size: 9 } } }
+                                }
+                            }
+                        });
+                    } catch (e) {}
+                },
+
+                renderClinicsChart() {
+                    const canvas = this.$refs.clinicsCanvas;
+                    if (!canvas) return;
+                    if (this.clinicsInstance) { try { this.clinicsInstance.destroy(); } catch (e) {} this.clinicsInstance = null; }
+
+                    const isDark = this.isDark();
+                    const textColor = isDark ? '#94a3b8' : '#64748b';
+
+                    try {
+                        this.clinicsInstance = new Chart(canvas, {
+                            type: 'bar',
+                            data: JSON.parse(JSON.stringify(this.chartPayload.clinics)),
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    x: { ticks: { color: textColor, font: { size: 9, weight: 'bold' } }, grid: { display: false } },
+                                    y: { beginAtZero: true, ticks: { color: textColor, font: { size: 9 } } }
+                                }
+                            }
+                        });
+                    } catch (e) {}
+                }
+            }));
         </script>
     @endscript
 </x-content>

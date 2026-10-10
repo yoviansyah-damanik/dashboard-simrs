@@ -275,6 +275,36 @@
                 @endforelse
             </tbody>
         </table>
+    @if (!empty($diagnosisBreakdown))
+        <div class="section-title">5. Rekapitulasi Top 20 Diagnosa Penyakit Terbanyak (ICD-10) Rawat Jalan</div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 25px; text-align: center;">Rank</th>
+                    <th style="width: 55px; text-align: center;">Kode ICD</th>
+                    <th>Nama Penyakit / Diagnosa</th>
+                    <th style="width: 50px; text-align: center;">Primer</th>
+                    <th style="width: 50px; text-align: center;">Sekunder</th>
+                    <th style="width: 55px; text-align: center;">Total Kasus</th>
+                    <th style="width: 45px; text-align: center;">Proporsi</th>
+                    <th style="width: 50px; text-align: center;">L / P</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (array_slice($diagnosisBreakdown, 0, 20) as $diag)
+                    <tr>
+                        <td style="text-align: center;">{{ $diag['rank'] }}</td>
+                        <td style="text-align: center; font-family: monospace; font-weight: bold; color: #0284c7;">{{ $diag['kd_penyakit'] }}</td>
+                        <td><strong>{{ $diag['nm_penyakit'] }}</strong></td>
+                        <td style="text-align: center;">{{ number_format($diag['primer'], 0, ',', '.') }}</td>
+                        <td style="text-align: center;">{{ number_format($diag['sekunder'], 0, ',', '.') }}</td>
+                        <td style="text-align: center; font-weight: bold; color: #0f172a;">{{ number_format($diag['total_kasus'] ?? $diag['total'], 0, ',', '.') }}</td>
+                        <td style="text-align: center;">{{ $diag['percent'] }}%</td>
+                        <td style="text-align: center;">{{ number_format($diag['pria'], 0, ',', '.') }} / {{ number_format($diag['wanita'], 0, ',', '.') }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
     @endif
 </body>
 </html>

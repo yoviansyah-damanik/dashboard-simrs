@@ -1,5 +1,19 @@
 [
     {
+        "version": "2.1.0",
+        "date": "2026-10-10",
+        "title": "Minor Release: Akumulasi Rawat Jalan, Perbaikan Grafik, Rekap Diagnosa & Pasien Dinas IGD",
+        "badge": "Minor Release",
+        "type": "minor",
+        "changeLog": [
+            "Penambahan akumulasi Total Rawat Jalan (Poli + IGD) di samping rincian Poli dan IGD pada kartu KPI, rekap, dan laporan.",
+            "Perbaikan grafik yang menghilang saat data/tab/filter berubah (wire:ignore, ResizeObserver, dan pembaruan dataset via event Livewire).",
+            "Pelengkapan Laporan Gawat Darurat: tab Rekap Pasien Dinas (TNI/POLRI), Rekap Diagnosa ICD-10, dan ekspor PDF.",
+            "Penambahan tab Rekap Diagnosa Pasien (ICD-10, primer/sekunder) pada Laporan Rawat Jalan, Rawat Inap, dan Gawat Darurat beserta PDF.",
+            "Perbaikan error stdClass pada tab Pasien Dinas Rekap Rawat Inap serta dropdown dokter dan tren pada Laporan IGD."
+        ]
+    },
+    {
         "version": "2.0.0",
         "date": "2026-10-08",
         "title": "Major Release: Modul Rekap Morbiditas & Prosedur Medis, SPM, Rekapitulasi Pasien Dinas TNI / POLRI",

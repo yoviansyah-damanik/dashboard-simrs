@@ -21,20 +21,20 @@ class ChangeLogTest extends TestCase
     }
 
     /**
-     * Memastikan GeneralHelper mengembalikan versi v2.0.0 dan data seluruh versi valid.
+     * Memastikan GeneralHelper mengembalikan versi v2.1.0 dan data seluruh versi valid.
      */
     public function test_general_helper_returns_version_2_0_0_and_changelogs(): void
     {
         $current = GeneralHelper::getVersion();
-        $this->assertEquals('v2.0.0', $current['version']);
+        $this->assertEquals('v2.1.0', $current['version']);
         $this->assertIsArray($current['changeLog']);
         $this->assertNotEmpty($current['changeLog']);
 
         $all = GeneralHelper::getAllVersions();
         $this->assertIsArray($all);
         $this->assertGreaterThanOrEqual(7, count($all));
-        $this->assertEquals('2.0.0', $all[0]['version']);
-        $this->assertEquals('major', $all[0]['type']);
+        $this->assertEquals('2.1.0', $all[0]['version']);
+        $this->assertEquals('minor', $all[0]['type']);
     }
 
     /**
@@ -48,7 +48,7 @@ class ChangeLogTest extends TestCase
         $response = $this->get('/changelog');
         $response->assertStatus(200);
         $response->assertSee('Catatan Rilis Aplikasi', false);
-        $response->assertSee('v2.0.0', false);
+        $response->assertSee('v2.1.0', false);
         $response->assertSee('Major Release', false);
     }
 
@@ -65,7 +65,7 @@ class ChangeLogTest extends TestCase
     }
 
     /**
-     * Memastikan menu sidebar dan badge memuat Catatan Rilis (v2.0.0).
+     * Memastikan menu sidebar dan badge memuat Catatan Rilis (v2.1.0).
      */
     public function test_sidebar_contains_changelog_menu(): void
     {
@@ -79,7 +79,7 @@ class ChangeLogTest extends TestCase
         $this->assertNotNull($lainnya, 'Grup menu Lainnya harus ada di sidebar.');
 
         $items = collect($lainnya['items']);
-        $changelogMenu = $items->firstWhere('title', 'Catatan Rilis (v2.0.0)');
+        $changelogMenu = $items->firstWhere('title', 'Catatan Rilis (v2.1.0)');
         $this->assertNotNull($changelogMenu, 'Menu Catatan Rilis harus terdaftar di Sidebar.');
         $this->assertEquals(route('changelog'), $changelogMenu['href']);
     }
@@ -93,10 +93,10 @@ class ChangeLogTest extends TestCase
         $this->actingAs($user);
 
         Livewire::test(ChangeLog::class)
-            ->assertSee('v2.0.0')
+            ->assertSee('v2.1.0')
             ->set('selectedType', 'major')
             ->assertSet('selectedType', 'major')
-            ->assertSee('v2.0.0')
+            ->assertSee('v2.1.0')
             ->set('search', 'ICD-9')
             ->assertSee('ICD-9')
             ->call('resetFilters')

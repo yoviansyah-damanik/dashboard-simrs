@@ -401,20 +401,42 @@
                 chart: null,
                 _updateHandler: null,
                 _initTimeout: null,
+                _resizeObserver: null,
+                _currentData: null,
+
                 init() {
-                    this.initChart({
-                        labels: JSON.parse(JSON.stringify(initialLabels)),
-                        datasets: JSON.parse(JSON.stringify(initialDatasets))
+                    this._currentData = {
+                        labels: JSON.parse(JSON.stringify(initialLabels || [])),
+                        datasets: JSON.parse(JSON.stringify(initialDatasets || []))
+                    };
+
+                    this._resizeObserver = new ResizeObserver((entries) => {
+                        for (let entry of entries) {
+                            if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+                                if (!this.chart || this.chart.width === 0 || this.chart.height === 0) {
+                                    this.initChart(this._currentData);
+                                } else {
+                                    try { this.chart.resize(); } catch (e) {}
+                                }
+                            }
+                        }
                     });
+
+                    if (this.$refs.chartContainer) {
+                        this._resizeObserver.observe(this.$refs.chartContainer);
+                    }
+
+                    this.initChart(this._currentData);
 
                     this._updateHandler = (event) => {
                         const payload = JSON.parse(JSON.stringify(event.detail));
                         if (!payload || !payload.labels) return;
+                        this._currentData = payload;
 
                         const canvas = this.$refs.chartContainer ? this.$refs.chartContainer.querySelector('canvas') : null;
                         const existingChart = canvas ? Chart.getChart(canvas) : null;
 
-                        if (existingChart && document.body.contains(canvas)) {
+                        if (existingChart && document.body.contains(canvas) && canvas.offsetWidth > 0 && canvas.offsetHeight > 0) {
                             try {
                                 existingChart.data.labels = payload.labels;
                                 existingChart.data.datasets = payload.datasets;
@@ -432,6 +454,10 @@
                 },
                 destroy() {
                     if (this._initTimeout) clearTimeout(this._initTimeout);
+                    if (this._resizeObserver) {
+                        this._resizeObserver.disconnect();
+                        this._resizeObserver = null;
+                    }
                     window.removeEventListener(`refreshChartData-${chartId}`, this._updateHandler);
                     if (this.chart) {
                         try { this.chart.destroy(); } catch (e) {}
@@ -439,9 +465,14 @@
                     }
                 },
                 initChart(data) {
+                    if (!data || !data.labels) return;
+                    this._currentData = data;
                     if (this._initTimeout) clearTimeout(this._initTimeout);
                     this._initTimeout = setTimeout(() => {
                         if (!this.$refs.chartContainer) return;
+                        if (this.$refs.chartContainer.offsetWidth === 0 && this.$refs.chartContainer.offsetHeight === 0) {
+                            return;
+                        }
                         let canvas = this.$refs.chartContainer.querySelector('canvas');
                         if (!canvas) {
                             canvas = document.createElement('canvas');
@@ -453,6 +484,10 @@
                             try { this.chart.destroy(); } catch (e) {}
                             this.chart = null;
                         }
+                        const existing = Chart.getChart(canvas);
+                        if (existing) {
+                            try { existing.destroy(); } catch (e) {}
+                        }
                         const ctx = canvas.getContext('2d');
                         if (!ctx) return;
                         try {
@@ -463,14 +498,14 @@
                                     datasets: (data.datasets || []).map(ds => ({ ...ds }))
                                 },
                                 options: {
-                                    scales: {
+                                    scales: chartType === 'doughnut' || chartType === 'pie' ? {} : {
                                         y: { beginAtZero: true },
                                         x: { beginAtZero: true },
                                     },
                                     indexAxis: barType,
                                     responsive: true,
                                     maintainAspectRatio: false,
-                                    animation: { duration: 500 }
+                                    animation: { duration: 400 }
                                 }
                             });
                         } catch (e) { console.error(`Chart init error [${chartId}]:`, e); }

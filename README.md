@@ -1,6 +1,6 @@
 # Dashboard SIMRS
 
-[![Latest Release](https://img.shields.io/badge/version-v2.0.0-10b981?style=for-the-badge&logo=git&logoColor=white)](https://github.com/yoviansyah-damanik/dashboard-simrs/releases/tag/v2.0.0)
+[![Latest Release](https://img.shields.io/badge/version-v2.1.0-10b981?style=for-the-badge&logo=git&logoColor=white)](https://github.com/yoviansyah-damanik/dashboard-simrs/releases/tag/v2.1.0)
 [![GitHub Release](https://img.shields.io/github/v/release/yoviansyah-damanik/dashboard-simrs?style=for-the-badge&color=2563eb)](https://github.com/yoviansyah-damanik/dashboard-simrs/releases)
 [![Laravel Version](https://img.shields.io/badge/Laravel-11.x-f43f5e?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
 [![Livewire Version](https://img.shields.io/badge/Livewire-3.x-fb7185?style=for-the-badge&logo=livewire&logoColor=white)](https://livewire.laravel.com)
@@ -81,6 +81,7 @@ Dashboard SIMRS menerapkan prinsip **[Semantic Versioning 2.0.0](https://semver.
 
 | Versi | Tanggal | Tipe Rilis | Sorotan Pembaruan | Rilis GitHub |
 |:---:|:---:|:---:|---|:---:|
+| **`v2.1.0`** | 2026-10-10 | `Minor Release` | Akumulasi Ralan (Poli + IGD), perbaikan grafik invisible, Rekap Diagnosa ICD-10 (Ralan/Ranap/IGD), Rekap Pasien Dinas IGD | [Release v2.1.0](https://github.com/yoviansyah-damanik/dashboard-simrs/releases/tag/v2.1.0) |
 | **`v2.0.0`** | 2026-10-08 | `Major Release` | Pemisahan Pasien Dinas TNI vs POLRI, Modul Rekap Morbiditas (ICD-10) & Tindakan (ICD-9-CM), SPM Rumah Sakit, Ekspor DomPDF terstandarisasi | [Release v2.0.0](https://github.com/yoviansyah-damanik/dashboard-simrs/releases/tag/v2.0.0) |
 | **`v1.5.0`** | 2026-09-15 | `Feature Update` | Matriks Indikator Penunjang (Lab, Rad, Farmasi), Integrasi Mutu RS (INM, IKP, PPI), Optimasi kueri analitik | [Release v1.5.0](https://github.com/yoviansyah-damanik/dashboard-simrs/releases/tag/v1.5.0) |
 | **`v1.4.0`** | 2026-08-20 | `Feature Update` | Modul Rekap Lab & Nilai Kritis, Rekap Radiologi, Jadwal Operasi (OK), Rekap Resep & Stok Farmasi | [Release v1.4.0](https://github.com/yoviansyah-damanik/dashboard-simrs/releases/tag/v1.4.0) |
@@ -181,4 +182,5 @@ php artisan serve
 | **GitHub** | [@yoviansyah-damanik](https://github.com/yoviansyah-damanik) |
 
 Untuk bantuan pengembangan lebih lanjut, pelaporan kendala, atau permintaan integrasi modul baru, silakan hubungi kontak di atas.
+
 

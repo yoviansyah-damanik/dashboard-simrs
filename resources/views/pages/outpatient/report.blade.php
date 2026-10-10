@@ -431,7 +431,7 @@
                             {{ count($this->chartPayload['trend']['labels']) }} Titik Waktu
                         </span>
                     </div>
-                    <div class="relative h-[280px] w-full">
+                    <div class="relative h-[280px] w-full" wire:ignore>
                         <canvas id="chartOutpatientTrend"></canvas>
                     </div>
                 </div>
@@ -449,7 +449,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="relative h-[280px] w-full flex items-center justify-center">
+                    <div class="relative h-[280px] w-full flex items-center justify-center" wire:ignore>
                         <canvas id="chartOutpatientPayer"></canvas>
                     </div>
                 </div>
@@ -470,7 +470,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="relative h-[270px] w-full">
+                    <div class="relative h-[270px] w-full" wire:ignore>
                         <canvas id="chartOutpatientPoly"></canvas>
                     </div>
                 </div>
@@ -488,7 +488,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="relative h-[270px] w-full">
+                    <div class="relative h-[270px] w-full" wire:ignore>
                         <canvas id="chartOutpatientAge"></canvas>
                     </div>
                 </div>
@@ -531,6 +531,15 @@
             <span>Rekap Pasien Dinas</span>
             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $activeTab === 'rekap_dinas' ? 'bg-purple-500/10 text-purple-700 dark:text-purple-300' : 'bg-gray-200 dark:bg-meta-4 text-gray-600 dark:text-gray-300' }}">
                 {{ $this->dinasBreakdown['summary']['total'] }}
+            </span>
+        </button>
+
+        <button type="button" wire:click="switchTab('rekap_diagnosa')"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer {{ $activeTab === 'rekap_diagnosa' ? 'bg-white dark:bg-boxdark text-rose-700 dark:text-rose-400 font-black shadow-sm ring-1 ring-black/5 dark:ring-white/10' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white font-semibold hover:bg-gray-200/50 dark:hover:bg-meta-4' }}">
+            <span class="icon-[solar--stethoscope-bold-duotone] text-base {{ $activeTab === 'rekap_diagnosa' ? 'text-rose-600 dark:text-rose-400' : '' }}"></span>
+            <span>Rekap Diagnosa Pasien</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $activeTab === 'rekap_diagnosa' ? 'bg-rose-500/10 text-rose-700 dark:text-rose-300' : 'bg-gray-200 dark:bg-meta-4 text-gray-600 dark:text-gray-300' }}">
+                {{ count($this->diagnosisBreakdown) }}
             </span>
         </button>
     </div>
@@ -1186,19 +1195,215 @@
         </div>
     @endif
 
+    {{-- TAB 5: REKAP DIAGNOSA PENYAKIT (ICD-10) --}}
+    @if ($activeTab === 'rekap_diagnosa')
+        <div class="bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm overflow-hidden">
+            <div class="px-6 py-5 border-b border-stroke dark:border-strokedark flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                        <span class="icon-[solar--stethoscope-bold-duotone] text-rose-600 dark:text-rose-400 text-lg"></span>
+                        Rekapitulasi Top Diagnosa Pasien Rawat Jalan (ICD-10)
+                    </h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Daftar diagnosa penyakit terbanyak tercatat pada SIMRS (Diagnosa Primer & Sekunder)
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold px-3 py-1 rounded-xl bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border border-rose-500/20">
+                        {{ count($this->diagnosisBreakdown) }} Kode Diagnosa Teratas
+                    </span>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50 dark:bg-meta-4/60 text-xs font-black text-gray-500 dark:text-gray-300 uppercase tracking-wider border-b border-stroke dark:border-strokedark">
+                            <th class="px-4 py-3.5 text-center w-12">No</th>
+                            <th class="px-4 py-3.5 text-center w-28">Kode ICD-10</th>
+                            <th class="px-4 py-3.5 text-left min-w-[240px]">Nama Penyakit / Diagnosa</th>
+                            <th class="px-4 py-3.5 text-center min-w-[120px]">Diagnosa Primer</th>
+                            <th class="px-4 py-3.5 text-center min-w-[120px]">Diagnosa Sekunder</th>
+                            <th class="px-4 py-3.5 text-center min-w-[120px]">Total Kasus</th>
+                            <th class="px-4 py-3.5 text-center min-w-[110px]">Proporsi (%)</th>
+                            <th class="px-4 py-3.5 text-center min-w-[130px]">Gender (L / P)</th>
+                            <th class="px-4 py-3.5 text-center min-w-[130px]">Status (Baru / Lama)</th>
+                            <th class="px-4 py-3.5 text-center min-w-[180px]">Penjamin (BPJS / Umum / Dinas)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-stroke dark:divide-strokedark">
+                        @php
+                            $diagTotalKasus = collect($this->diagnosisBreakdown)->sum('total');
+                            $sumPrimer = 0;
+                            $sumSekunder = 0;
+                            $sumTotal = 0;
+                            $sumPria = 0;
+                            $sumWanita = 0;
+                            $sumBaru = 0;
+                            $sumLama = 0;
+                            $sumBpjs = 0;
+                            $sumUmum = 0;
+                            $sumDinas = 0;
+                        @endphp
+                        @forelse ($this->diagnosisBreakdown as $idx => $diag)
+                            @php
+                                $sumPrimer += $diag['primer'];
+                                $sumSekunder += $diag['sekunder'];
+                                $sumTotal += $diag['total'];
+                                $sumPria += $diag['pria'];
+                                $sumWanita += $diag['wanita'];
+                                $sumBaru += $diag['baru'];
+                                $sumLama += $diag['lama'];
+                                $sumBpjs += $diag['bpjs'];
+                                $sumUmum += $diag['umum'];
+                                $sumDinas += $diag['dinas'];
+                                $proporsi = $diagTotalKasus > 0 ? round(($diag['total'] / $diagTotalKasus) * 100, 1) : 0;
+                            @endphp
+                            <tr class="hover:bg-gray-50/70 dark:hover:bg-meta-4/30 transition-colors">
+                                <td class="px-4 py-3.5 text-center text-xs font-semibold text-gray-400">{{ $idx + 1 }}</td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border border-rose-500/20 font-mono">
+                                        {{ $diag['kd_penyakit'] }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3.5">
+                                    <div class="font-bold text-gray-800 dark:text-white leading-snug">{{ $diag['nm_penyakit'] }}</div>
+                                </td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-black bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                                        {{ number_format($diag['primer']) }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+                                        {{ number_format($diag['sekunder']) }}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3.5 text-center font-black text-gray-900 dark:text-white">
+                                    {{ number_format($diag['total']) }}
+                                </td>
+                                <td class="px-4 py-3.5 text-center font-bold text-xs text-gray-500 dark:text-gray-400">
+                                    {{ $proporsi }}%
+                                </td>
+                                <td class="px-4 py-3.5 text-center text-xs">
+                                    <span class="text-blue-600 dark:text-blue-400 font-bold">{{ number_format($diag['pria']) }}</span>
+                                    <span class="text-gray-300 dark:text-gray-600 mx-1">/</span>
+                                    <span class="text-pink-600 dark:text-pink-400 font-bold">{{ number_format($diag['wanita']) }}</span>
+                                </td>
+                                <td class="px-4 py-3.5 text-center text-xs">
+                                    <span class="text-emerald-600 dark:text-emerald-400 font-bold">{{ number_format($diag['baru']) }}</span>
+                                    <span class="text-gray-300 dark:text-gray-600 mx-1">/</span>
+                                    <span class="text-gray-600 dark:text-gray-300 font-bold">{{ number_format($diag['lama']) }}</span>
+                                </td>
+                                <td class="px-4 py-3.5 text-center text-xs">
+                                    <span class="text-emerald-600 dark:text-emerald-400 font-bold">{{ number_format($diag['bpjs']) }}</span>
+                                    <span class="text-gray-300 dark:text-gray-600 mx-1">/</span>
+                                    <span class="text-amber-600 dark:text-amber-400 font-bold">{{ number_format($diag['umum']) }}</span>
+                                    <span class="text-gray-300 dark:text-gray-600 mx-1">/</span>
+                                    <span class="text-purple-600 dark:text-purple-400 font-bold">{{ number_format($diag['dinas']) }}</span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="10" class="px-6 py-12 text-center text-gray-400 dark:text-gray-500">
+                                    <div class="flex flex-col items-center justify-center gap-2">
+                                        <span class="icon-[solar--document-medicine-bold-duotone] text-4xl opacity-50"></span>
+                                        <span class="text-sm font-semibold">Tidak ada rekaman diagnosa pasien untuk filter ini</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                    @if (count($this->diagnosisBreakdown) > 0)
+                        <tfoot>
+                            <tr class="bg-gray-100 dark:bg-meta-4/80 font-black text-gray-800 dark:text-white border-t-2 border-stroke dark:border-strokedark text-xs">
+                                <td colspan="3" class="px-4 py-3.5 text-right uppercase tracking-wider">Total Terpilih:</td>
+                                <td class="px-4 py-3.5 text-center text-emerald-600 dark:text-emerald-400">{{ number_format($sumPrimer) }}</td>
+                                <td class="px-4 py-3.5 text-center text-amber-600 dark:text-amber-400">{{ number_format($sumSekunder) }}</td>
+                                <td class="px-4 py-3.5 text-center text-sm font-black">{{ number_format($sumTotal) }}</td>
+                                <td class="px-4 py-3.5 text-center">100%</td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <span class="text-blue-600 dark:text-blue-400">{{ number_format($sumPria) }}</span> /
+                                    <span class="text-pink-600 dark:text-pink-400">{{ number_format($sumWanita) }}</span>
+                                </td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <span class="text-emerald-600 dark:text-emerald-400">{{ number_format($sumBaru) }}</span> /
+                                    <span class="text-gray-600 dark:text-gray-300">{{ number_format($sumLama) }}</span>
+                                </td>
+                                <td class="px-4 py-3.5 text-center">
+                                    <span class="text-emerald-600 dark:text-emerald-400">{{ number_format($sumBpjs) }}</span> /
+                                    <span class="text-amber-600 dark:text-amber-400">{{ number_format($sumUmum) }}</span> /
+                                    <span class="text-purple-600 dark:text-purple-400">{{ number_format($sumDinas) }}</span>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    @endif
+                </table>
+            </div>
+        </div>
+    @endif
+
     @script
         <script>
-            Alpine.data('outpatientReportCharts', (chartPayload) => ({
+            Alpine.data('outpatientReportCharts', (initialPayload) => ({
                 trendChart: null,
                 payerChart: null,
                 polyChart: null,
                 ageChart: null,
+                currentData: initialPayload,
+                observers: [],
+                _updateListener: null,
                 init() {
+                    this.currentData = initialPayload;
                     this.$nextTick(() => {
-                        this.renderAll(chartPayload);
+                        this.renderAll(this.currentData);
+                        this.attachObservers();
+                    });
+
+                    this._updateListener = (e) => {
+                        const payload = e.detail?.payload || e.detail;
+                        if (payload) {
+                            this.currentData = payload;
+                            this.renderAll(payload);
+                        }
+                    };
+                    window.addEventListener('outpatient-charts-updated', this._updateListener);
+                },
+                attachObservers() {
+                    const ids = ['chartOutpatientTrend', 'chartOutpatientPayer', 'chartOutpatientPoly', 'chartOutpatientAge'];
+                    ids.forEach(id => {
+                        const canvas = document.getElementById(id);
+                        if (canvas && canvas.parentElement) {
+                            const ro = new ResizeObserver((entries) => {
+                                for (let entry of entries) {
+                                    if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
+                                        const chartMap = {
+                                            'chartOutpatientTrend': this.trendChart,
+                                            'chartOutpatientPayer': this.payerChart,
+                                            'chartOutpatientPoly': this.polyChart,
+                                            'chartOutpatientAge': this.ageChart,
+                                        };
+                                        const existing = chartMap[id];
+                                        if (existing) {
+                                            existing.resize();
+                                        } else if (this.currentData) {
+                                            this.renderAll(this.currentData);
+                                        }
+                                    }
+                                }
+                            });
+                            ro.observe(canvas.parentElement);
+                            this.observers.push(ro);
+                        }
                     });
                 },
                 destroy() {
+                    if (this._updateListener) {
+                        window.removeEventListener('outpatient-charts-updated', this._updateListener);
+                        this._updateListener = null;
+                    }
+                    this.observers.forEach(ro => ro.disconnect());
+                    this.observers = [];
                     this.destroyAll();
                 },
                 destroyAll() {

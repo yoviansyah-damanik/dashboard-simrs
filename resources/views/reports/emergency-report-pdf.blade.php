@@ -116,5 +116,61 @@
         </tbody>
     </table>
 
+    @if (!empty($dinasBreakdown['categories']))
+        <h4 style="margin: 14px 0 4px 0; font-size: 10px; color: #0f172a;">3. Rekapitulasi Pasien Dinas (TNI / POLRI) IGD</h4>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 8%; text-align: center;">No</th>
+                    <th style="width: 40%;">Kategori Personel</th>
+                    <th style="width: 14%; text-align: right;">TNI</th>
+                    <th style="width: 14%; text-align: right;">POLRI</th>
+                    <th style="width: 12%; text-align: right;">Ranap</th>
+                    <th style="width: 12%; text-align: right;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($dinasBreakdown['categories'] as $cat)
+                    <tr>
+                        <td style="text-align: center;">{{ $loop->iteration }}</td>
+                        <td><strong>{{ $cat['kategori'] }}</strong></td>
+                        <td style="text-align: right;">{{ number_format($cat['tni']) }}</td>
+                        <td style="text-align: right;">{{ number_format($cat['polri']) }}</td>
+                        <td style="text-align: right;">{{ number_format($cat['ranap']) }}</td>
+                        <td style="text-align: right; font-weight: bold;">{{ number_format($cat['total']) }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
+    @if (!empty($diagnosisBreakdown))
+        <h4 style="margin: 14px 0 4px 0; font-size: 10px; color: #0f172a;">4. Top 15 Diagnosa Penyakit Terbanyak (ICD-10) IGD</h4>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 6%; text-align: center;">Rank</th>
+                    <th style="width: 12%; text-align: center;">Kode ICD</th>
+                    <th style="width: 44%;">Nama Penyakit</th>
+                    <th style="width: 12%; text-align: right;">Primer</th>
+                    <th style="width: 12%; text-align: right;">Sekunder</th>
+                    <th style="width: 14%; text-align: right;">Total Kasus</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (array_slice($diagnosisBreakdown, 0, 15) as $diag)
+                    <tr>
+                        <td style="text-align: center;">{{ $diag['rank'] }}</td>
+                        <td style="text-align: center; font-weight: bold; color: #e11d48;">{{ $diag['kd_penyakit'] }}</td>
+                        <td>{{ $diag['nm_penyakit'] }}</td>
+                        <td style="text-align: right;">{{ number_format($diag['primer']) }}</td>
+                        <td style="text-align: right;">{{ number_format($diag['sekunder']) }}</td>
+                        <td style="text-align: right; font-weight: bold;">{{ number_format($diag['total_kasus']) }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
 </body>
 </html>

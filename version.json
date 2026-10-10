@@ -1,5 +1,16 @@
 [
     {
+        "version": "2.1.1",
+        "date": "2026-10-10",
+        "title": "Patch Release: Skill Rilis Versi & Penyelarasan Label Versi",
+        "badge": "Patch Release",
+        "type": "patch",
+        "changeLog": [
+            "Penambahan skill version-release agar setiap rilis wajib memuat label versi (badge/type) dan deskripsi (title + changeLog).",
+            "Judul menu Catatan Rilis pada sidebar kini dinamis mengikuti versi aktif dari version.json."
+        ]
+    },
+    {
         "version": "2.1.0",
         "date": "2026-10-10",
         "title": "Minor Release: Akumulasi Rawat Jalan, Perbaikan Grafik, Rekap Diagnosa & Pasien Dinas IGD",

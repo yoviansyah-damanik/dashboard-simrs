@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   release:
-    name: Create GitHub Release
+    name: Sync GitHub Releases
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -29,28 +29,9 @@ jobs:
           php-version: '8.2'
 
       # Membuat GitHub Release untuk setiap versi di version.json yang belum punya release
-      # (diperiksa berdasarkan keberadaan Release, bukan tag).
-      - name: Create Missing GitHub Releases
+      # Lengkap dengan tag, judul rilis, badge rilis, tanggal, dan changelog.
+      - name: Sync Missing GitHub Releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSIONS=$(php -r '$j=json_decode(file_get_contents("version.json"),true); foreach(array_reverse($j) as $e){echo $e["version"],"\n";}')
-          LATEST=$(php -r '$j=json_decode(file_get_contents("version.json"),true); echo $j[0]["version"];')
-          for V in $VERSIONS; do
-            TAG="v$V"
-            if gh release view "$TAG" >/dev/null 2>&1; then
-              echo "Release $TAG sudah ada."
-              continue
-            fi
-            php scripts/generate-release-notes.php "$V"
-            TITLE=$(php -r '$j=json_decode(file_get_contents("version.json"),true); foreach($j as $e){ if($e["version"]==$argv[1]){echo $e["title"];}}' "$V")
-            ARGS=()
-            if ! git rev-parse "$TAG" >/dev/null 2>&1 && ! git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
-              # Tag belum ada: arahkan ke commit yang pertama kali memuat versi ini
-              SHA=$(git log -S"\"version\": \"$V\"" --format=%H --reverse -- version.json | head -n 1)
-              ARGS+=(--target "${SHA:-$GITHUB_SHA}")
-            fi
-            LATEST_FLAG=""
-            [ "$V" = "$LATEST" ] && LATEST_FLAG="--latest" || LATEST_FLAG="--latest=false"
-            gh release create "$TAG" "${ARGS[@]}" --title "$TAG - $TITLE" --notes-file RELEASE_NOTES.md $LATEST_FLAG
-          done
+          php scripts/sync-github-releases.php

@@ -20,3 +20,6 @@ yarn-error.log
 /.idea
 /.vscode
 RELEASE_NOTES.md
+/.agents
+/.claude
+/.github

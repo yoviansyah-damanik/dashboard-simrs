@@ -1,5 +1,20 @@
 [
     {
+        "version": "2.2.0",
+        "date": "2026-10-12",
+        "title": "Minor Release: Filter Pasien Dinas Rekap Penyakit (ICD-10) & Tindakan (ICD-9), Perbaikan Ikon dan Peta Login",
+        "badge": "Minor Release",
+        "type": "minor",
+        "changeLog": [
+            "Penambahan filter Status Dinas (Semua Dinas TNI & POLRI, Personel TNI, Personel POLRI, Non-Dinas/Sipil) pada modul Rekapitulasi Data Penyakit (ICD-10).",
+            "Penambahan filter Status Dinas (Semua Dinas TNI & POLRI, Personel TNI, Personel POLRI, Non-Dinas/Sipil) pada modul Rekapitulasi Data Tindakan (ICD-9-CM).",
+            "Penambahan metrik ringkasan pasien dinas pada kartu KPI serta indikator badge status dinas pada modal drilldown rincian pasien ICD-10 dan ICD-9.",
+            "Penyelarasan parameter filter Status Pasien pada ekspor laporan PDF Rekapitulasi Penyakit dan Rekapitulasi Tindakan.",
+            "Perbaikan nama icon Lucide/Blade-solar invalid menjadi format Solar Iconify yang valid di seluruh modul tampilan antarmuka.",
+            "Penyempurnaan visualisasi peta riwayat login dengan koordinat acuan rumah sakit dan marker interaktif Leaflet pada profil pengguna."
+        ]
+    },
+    {
         "version": "2.1.2",
         "date": "2026-10-10",
         "title": "Patch Release: Otomatisasi GitHub Release untuk Setiap Versi",

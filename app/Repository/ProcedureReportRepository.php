@@ -127,7 +127,9 @@ class ProcedureReportRepository
             ->table('prosedur_pasien as pp')
             ->join('icd9 as i', 'pp.kode', '=', 'i.kode')
             ->join('reg_periksa as rp', 'pp.no_rawat', '=', 'rp.no_rawat')
-            ->join('pasien as ps', 'rp.no_rkm_medis', '=', 'ps.no_rkm_medis');
+            ->join('pasien as ps', 'rp.no_rkm_medis', '=', 'ps.no_rkm_medis')
+            ->leftJoin('pasien_tni as pt', 'ps.no_rkm_medis', '=', 'pt.no_rkm_medis')
+            ->leftJoin('pasien_polri as ppolri', 'ps.no_rkm_medis', '=', 'ppolri.no_rkm_medis');
 
         // Filter Status Registrasi: Jika Ralan, stts not in ('Batal', 'Belum')
         $query->where(function ($q) {
@@ -183,6 +185,23 @@ class ProcedureReportRepository
             });
         }
 
+        // Filter Pasien Dinas (TNI / POLRI murni dari relasi pasien_tni dan pasien_polri)
+        if (!empty($filters['dinas_filter']) && !in_array($filters['dinas_filter'], ['all', 'semua'])) {
+            if ($filters['dinas_filter'] === 'DINAS') {
+                $query->where(function ($q) {
+                    $q->whereNotNull('pt.no_rkm_medis')
+                      ->orWhereNotNull('ppolri.no_rkm_medis');
+                });
+            } elseif ($filters['dinas_filter'] === 'TNI') {
+                $query->whereNotNull('pt.no_rkm_medis');
+            } elseif ($filters['dinas_filter'] === 'POLRI') {
+                $query->whereNotNull('ppolri.no_rkm_medis');
+            } elseif ($filters['dinas_filter'] === 'NON_DINAS' || $filters['dinas_filter'] === 'UMUM') {
+                $query->whereNull('pt.no_rkm_medis')
+                      ->whereNull('ppolri.no_rkm_medis');
+            }
+        }
+
         // Filter Pencarian Teks (Kode atau Deskripsi)
         if (!empty($filters['search'])) {
             $search = trim($filters['search']);
@@ -214,7 +233,10 @@ class ProcedureReportRepository
             SUM(CASE WHEN rp.status_lanjut = 'Ralan' AND rp.kd_poli != 'IGDK' THEN 1 ELSE 0 END) as poli,
             SUM(CASE WHEN rp.kd_poli = 'IGDK' THEN 1 ELSE 0 END) as igd,
             SUM(CASE WHEN rp.status_lanjut = 'Ralan' THEN 1 ELSE 0 END) as ralan,
-            SUM(CASE WHEN rp.status_lanjut = 'Ranap' THEN 1 ELSE 0 END) as ranap
+            SUM(CASE WHEN rp.status_lanjut = 'Ranap' THEN 1 ELSE 0 END) as ranap,
+            SUM(CASE WHEN pt.no_rkm_medis IS NOT NULL OR ppolri.no_rkm_medis IS NOT NULL THEN 1 ELSE 0 END) as total_dinas,
+            SUM(CASE WHEN pt.no_rkm_medis IS NOT NULL THEN 1 ELSE 0 END) as total_tni,
+            SUM(CASE WHEN ppolri.no_rkm_medis IS NOT NULL THEN 1 ELSE 0 END) as total_polri
         ")->first();
 
         $totalTindakan = (int) ($stats->total_tindakan ?? 0);
@@ -231,6 +253,9 @@ class ProcedureReportRepository
             'igd' => (int) ($stats->igd ?? 0),
             'ralan' => (int) ($stats->ralan ?? 0),
             'ranap' => (int) ($stats->ranap ?? 0),
+            'total_dinas' => (int) ($stats->total_dinas ?? 0),
+            'total_tni' => (int) ($stats->total_tni ?? 0),
+            'total_polri' => (int) ($stats->total_polri ?? 0),
         ];
     }
 
@@ -412,7 +437,8 @@ class ProcedureReportRepository
                 pj.png_jawab,
                 pp.prioritas,
                 pp.status as status_prosedur,
-                TIMESTAMPDIFF(YEAR, ps.tgl_lahir, rp.tgl_registrasi) as umur_tahun
+                TIMESTAMPDIFF(YEAR, ps.tgl_lahir, rp.tgl_registrasi) as umur_tahun,
+                CASE WHEN pt.no_rkm_medis IS NOT NULL THEN 'TNI' WHEN ppolri.no_rkm_medis IS NOT NULL THEN 'POLRI' ELSE 'UMUM' END as status_dinas
             ")
             ->orderByDesc('rp.tgl_registrasi')
             ->limit($limit)
@@ -437,6 +463,7 @@ class ProcedureReportRepository
                 'dokter' => $r->nm_dokter ?? '-',
                 'penjamin' => $r->png_jawab ?? 'Umum',
                 'prioritas' => (int) $r->prioritas === 1 ? 'Utama' : 'Sekunder',
+                'status_dinas' => $r->status_dinas ?? 'UMUM',
             ];
         }
 

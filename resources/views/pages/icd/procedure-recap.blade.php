@@ -29,7 +29,7 @@
                     <button type="button" wire:click="exportPdf" wire:loading.attr="disabled"
                         class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-900/30 transition-all cursor-pointer">
                         <span wire:loading.remove wire:target="exportPdf" class="icon-[solar--file-download-bold-duotone] text-base"></span>
-                        <span wire:loading wire:target="exportPdf" class="icon-[solar--spinner-line-duotone] animate-spin text-base"></span>
+                        <span wire:loading wire:target="exportPdf" class="icon-[solar--restart-line-duotone] animate-spin text-base"></span>
                         <span>Cetak PDF Data</span>
                     </button>
                     <button type="button" wire:click="resetFilters"
@@ -63,7 +63,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
                 <!-- Periode: Bulan/Tahun atau Rentang Tanggal -->
                 @if ($periodType === 'month')
                     <div>
@@ -136,6 +136,18 @@
                         <option value="P">Perempuan</option>
                     </select>
                 </div>
+
+                <!-- Status Pasien Dinas -->
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-gray-400 mb-1">Status Dinas</label>
+                    <select wire:model.live="dinasFilter" class="w-full text-xs font-bold rounded-xl border-stroke dark:border-strokedark bg-gray-50 dark:bg-meta-4 text-gray-800 dark:text-white focus:border-cyan-500 focus:ring-cyan-500 py-2 px-3">
+                        <option value="all">Semua Pasien</option>
+                        <option value="DINAS">Semua Dinas (TNI & POLRI)</option>
+                        <option value="TNI">Personel TNI</option>
+                        <option value="POLRI">Personel POLRI</option>
+                        <option value="NON_DINAS">Sipil / Non-Dinas</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Pencarian Teks Kode ICD-9 atau Deskripsi -->
@@ -172,9 +184,12 @@
                         {{ number_format($summary['total_tindakan'] ?? 0) }}
                     </div>
                 </div>
-                <div class="text-[10px] font-bold text-gray-400 mt-2 flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
-                    <span>Prosedur Terinput</span>
+                <div class="text-[10px] font-bold text-gray-400 mt-2 flex items-center justify-between">
+                    <span class="flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+                        <span>Dinas: <strong class="text-cyan-600 dark:text-cyan-400">{{ number_format($summary['total_dinas'] ?? 0) }}</strong></span>
+                    </span>
+                    <span class="text-[9px] text-gray-400">TNI: {{ $summary['total_tni'] ?? 0 }} | POLRI: {{ $summary['total_polri'] ?? 0 }}</span>
                 </div>
             </div>
 
@@ -558,6 +573,7 @@
                                         <th class="py-2.5 px-3">Layanan / Unit</th>
                                         <th class="py-2.5 px-3">DPJP / Dokter</th>
                                         <th class="py-2.5 px-2 text-center">Prioritas</th>
+                                        <th class="py-2.5 px-2 text-center">Dinas</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-stroke/50 dark:divide-strokedark/50">
@@ -602,10 +618,15 @@
                                                     {{ $p['prioritas'] }}
                                                 </span>
                                             </td>
+                                            <td class="py-2.5 px-2 text-center">
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold {{ ($p['status_dinas'] ?? '') === 'TNI' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25' : (($p['status_dinas'] ?? '') === 'POLRI' ? 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/25' : 'bg-gray-100 dark:bg-meta-4 text-gray-500') }}">
+                                                    {{ $p['status_dinas'] ?? 'UMUM' }}
+                                                </span>
+                                            </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="8" class="text-center py-6 text-gray-400 text-xs">
+                                            <td colspan="9" class="text-center py-6 text-gray-400 text-xs">
                                                 Tidak ditemukan riwayat pasien untuk tindakan ini.
                                             </td>
                                         </tr>

@@ -37,7 +37,7 @@
                         <span>Cetak PDF Data</span>
                     </span>
                     <span wire:loading wire:target="exportPdf" class="flex items-center gap-1.5">
-                        <span class="icon-[solar--spinner-linear] animate-spin text-sm"></span>
+                        <span class="icon-[solar--restart-linear] animate-spin text-sm"></span>
                         <span>Menyiapkan PDF...</span>
                     </span>
                 </button>
@@ -86,7 +86,7 @@
                             Akan Habis
                         </span>
                         <span class="p-1.5 bg-white/20 rounded-lg text-white">
-                            <span class="icon-[solar--bell-ringing-bold-duotone] text-base"></span>
+                            <span class="icon-[solar--bell-bing-bold-duotone] text-base"></span>
                         </span>
                     </div>
                     <div class="text-2xl font-black text-white">

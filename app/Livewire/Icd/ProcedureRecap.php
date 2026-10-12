@@ -23,6 +23,7 @@ class ProcedureRecap extends Component
     public $priority = 'all'; // 'all', '1' (utama), '2' (sekunder)
     public $gender = 'all'; // 'all', 'L', 'P'
     public $category = 'all'; // Kategori bab ICD-9
+    public $dinasFilter = 'all'; // 'all', 'DINAS', 'TNI', 'POLRI', 'NON_DINAS'
     public $search = '';
     public $perPage = 25;
 
@@ -42,6 +43,7 @@ class ProcedureRecap extends Component
         'priority' => ['except' => 'all'],
         'gender' => ['except' => 'all'],
         'category' => ['except' => 'all'],
+        'dinasFilter' => ['except' => 'all'],
         'search' => ['except' => ''],
     ];
 
@@ -55,7 +57,7 @@ class ProcedureRecap extends Component
 
     public function updated($propertyName)
     {
-        if (in_array($propertyName, ['year', 'month', 'periodType', 'startDate', 'endDate', 'serviceStatus', 'priority', 'gender', 'category', 'search', 'perPage'])) {
+        if (in_array($propertyName, ['year', 'month', 'periodType', 'startDate', 'endDate', 'serviceStatus', 'priority', 'gender', 'category', 'dinasFilter', 'search', 'perPage'])) {
             $this->resetPage();
             $this->dispatch('procedure-chart-updated', top: $this->topProcedures);
         }
@@ -109,6 +111,7 @@ class ProcedureRecap extends Component
         $this->priority = 'all';
         $this->gender = 'all';
         $this->category = 'all';
+        $this->dinasFilter = 'all';
         $this->search = '';
         $this->resetPage();
         $this->dispatch('procedure-chart-updated', top: $this->topProcedures);
@@ -134,6 +137,7 @@ class ProcedureRecap extends Component
             'priority' => $this->priority,
             'gender' => $this->gender,
             'category' => $this->category,
+            'dinas_filter' => $this->dinasFilter,
             'search' => $this->search,
         ];
 
@@ -230,12 +234,22 @@ class ProcedureRecap extends Component
         ];
         $genderLabel = $genderLabels[$this->gender] ?? 'Semua';
 
+        $dinasLabels = [
+            'all' => 'Semua Pasien (Dinas & Umum)',
+            'DINAS' => 'Semua Personel Dinas (TNI & POLRI)',
+            'TNI' => 'Personel TNI',
+            'POLRI' => 'Personel POLRI',
+            'NON_DINAS' => 'Pasien Non-Dinas (Sipil / Umum)',
+        ];
+        $dinasLabel = $dinasLabels[$this->dinasFilter] ?? 'Semua Pasien';
+
         $filterInfo = [
             'period' => $periodLabel,
             'service_status' => $serviceLabel,
             'category' => $categoryLabel,
             'priority' => $priorityLabel,
             'gender' => $genderLabel,
+            'dinas' => $dinasLabel,
         ];
 
         $pdf = Pdf::loadView('reports.procedure-recap-pdf', [

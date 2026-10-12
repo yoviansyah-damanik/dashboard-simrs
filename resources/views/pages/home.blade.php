@@ -940,7 +940,7 @@
                             class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 dark:bg-meta-4/60 dark:hover:bg-meta-4 text-gray-700 dark:text-gray-300 transition"
                             title="Perbarui Data Mutu">
                             <span wire:loading.remove wire:target="refreshMutuCache" class="icon-[solar--refresh-circle-bold-duotone] text-base"></span>
-                            <span wire:loading wire:target="refreshMutuCache" class="icon-[solar--spinner-line-duotone] animate-spin text-base"></span>
+                            <span wire:loading wire:target="refreshMutuCache" class="icon-[solar--restart-line-duotone] animate-spin text-base"></span>
                             <span class="text-[11px]">Sync Mutu</span>
                         </button>
                         <a href="{{ route('mutu.inm') }}" wire:navigate class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition">

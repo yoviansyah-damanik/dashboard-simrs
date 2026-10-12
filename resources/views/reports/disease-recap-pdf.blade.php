@@ -120,8 +120,12 @@
             <tr>
                 <td class="filter-label">Jenis Kelamin:</td>
                 <td class="filter-value">{{ $filterInfo['gender_label'] }}</td>
+                <td class="filter-label">Status Pasien:</td>
+                <td class="filter-value">{{ $filterInfo['dinas_label'] ?? 'Semua Pasien' }}</td>
+            </tr>
+            <tr>
                 <td class="filter-label">Kategori Kasus:</td>
-                <td class="filter-value">{{ $filterInfo['special_case_label'] ?? 'Semua Kasus' }}</td>
+                <td class="filter-value" colspan="3">{{ $filterInfo['special_case_label'] ?? 'Semua Kasus' }}</td>
             </tr>
             <tr>
                 <td class="filter-label">Waktu Cetak:</td>

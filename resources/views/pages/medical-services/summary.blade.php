@@ -50,7 +50,7 @@
             <x-button color="default" icon="i-ph-file-pdf" wire:click="exportPdf" wire:loading.attr="disabled">
                 <span wire:loading.remove wire:target="exportPdf">Cetak PDF Data</span>
                 <span wire:loading wire:target="exportPdf" class="flex items-center gap-1.5">
-                    <span class="icon-[solar--spinner-linear] animate-spin text-sm"></span>
+                    <span class="icon-[solar--restart-linear] animate-spin text-sm"></span>
                     <span>Menyiapkan PDF...</span>
                 </span>
             </x-button>
@@ -103,7 +103,7 @@
             <div class="flex items-center justify-between mb-3">
                 <span class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Gawat Darurat (IGD)</span>
                 <span class="p-2 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-xl">
-                    <span class="icon-[solar--ambulance-bold-duotone] text-lg"></span>
+                    <span class="icon-[solar--siren-rounded-bold-duotone] text-lg"></span>
                 </span>
             </div>
             <div class="text-3xl font-black text-gray-800 dark:text-white tracking-tight mb-1">
@@ -262,7 +262,7 @@
                 </button>
                 <button type="button" wire:click="setTab('igd')"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-all duration-200 {{ $activeTab === 'igd' ? 'bg-rose-600 text-white shadow-sm font-bold ring-1 ring-rose-500/20' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white font-medium' }}">
-                    <span class="icon-[solar--ambulance-bold-duotone] text-sm"></span>
+                    <span class="icon-[solar--siren-rounded-bold-duotone] text-sm"></span>
                     <span>Gawat Darurat (IGD)</span>
                 </button>
                 <button type="button" wire:click="setTab('ranap')"
@@ -467,7 +467,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="p-4 bg-gray-50 dark:bg-meta-4/30 rounded-2xl border border-stroke/40 dark:border-strokedark/40">
                     <h5 class="text-xs font-bold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                        <span class="icon-[solar--door-open-bold-duotone] text-amber-600 text-base"></span>
+                        <span class="icon-[solar--exit-bold-duotone] text-amber-600 text-base"></span>
                         <span>Status Pulang & Indikator Ranap</span>
                     </h5>
                     <div class="space-y-3">

@@ -120,8 +120,12 @@
             <tr>
                 <td class="filter-label">Jenis Kelamin:</td>
                 <td class="filter-value">{{ $filterInfo['gender'] ?? 'Semua Gender' }}</td>
+                <td class="filter-label">Status Pasien:</td>
+                <td class="filter-value">{{ $filterInfo['dinas'] ?? 'Semua Pasien' }}</td>
+            </tr>
+            <tr>
                 <td class="filter-label">Tanggal Cetak:</td>
-                <td class="filter-value">{{ date('d/m/Y H:i:s') }}</td>
+                <td class="filter-value" colspan="3">{{ date('d/m/Y H:i:s') }}</td>
             </tr>
         </table>
     </div>

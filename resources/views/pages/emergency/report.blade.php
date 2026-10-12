@@ -115,7 +115,7 @@
             <x-button color="default" icon="i-ph-file-pdf" wire:click="exportPdf" wire:loading.attr="disabled">
                 <span wire:loading.remove wire:target="exportPdf">Cetak PDF Data</span>
                 <span wire:loading wire:target="exportPdf" class="flex items-center gap-1.5">
-                    <span class="icon-[solar--spinner-linear] animate-spin text-sm"></span>
+                    <span class="icon-[solar--restart-linear] animate-spin text-sm"></span>
                     <span>Menyiapkan PDF...</span>
                 </span>
             </x-button>
@@ -131,7 +131,7 @@
             <div class="flex items-center justify-between mb-3">
                 <span class="text-xs font-black uppercase tracking-wider text-rose-200">Total Pasien IGD</span>
                 <span class="p-2 bg-white/15 rounded-xl text-white backdrop-blur-sm">
-                    <span class="icon-[solar--ambulance-bold-duotone] text-lg"></span>
+                    <span class="icon-[solar--siren-rounded-bold-duotone] text-lg"></span>
                 </span>
             </div>
             <div class="text-3xl font-black tracking-tight mb-1">

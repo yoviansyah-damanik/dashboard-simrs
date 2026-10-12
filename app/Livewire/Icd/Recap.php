@@ -24,6 +24,7 @@ class Recap extends Component
     public $caseType = 'all'; // 'all', 'Baru', 'Lama'
     public $gender = 'all'; // 'all', 'L', 'P'
     public $specialCase = 'all'; // 'all', 'isk', 'ispa', 'tb', 'diare', 'dbd', dll
+    public $dinasFilter = 'all'; // 'all', 'DINAS', 'TNI', 'POLRI', 'NON_DINAS'
     public $search = '';
     public $perPage = 25;
 
@@ -44,6 +45,7 @@ class Recap extends Component
         'caseType' => ['except' => 'all'],
         'gender' => ['except' => 'all'],
         'specialCase' => ['except' => 'all'],
+        'dinasFilter' => ['except' => 'all'],
         'search' => ['except' => ''],
     ];
 
@@ -57,7 +59,7 @@ class Recap extends Component
 
     public function updated($propertyName)
     {
-        if (in_array($propertyName, ['year', 'month', 'periodType', 'startDate', 'endDate', 'serviceStatus', 'priority', 'caseType', 'gender', 'specialCase', 'search', 'perPage'])) {
+        if (in_array($propertyName, ['year', 'month', 'periodType', 'startDate', 'endDate', 'serviceStatus', 'priority', 'caseType', 'gender', 'specialCase', 'dinasFilter', 'search', 'perPage'])) {
             $this->resetPage();
             $this->dispatch('disease-chart-updated', top: $this->topDiseases);
         }
@@ -112,6 +114,7 @@ class Recap extends Component
         $this->caseType = 'all';
         $this->gender = 'all';
         $this->specialCase = 'all';
+        $this->dinasFilter = 'all';
         $this->search = '';
         $this->resetPage();
     }
@@ -137,6 +140,7 @@ class Recap extends Component
             'case_type' => $this->caseType,
             'gender' => $this->gender,
             'special_case' => $this->specialCase,
+            'dinas_filter' => $this->dinasFilter,
             'search' => $this->search,
         ];
 
@@ -232,6 +236,14 @@ class Recap extends Component
             ? $specialCaseMap[$this->specialCase]['label']
             : 'Semua Kasus (Umum)';
 
+        $dinasMap = [
+            'all' => 'Semua Pasien (Dinas & Umum)',
+            'DINAS' => 'Semua Personel Dinas (TNI & POLRI)',
+            'TNI' => 'Personel TNI',
+            'POLRI' => 'Personel POLRI',
+            'NON_DINAS' => 'Pasien Non-Dinas (Sipil / Umum)',
+        ];
+
         $filterInfo = [
             'period_label' => $periodLabel,
             'service_label' => $serviceMap[$this->serviceStatus] ?? 'Semua',
@@ -239,6 +251,7 @@ class Recap extends Component
             'case_label' => $caseMap[$this->caseType] ?? 'Semua',
             'gender_label' => $genderMap[$this->gender] ?? 'Semua',
             'special_case_label' => $specialCaseLabel,
+            'dinas_label' => $dinasMap[$this->dinasFilter] ?? 'Semua Pasien',
         ];
 
         $pdf = Pdf::loadView('reports.disease-recap-pdf', [

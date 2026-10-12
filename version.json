@@ -1,5 +1,19 @@
 [
     {
+        "version": "2.3.0",
+        "date": "2026-10-12",
+        "title": "Minor Release: Modul Pengaturan Sistem, Filter Master Data SIMRS, Diagnostik Koneksi & Pemeliharaan",
+        "badge": "Minor Release",
+        "type": "minor",
+        "changeLog": [
+            "Implementasi modul Pengaturan Sistem (/pengaturan) menggantikan status under maintenance dengan antarmuka interaktif 4 tab.",
+            "Manajemen filter entitas master data SIMRS Khanza (Poliklinik, Penjab/Asuransi, Dokter DPJP, Kamar, dan Bangsal nonaktif) secara real-time.",
+            "Integrasi kartu diagnostik status koneksi basis data SIMRS Khanza (read-only) dilengkapi informasi host, versi DBMS, dan latensi ping kueri.",
+            "Visualisasi profil instansi rumah sakit dan pratinjau logo resmi dari tabel setting SIMRS Khanza untuk kop surat laporan PDF.",
+            "Utilitas pemeliharaan performa sistem: pembersihan cache aplikasi/kueri/tampilan Blade serta opsi reset konfigurasi ke setelan default."
+        ]
+    },
+    {
         "version": "2.2.0",
         "date": "2026-10-12",
         "title": "Minor Release: Filter Pasien Dinas Rekap Penyakit (ICD-10) & Tindakan (ICD-9), Perbaikan Ikon dan Peta Login",

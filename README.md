@@ -1,6 +1,6 @@
 # Dashboard SIMRS
 
-[![Latest Release](https://img.shields.io/badge/version-v2.2.0-10b981?style=for-the-badge&logo=git&logoColor=white)](https://github.com/yoviansyah-damanik/dashboard-simrs/releases/tag/v2.2.0)
+[![Latest Release](https://img.shields.io/badge/version-v2.3.0-10b981?style=for-the-badge&logo=git&logoColor=white)](https://github.com/yoviansyah-damanik/dashboard-simrs/releases/tag/v2.3.0)
 [![GitHub Release](https://img.shields.io/github/v/release/yoviansyah-damanik/dashboard-simrs?style=for-the-badge&color=2563eb)](https://github.com/yoviansyah-damanik/dashboard-simrs/releases)
 [![Laravel Version](https://img.shields.io/badge/Laravel-11.x-f43f5e?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
 [![Livewire Version](https://img.shields.io/badge/Livewire-3.x-fb7185?style=for-the-badge&logo=livewire&logoColor=white)](https://livewire.laravel.com)

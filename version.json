@@ -11,7 +11,8 @@
             "Integrasi kartu diagnostik status koneksi basis data SIMRS Khanza (read-only) dilengkapi informasi host, versi DBMS, dan latensi ping kueri.",
             "Visualisasi profil instansi rumah sakit dan pratinjau logo resmi dari tabel setting SIMRS Khanza untuk kop surat laporan PDF.",
             "Utilitas pemeliharaan performa sistem: pembersihan cache aplikasi/kueri/tampilan Blade serta opsi reset konfigurasi ke setelan default.",
-            "Penambahan filter Kasus Khusus Penyakit Jantung (I05-I09, I11, I20-I25, I26-I28, I30-I52) pada modul Rekapitulasi Data Penyakit & Morbiditas (ICD-10)."
+            "Penambahan filter Kasus Khusus Penyakit Jantung (I05-I09, I11, I20-I25, I26-I28, I30-I52) pada modul Rekapitulasi Data Penyakit & Morbiditas (ICD-10).",
+            "Penyajian tabel Rekapitulasi Kasus Penyakit Per Bulan (Januari s.d. Desember) saat filter periode menampilkan Semua Bulan (Tahunan), lengkap dengan rincian layanan Poli/IGD/Ranap, klasifikasi kasus, gender, dan ekspor PDF."
         ]
     },
     {

@@ -182,7 +182,84 @@
         </tr>
     </table>
 
+    @if (!empty($isYearly) && !empty($monthlyBreakdown))
+        <!-- Rekapitulasi Kasus Penyakit Per Bulan (Khusus Periode Tahunan) -->
+        <div style="font-size: 8.5pt; font-weight: bold; color: #0f172a; margin-top: 10px; margin-bottom: 4px; text-transform: uppercase;">
+            Rekapitulasi Kasus Penyakit Per Bulan (Tahun {{ $monthlyBreakdown['year'] }})
+        </div>
+        <table class="data-table" style="margin-bottom: 12px;">
+            <thead>
+                <tr>
+                    <th rowspan="2" style="width: 14%;">Bulan</th>
+                    <th colspan="2">Kasus</th>
+                    <th colspan="2">Diagnosa</th>
+                    <th colspan="2">Gender</th>
+                    <th colspan="4">Klasifikasi Layanan</th>
+                    <th rowspan="2" style="width: 8%;">Penyakit Unik</th>
+                    <th rowspan="2" style="width: 8%;">Pasien Unik</th>
+                    <th rowspan="2" style="width: 9%;">Total Kasus</th>
+                    <th rowspan="2" style="width: 5%;">%</th>
+                </tr>
+                <tr class="subheader">
+                    <th style="width: 5%;">Baru</th>
+                    <th style="width: 5%;">Lama</th>
+                    <th style="width: 5%;">Primer</th>
+                    <th style="width: 5%;">Sekunder</th>
+                    <th style="width: 5%;">L</th>
+                    <th style="width: 5%;">P</th>
+                    <th style="width: 6%;">Poli</th>
+                    <th style="width: 6%;">IGD</th>
+                    <th style="width: 7%; background-color: #065f46;">Total Ralan</th>
+                    <th style="width: 6%;">Ranap</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($monthlyBreakdown['months'] as $m => $item)
+                    <tr>
+                        <td style="text-align: left; font-weight: bold;">{{ $item['nama_bulan'] }}</td>
+                        <td class="text-right">{{ number_format($item['kasus_baru']) }}</td>
+                        <td class="text-right">{{ number_format($item['kasus_lama']) }}</td>
+                        <td class="text-right">{{ number_format($item['primer']) }}</td>
+                        <td class="text-right">{{ number_format($item['sekunder']) }}</td>
+                        <td class="text-right">{{ number_format($item['pria']) }}</td>
+                        <td class="text-right">{{ number_format($item['wanita']) }}</td>
+                        <td class="text-right">{{ number_format($item['poli']) }}</td>
+                        <td class="text-right">{{ number_format($item['igd']) }}</td>
+                        <td class="text-right font-bold" style="background-color: #f0fdf4;">{{ number_format($item['ralan']) }}</td>
+                        <td class="text-right">{{ number_format($item['ranap']) }}</td>
+                        <td class="text-center">{{ number_format($item['total_penyakit_unik']) }}</td>
+                        <td class="text-center">{{ number_format($item['total_pasien_unik']) }}</td>
+                        <td class="text-right font-bold">{{ number_format($item['total_kasus']) }}</td>
+                        <td class="text-right font-mono">{{ $item['persentase'] }}%</td>
+                    </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr style="background-color: #f1f5f9; font-weight: bold;">
+                    <td style="text-align: left;">TOTAL SETAHUN</td>
+                    <td class="text-right">{{ number_format($monthlyBreakdown['totals']['kasus_baru']) }}</td>
+                    <td class="text-right">{{ number_format($monthlyBreakdown['totals']['kasus_lama']) }}</td>
+                    <td class="text-right">{{ number_format($monthlyBreakdown['totals']['primer']) }}</td>
+                    <td class="text-right">{{ number_format($monthlyBreakdown['totals']['sekunder']) }}</td>
+                    <td class="text-right">{{ number_format($monthlyBreakdown['totals']['pria']) }}</td>
+                    <td class="text-right">{{ number_format($monthlyBreakdown['totals']['wanita']) }}</td>
+                    <td class="text-right">{{ number_format($monthlyBreakdown['totals']['poli']) }}</td>
+                    <td class="text-right">{{ number_format($monthlyBreakdown['totals']['igd']) }}</td>
+                    <td class="text-right font-bold" style="background-color: #dcfce7;">{{ number_format($monthlyBreakdown['totals']['ralan']) }}</td>
+                    <td class="text-right">{{ number_format($monthlyBreakdown['totals']['ranap']) }}</td>
+                    <td class="text-center">{{ number_format($monthlyBreakdown['totals']['total_penyakit_unik']) }}</td>
+                    <td class="text-center">{{ number_format($monthlyBreakdown['totals']['total_pasien_unik']) }}</td>
+                    <td class="text-right font-bold">{{ number_format($monthlyBreakdown['totals']['total_kasus']) }}</td>
+                    <td class="text-right font-mono">100%</td>
+                </tr>
+            </tfoot>
+        </table>
+    @endif
+
     <!-- Tabel Data Morbiditas Penyakit -->
+    <div style="font-size: 8.5pt; font-weight: bold; color: #0f172a; margin-top: 10px; margin-bottom: 4px; text-transform: uppercase;">
+        Daftar Morbiditas Pasien (Top {{ count($diseases) }} Terbanyak)
+    </div>
     <table class="data-table">
         <thead>
             <tr>

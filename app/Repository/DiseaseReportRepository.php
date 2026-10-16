@@ -14,6 +14,7 @@ interface DiseaseReportInterface
     public static function getDiseasesPaginated(array $filters, int $perPage = 25): LengthAwarePaginator;
     public static function getAllDiseasesForExport(array $filters, int $limit = 100): array;
     public static function getPatientDrilldown(string $diseaseCode, array $filters, int $limit = 50): array;
+    public static function getMonthlyBreakdown(array $filters): array;
 }
 
 class DiseaseReportRepository implements DiseaseReportInterface
@@ -494,5 +495,142 @@ class DiseaseReportRepository implements DiseaseReportInterface
         }
 
         return $items;
+    }
+
+    /**
+     * Mengambil rekapitulasi data penyakit per bulan (Januari s.d. Desember) untuk periode tahunan
+     */
+    public static function getMonthlyBreakdown(array $filters): array
+    {
+        $monthlyFilters = $filters;
+        $monthlyFilters['month'] = null;
+        unset($monthlyFilters['start_date'], $monthlyFilters['end_date']);
+
+        $query = self::buildBaseQuery($monthlyFilters);
+
+        $rows = $query->selectRaw("
+            MONTH(rp.tgl_registrasi) as bulan,
+            COUNT(*) as total_kasus,
+            COUNT(DISTINCT dp.kd_penyakit) as total_penyakit_unik,
+            COUNT(DISTINCT rp.no_rkm_medis) as total_pasien_unik,
+            SUM(CASE WHEN dp.status_penyakit = 'Baru' THEN 1 ELSE 0 END) as kasus_baru,
+            SUM(CASE WHEN dp.status_penyakit = 'Lama' THEN 1 ELSE 0 END) as kasus_lama,
+            SUM(CASE WHEN dp.prioritas = 1 THEN 1 ELSE 0 END) as primer,
+            SUM(CASE WHEN dp.prioritas > 1 THEN 1 ELSE 0 END) as sekunder,
+            SUM(CASE WHEN ps.jk = 'L' THEN 1 ELSE 0 END) as pria,
+            SUM(CASE WHEN ps.jk = 'P' THEN 1 ELSE 0 END) as wanita,
+            SUM(CASE WHEN rp.status_lanjut = 'Ralan' AND rp.kd_poli != 'IGDK' THEN 1 ELSE 0 END) as poli,
+            SUM(CASE WHEN rp.kd_poli = 'IGDK' THEN 1 ELSE 0 END) as igd,
+            SUM(CASE WHEN rp.status_lanjut = 'Ralan' THEN 1 ELSE 0 END) as ralan,
+            SUM(CASE WHEN rp.status_lanjut = 'Ranap' THEN 1 ELSE 0 END) as ranap,
+            SUM(CASE WHEN pt.no_rkm_medis IS NOT NULL OR pp.no_rkm_medis IS NOT NULL THEN 1 ELSE 0 END) as total_dinas,
+            SUM(CASE WHEN pt.no_rkm_medis IS NOT NULL THEN 1 ELSE 0 END) as total_tni,
+            SUM(CASE WHEN pp.no_rkm_medis IS NOT NULL THEN 1 ELSE 0 END) as total_polri,
+            SUM(CASE WHEN pt.no_rkm_medis IS NULL AND pp.no_rkm_medis IS NULL THEN 1 ELSE 0 END) as total_umum
+        ")
+        ->groupBy('bulan')
+        ->orderBy('bulan')
+        ->get()
+        ->keyBy('bulan');
+
+        $monthNames = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        $months = [];
+        $totals = [
+            'total_kasus' => 0,
+            'kasus_baru' => 0,
+            'kasus_lama' => 0,
+            'primer' => 0,
+            'sekunder' => 0,
+            'pria' => 0,
+            'wanita' => 0,
+            'poli' => 0,
+            'igd' => 0,
+            'ralan' => 0,
+            'ranap' => 0,
+            'total_dinas' => 0,
+            'total_tni' => 0,
+            'total_polri' => 0,
+            'total_umum' => 0,
+        ];
+
+        $yearTotal = $rows->sum('total_kasus') ?: 1;
+
+        for ($m = 1; $m <= 12; $m++) {
+            $row = $rows->get($m);
+            $totalKasus = (int) ($row->total_kasus ?? 0);
+            $kasusBaru = (int) ($row->kasus_baru ?? 0);
+            $kasusLama = (int) ($row->kasus_lama ?? 0);
+            $primer = (int) ($row->primer ?? 0);
+            $sekunder = (int) ($row->sekunder ?? 0);
+            $pria = (int) ($row->pria ?? 0);
+            $wanita = (int) ($row->wanita ?? 0);
+            $poli = (int) ($row->poli ?? 0);
+            $igd = (int) ($row->igd ?? 0);
+            $ralan = (int) ($row->ralan ?? 0);
+            $ranap = (int) ($row->ranap ?? 0);
+            $totalDinas = (int) ($row->total_dinas ?? 0);
+            $totalTni = (int) ($row->total_tni ?? 0);
+            $totalPolri = (int) ($row->total_polri ?? 0);
+            $totalUmum = (int) ($row->total_umum ?? 0);
+            $penyakitUnik = (int) ($row->total_penyakit_unik ?? 0);
+            $pasienUnik = (int) ($row->total_pasien_unik ?? 0);
+
+            $months[$m] = [
+                'bulan' => $m,
+                'nama_bulan' => $monthNames[$m],
+                'short_bulan' => substr($monthNames[$m], 0, 3),
+                'total_kasus' => $totalKasus,
+                'total_penyakit_unik' => $penyakitUnik,
+                'total_pasien_unik' => $pasienUnik,
+                'kasus_baru' => $kasusBaru,
+                'kasus_lama' => $kasusLama,
+                'primer' => $primer,
+                'sekunder' => $sekunder,
+                'pria' => $pria,
+                'wanita' => $wanita,
+                'poli' => $poli,
+                'igd' => $igd,
+                'ralan' => $ralan,
+                'ranap' => $ranap,
+                'total_dinas' => $totalDinas,
+                'total_tni' => $totalTni,
+                'total_polri' => $totalPolri,
+                'total_umum' => $totalUmum,
+                'persentase' => round(($totalKasus / $yearTotal) * 100, 1),
+            ];
+
+            $totals['total_kasus'] += $totalKasus;
+            $totals['kasus_baru'] += $kasusBaru;
+            $totals['kasus_lama'] += $kasusLama;
+            $totals['primer'] += $primer;
+            $totals['sekunder'] += $sekunder;
+            $totals['pria'] += $pria;
+            $totals['wanita'] += $wanita;
+            $totals['poli'] += $poli;
+            $totals['igd'] += $igd;
+            $totals['ralan'] += $ralan;
+            $totals['ranap'] += $ranap;
+            $totals['total_dinas'] += $totalDinas;
+            $totals['total_tni'] += $totalTni;
+            $totals['total_polri'] += $totalPolri;
+            $totals['total_umum'] += $totalUmum;
+        }
+
+        // Ambil data unik tahunan sebenarnya dari getSummary
+        $yearSummary = self::getSummary($monthlyFilters);
+        $totals['total_penyakit_unik'] = $yearSummary['total_penyakit_unik'];
+        $totals['total_pasien_unik'] = $yearSummary['total_pasien_unik'];
+        $totals['avg_kasus_per_bulan'] = round($totals['total_kasus'] / 12, 1);
+
+        return [
+            'year' => (int) ($filters['year'] ?? date('Y')),
+            'months' => $months,
+            'totals' => $totals,
+        ];
     }
 }

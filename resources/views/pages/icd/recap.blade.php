@@ -445,6 +445,210 @@
             </div>
         </div>
 
+        {{-- 4.5 Rekapitulasi Data Penyakit Per Bulan (Khusus Periode Tahunan / Semua Bulan) --}}
+        @if ($this->isYearly && !empty($this->monthlyBreakdown))
+            @php $mb = $this->monthlyBreakdown; @endphp
+            <div class="bg-white dark:bg-boxdark rounded-[2.5rem] border border-stroke dark:border-strokedark shadow-sm overflow-hidden animate-in fade-in duration-300">
+                <div class="p-6 sm:p-7 border-b border-stroke/70 dark:border-strokedark/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0">
+                            <span class="icon-[solar--calendar-date-bold-duotone]"></span>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-black text-gray-800 dark:text-white uppercase tracking-tight">
+                                Rekapitulasi Data Penyakit Per Bulan
+                            </h3>
+                            <p class="text-xs text-gray-400 mt-0.5">
+                                Distribusi morbiditas penyakit, klasifikasi kasus, gender, dan jenis pelayanan per bulan Tahun {{ $year }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            <span class="icon-[solar--clipboard-list-bold-duotone] text-sm"></span>
+                            <span>Total: {{ number_format($mb['totals']['total_kasus']) }} Kasus</span>
+                        </span>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                            <span class="icon-[solar--chart-square-bold-duotone] text-sm"></span>
+                            <span>Rata-rata: {{ number_format($mb['totals']['avg_kasus_per_bulan'], 1) }} Kasus / Bulan</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-gray-50/90 dark:bg-meta-4/60 text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-300 border-b border-stroke dark:border-strokedark">
+                                <th rowspan="2" class="py-3.5 px-4 text-left w-36 align-bottom">Bulan</th>
+                                <th colspan="2" class="py-2 px-3 text-center border-l border-stroke dark:border-strokedark">Kasus</th>
+                                <th colspan="2" class="py-2 px-3 text-center border-l border-stroke dark:border-strokedark">Prioritas</th>
+                                <th colspan="2" class="py-2 px-3 text-center border-l border-stroke dark:border-strokedark">Gender</th>
+                                <th colspan="4" class="py-2 px-3 text-center border-l border-stroke dark:border-strokedark">Klasifikasi Pelayanan</th>
+                                <th colspan="3" class="py-2 px-3 text-center border-l border-stroke dark:border-strokedark">Pasien Dinas</th>
+                                <th rowspan="2" class="py-3.5 px-3 text-center align-bottom border-l border-stroke dark:border-strokedark" title="Jumlah Penyakit / Kode ICD-10 Unik">Penyakit Unik</th>
+                                <th rowspan="2" class="py-3.5 px-3 text-center align-bottom border-l border-stroke dark:border-strokedark" title="Jumlah Pasien Unik">Pasien Unik</th>
+                                <th rowspan="2" class="py-3.5 px-4 text-center align-bottom border-l border-stroke dark:border-strokedark">Total Kasus</th>
+                                <th rowspan="2" class="py-3.5 px-3 text-center align-bottom border-l border-stroke dark:border-strokedark">%</th>
+                                <th rowspan="2" class="py-3.5 px-3 text-center align-bottom border-l border-stroke dark:border-strokedark w-24">Aksi</th>
+                            </tr>
+                            <tr class="bg-gray-50/90 dark:bg-meta-4/60 text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-300 border-b border-stroke dark:border-strokedark">
+                                <th class="py-2 px-2.5 text-right border-l border-stroke dark:border-strokedark text-emerald-600 dark:text-emerald-400">Baru</th>
+                                <th class="py-2 px-2.5 text-right text-blue-600 dark:text-blue-400">Lama</th>
+                                <th class="py-2 px-2.5 text-right border-l border-stroke dark:border-strokedark text-amber-600 dark:text-amber-400">Primer</th>
+                                <th class="py-2 px-2.5 text-right text-purple-600 dark:text-purple-400">Sekunder</th>
+                                <th class="py-2 px-2.5 text-right border-l border-stroke dark:border-strokedark text-blue-500">L</th>
+                                <th class="py-2 px-2.5 text-right text-pink-500">P</th>
+                                <th class="py-2 px-2.5 text-right border-l border-stroke dark:border-strokedark text-emerald-600 dark:text-emerald-400">Poli</th>
+                                <th class="py-2 px-2.5 text-right text-rose-600 dark:text-rose-400">IGD</th>
+                                <th class="py-2 px-2.5 text-right bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-extrabold">Total Ralan</th>
+                                <th class="py-2 px-2.5 text-right text-blue-600 dark:text-blue-400">Ranap</th>
+                                <th class="py-2 px-2 text-right border-l border-stroke dark:border-strokedark">TNI</th>
+                                <th class="py-2 px-2 text-right">POLRI</th>
+                                <th class="py-2 px-2 text-right">Non-Dinas</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 font-medium">
+                            @foreach ($mb['months'] as $m => $item)
+                                <tr class="hover:bg-gray-50/70 dark:hover:bg-meta-4/20 transition-colors {{ $item['total_kasus'] > 0 ? '' : 'opacity-60' }}">
+                                    <td class="py-3 px-4 font-bold text-gray-800 dark:text-white">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-6 h-6 rounded-lg bg-gray-100 dark:bg-meta-4 text-[11px] font-mono font-black text-gray-500 dark:text-gray-400 flex items-center justify-center">
+                                                {{ str_pad($m, 2, '0', STR_PAD_LEFT) }}
+                                            </span>
+                                            <span class="font-bold">{{ $item['nama_bulan'] }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-2.5 text-right border-l border-stroke/60 dark:border-strokedark/60 text-emerald-600 dark:text-emerald-400 font-bold">
+                                        {{ number_format($item['kasus_baru']) }}
+                                    </td>
+                                    <td class="py-3 px-2.5 text-right text-blue-600 dark:text-blue-400 font-bold">
+                                        {{ number_format($item['kasus_lama']) }}
+                                    </td>
+                                    <td class="py-3 px-2.5 text-right border-l border-stroke/60 dark:border-strokedark/60 font-semibold text-gray-700 dark:text-gray-300">
+                                        {{ number_format($item['primer']) }}
+                                    </td>
+                                    <td class="py-3 px-2.5 text-right font-semibold text-gray-700 dark:text-gray-300">
+                                        {{ number_format($item['sekunder']) }}
+                                    </td>
+                                    <td class="py-3 px-2.5 text-right border-l border-stroke/60 dark:border-strokedark/60 text-blue-600 font-semibold">
+                                        {{ number_format($item['pria']) }}
+                                    </td>
+                                    <td class="py-3 px-2.5 text-right text-pink-600 font-semibold">
+                                        {{ number_format($item['wanita']) }}
+                                    </td>
+                                    <td class="py-3 px-2.5 text-right border-l border-stroke/60 dark:border-strokedark/60 text-emerald-600 dark:text-emerald-400 font-semibold">
+                                        {{ number_format($item['poli']) }}
+                                    </td>
+                                    <td class="py-3 px-2.5 text-right text-rose-600 dark:text-rose-400 font-semibold">
+                                        {{ number_format($item['igd']) }}
+                                    </td>
+                                    <td class="py-3 px-2.5 text-right bg-emerald-500/5 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-black">
+                                        {{ number_format($item['ralan']) }}
+                                    </td>
+                                    <td class="py-3 px-2.5 text-right text-blue-600 dark:text-blue-400 font-semibold">
+                                        {{ number_format($item['ranap']) }}
+                                    </td>
+                                    <td class="py-3 px-2 text-right border-l border-stroke/60 dark:border-strokedark/60 text-gray-700 dark:text-gray-300">
+                                        {{ number_format($item['total_tni']) }}
+                                    </td>
+                                    <td class="py-3 px-2 text-right text-gray-700 dark:text-gray-300">
+                                        {{ number_format($item['total_polri']) }}
+                                    </td>
+                                    <td class="py-3 px-2 text-right text-gray-700 dark:text-gray-300">
+                                        {{ number_format($item['total_umum']) }}
+                                    </td>
+                                    <td class="py-3 px-3 text-center border-l border-stroke/60 dark:border-strokedark/60 font-semibold text-gray-700 dark:text-gray-300">
+                                        {{ number_format($item['total_penyakit_unik']) }}
+                                    </td>
+                                    <td class="py-3 px-3 text-center border-l border-stroke/60 dark:border-strokedark/60 font-semibold text-gray-700 dark:text-gray-300">
+                                        {{ number_format($item['total_pasien_unik']) }}
+                                    </td>
+                                    <td class="py-3 px-4 text-center border-l border-stroke/60 dark:border-strokedark/60">
+                                        <span class="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                                            {{ number_format($item['total_kasus']) }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3 text-center border-l border-stroke/60 dark:border-strokedark/60 font-mono text-[11px] text-gray-500 dark:text-gray-400">
+                                        {{ $item['persentase'] }}%
+                                    </td>
+                                    <td class="py-3 px-3 text-center border-l border-stroke/60 dark:border-strokedark/60">
+                                        <button type="button" wire:click="selectMonth({{ $m }})"
+                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition cursor-pointer"
+                                            title="Filter Morbiditas untuk Bulan {{ $item['nama_bulan'] }}">
+                                            <span class="icon-[solar--filter-bold-duotone] text-xs"></span>
+                                            <span>Pilih</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                        <tfoot>
+                            <tr class="bg-gray-100/80 dark:bg-meta-4/80 font-black text-gray-800 dark:text-white border-t-2 border-stroke dark:border-strokedark">
+                                <td class="py-3.5 px-4 uppercase tracking-wider text-[11px]">
+                                    Total Setahun
+                                </td>
+                                <td class="py-3.5 px-2.5 text-right border-l border-stroke dark:border-strokedark text-emerald-600 dark:text-emerald-400">
+                                    {{ number_format($mb['totals']['kasus_baru']) }}
+                                </td>
+                                <td class="py-3.5 px-2.5 text-right text-blue-600 dark:text-blue-400">
+                                    {{ number_format($mb['totals']['kasus_lama']) }}
+                                </td>
+                                <td class="py-3.5 px-2.5 text-right border-l border-stroke dark:border-strokedark">
+                                    {{ number_format($mb['totals']['primer']) }}
+                                </td>
+                                <td class="py-3.5 px-2.5 text-right">
+                                    {{ number_format($mb['totals']['sekunder']) }}
+                                </td>
+                                <td class="py-3.5 px-2.5 text-right border-l border-stroke dark:border-strokedark text-blue-600">
+                                    {{ number_format($mb['totals']['pria']) }}
+                                </td>
+                                <td class="py-3.5 px-2.5 text-right text-pink-600">
+                                    {{ number_format($mb['totals']['wanita']) }}
+                                </td>
+                                <td class="py-3.5 px-2.5 text-right border-l border-stroke dark:border-strokedark text-emerald-600 dark:text-emerald-400">
+                                    {{ number_format($mb['totals']['poli']) }}
+                                </td>
+                                <td class="py-3.5 px-2.5 text-right text-rose-600 dark:text-rose-400">
+                                    {{ number_format($mb['totals']['igd']) }}
+                                </td>
+                                <td class="py-3.5 px-2.5 text-right bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-black">
+                                    {{ number_format($mb['totals']['ralan']) }}
+                                </td>
+                                <td class="py-3.5 px-2.5 text-right text-blue-600 dark:text-blue-400">
+                                    {{ number_format($mb['totals']['ranap']) }}
+                                </td>
+                                <td class="py-3.5 px-2 text-right border-l border-stroke dark:border-strokedark">
+                                    {{ number_format($mb['totals']['total_tni']) }}
+                                </td>
+                                <td class="py-3.5 px-2 text-right">
+                                    {{ number_format($mb['totals']['total_polri']) }}
+                                </td>
+                                <td class="py-3.5 px-2 text-right">
+                                    {{ number_format($mb['totals']['total_umum']) }}
+                                </td>
+                                <td class="py-3.5 px-3 text-center border-l border-stroke dark:border-strokedark font-mono">
+                                    {{ number_format($mb['totals']['total_penyakit_unik']) }}
+                                </td>
+                                <td class="py-3.5 px-3 text-center border-l border-stroke dark:border-strokedark font-mono">
+                                    {{ number_format($mb['totals']['total_pasien_unik']) }}
+                                </td>
+                                <td class="py-3.5 px-4 text-center border-l border-stroke dark:border-strokedark text-sm text-emerald-600 dark:text-emerald-400 font-black">
+                                    {{ number_format($mb['totals']['total_kasus']) }}
+                                </td>
+                                <td class="py-3.5 px-3 text-center border-l border-stroke dark:border-strokedark text-[11px] font-mono">
+                                    100%
+                                </td>
+                                <td class="py-3.5 px-3 text-center border-l border-stroke dark:border-strokedark text-[10px] text-gray-400">
+                                    -
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        @endif
+
         <!-- 5. Tabel Morbiditas Lengkap -->
         <div class="bg-white dark:bg-boxdark rounded-[2.5rem] border border-stroke dark:border-strokedark shadow-sm overflow-hidden">
             <div class="p-6 sm:p-7 border-b border-stroke/70 dark:border-strokedark/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

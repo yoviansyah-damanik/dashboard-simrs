@@ -167,6 +167,29 @@ class Recap extends Component
         return DiseaseReportRepository::getTopDiseases($this->filters, 10);
     }
 
+    #[Computed]
+    public function isYearly(): bool
+    {
+        return $this->periodType === 'month' && empty($this->month);
+    }
+
+    #[Computed]
+    public function monthlyBreakdown(): array
+    {
+        if (!$this->isYearly) {
+            return [];
+        }
+
+        return DiseaseReportRepository::getMonthlyBreakdown($this->filters);
+    }
+
+    public function selectMonth(int $month)
+    {
+        $this->month = $month;
+        $this->resetPage();
+        $this->dispatch('disease-chart-updated', top: $this->topDiseases);
+    }
+
     public function openDetail(string $code, string $name)
     {
         $this->selectedDiseaseCode = $code;
@@ -254,12 +277,17 @@ class Recap extends Component
             'dinas_label' => $dinasMap[$this->dinasFilter] ?? 'Semua Pasien',
         ];
 
+        $isYearly = $this->isYearly;
+        $monthlyBreakdown = $this->monthlyBreakdown;
+
         $pdf = Pdf::loadView('reports.disease-recap-pdf', [
             'profile' => $profile,
             'summary' => $summary,
             'diseases' => $exportData['items'],
             'total_all' => $exportData['total_all'],
             'filterInfo' => $filterInfo,
+            'isYearly' => $isYearly,
+            'monthlyBreakdown' => $monthlyBreakdown,
         ]);
 
         $pdf->setPaper('a4', 'portrait');

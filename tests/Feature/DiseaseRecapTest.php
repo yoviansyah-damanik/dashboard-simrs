@@ -188,4 +188,56 @@ class DiseaseRecapTest extends TestCase
             ->assertSet('periodType', 'month')
             ->assertDispatched('disease-chart-updated');
     }
+
+    /**
+     * Memastikan DiseaseReportRepository::getMonthlyBreakdown mengembalikan 12 bulan dan agregasi data lengkap.
+     */
+    public function test_monthly_breakdown_repository_computes_twelve_months_and_totals(): void
+    {
+        $breakdown = DiseaseReportRepository::getMonthlyBreakdown([
+            'year' => (int) date('Y'),
+        ]);
+
+        $this->assertArrayHasKey('months', $breakdown);
+        $this->assertArrayHasKey('totals', $breakdown);
+        $this->assertCount(12, $breakdown['months']);
+
+        $firstMonth = $breakdown['months'][1];
+        $this->assertEquals('Januari', $firstMonth['nama_bulan']);
+        $this->assertArrayHasKey('poli', $firstMonth);
+        $this->assertArrayHasKey('igd', $firstMonth);
+        $this->assertArrayHasKey('ralan', $firstMonth);
+        $this->assertArrayHasKey('ranap', $firstMonth);
+        $this->assertArrayHasKey('kasus_baru', $firstMonth);
+        $this->assertArrayHasKey('kasus_lama', $firstMonth);
+        $this->assertArrayHasKey('total_kasus', $firstMonth);
+
+        $totals = $breakdown['totals'];
+        $this->assertArrayHasKey('total_kasus', $totals);
+        $this->assertArrayHasKey('avg_kasus_per_bulan', $totals);
+        $this->assertArrayHasKey('poli', $totals);
+        $this->assertArrayHasKey('igd', $totals);
+        $this->assertArrayHasKey('ralan', $totals);
+        $this->assertArrayHasKey('ranap', $totals);
+    }
+
+    /**
+     * Memastikan mode tahunan (semua bulan) merender tabel rekapitulasi data penyakit per bulan.
+     */
+    public function test_yearly_mode_renders_monthly_breakdown_table(): void
+    {
+        $user = $this->getAuthUser();
+        $this->actingAs($user);
+
+        Livewire::test(Recap::class)
+            ->set('periodType', 'month')
+            ->set('month', '')
+            ->assertSet('isYearly', true)
+            ->assertSee('Rekapitulasi Data Penyakit Per Bulan', false)
+            ->assertSee('Total Setahun', false)
+            ->call('selectMonth', 3)
+            ->assertSet('month', 3)
+            ->assertSet('isYearly', false)
+            ->assertDontSee('Rekapitulasi Data Penyakit Per Bulan', false);
+    }
 }

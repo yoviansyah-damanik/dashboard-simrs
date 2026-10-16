@@ -152,7 +152,10 @@ class DiseaseRecapTest extends TestCase
         $this->assertArrayHasKey('ispa', $specialCases);
         $this->assertArrayHasKey('tb', $specialCases);
         $this->assertArrayHasKey('dbd', $specialCases);
+        $this->assertArrayHasKey('jantung', $specialCases);
         $this->assertContains('N39.0%', $specialCases['isk']['patterns']);
+        $this->assertContains('I20%', $specialCases['jantung']['patterns']);
+        $this->assertContains('I50%', $specialCases['jantung']['patterns']);
 
         $user = $this->getAuthUser();
         $this->actingAs($user);
@@ -161,6 +164,9 @@ class DiseaseRecapTest extends TestCase
             ->set('specialCase', 'isk')
             ->assertSee('Infeksi Saluran Kemih', false)
             ->assertSet('specialCase', 'isk')
+            ->set('specialCase', 'jantung')
+            ->assertSee('Penyakit Jantung', false)
+            ->assertSet('specialCase', 'jantung')
             ->set('specialCase', 'all')
             ->assertSet('specialCase', 'all');
     }

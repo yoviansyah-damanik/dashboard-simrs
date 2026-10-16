@@ -5,9 +5,10 @@ Dokumentasi modul pelaporan morbiditas dan 10/20 besar pola penyakit pasien SIMR
 ---
 
 ## 1. Fitur Utama
-- **Filter Fleksibel**: Pemilihan periode (Bulan/Tahun atau Rentang Tanggal), Status Rawat (Semua / Poli / IGD / Ralan / Ranap), Kategori Kasus Khusus (ISK, ISPA, TBC, Diare, DBD, Tifoid, Hipertensi, DM, Dispepsia, IDO), Prioritas Diagnosa (Primer / Sekunder), Jenis Kasus (Baru / Lama), Jenis Kelamin (L / P), serta Pencarian teks (Kode ICD-10 & Nama Penyakit).
+- **Filter Fleksibel**: Pemilihan periode (Bulan/Tahun atau Rentang Tanggal), Status Rawat (Semua / Poli / IGD / Ralan / Ranap), Kategori Kasus Khusus (ISK, ISPA, TBC, Diare, DBD, Tifoid, Jantung, Hipertensi, DM, Dispepsia, IDO), Prioritas Diagnosa (Primer / Sekunder), Jenis Kasus (Baru / Lama), Jenis Kelamin (L / P), serta Pencarian teks (Kode ICD-10 & Nama Penyakit).
 - **Kasus Khusus & Surveilans Klinis**: Pengelompokan kode ICD-10 resmi Kemenkes:
   - *Infeksi Saluran Kemih (ISK)*: `N39.0`, `N30` (Sistitis), `N10-N12` (Pielonefritis), `N34` (Uretritis), `T83.5` (CAUTI), `O23` (ISK Kehamilan).
+  - *Penyakit Jantung*: `I05-I09` (Rematik), `I11` (HHD), `I20-I25` (PJK / Iskemik / AMI), `I26-I28` (Pulmonal), `I30-I38` (Katup & Perikard), `I40-I43` (Kardiomiopati), `I44-I49` (Aritmia), `I50-I52` (Gagal Jantung / Decompensatio Cordis).
   - *Kasus Surveilans Lainnya*: ISPA/Pneumonia (`J00-J22`), TBC (`A15-A19`), Diare/GEA (`A00-A09`, `K52.9`), DBD (`A90`, `A91`), Tifoid (`A01`), Hipertensi (`I10-I15`), DM (`E10-E14`), Dispepsia/Gastritis (`K29`, `K30`), IDO (`T81.4`).
 - **Executive KPI Cards**: Total Kasus Terinput, Penyakit Unik, Pasien Unik, Kasus Baru vs Lama, Diagnosa Primer vs Sekunder, dan Demografi Gender + breakdown instalasi (Poli, IGD, Ranap).
 - **Grafik Interaktif Real-Time**: Bar chart *10 Besar Penyakit Terbanyak* sinkron dengan Livewire via event `disease-chart-updated`, mendukung 3 mode tampilan: **Bertumpuk (Stacked)**, **Berdampingan (Grouped)**, dan **Total Kasus**, dilengkapi tooltip rincian gender & kasus baru/lama.

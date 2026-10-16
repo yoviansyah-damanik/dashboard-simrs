@@ -60,6 +60,21 @@ class DiseaseReportRepository implements DiseaseReportInterface
             'patterns' => ['A01%'],
             'description' => 'A01.0 - A01.4 (Typhoid & Paratyphoid Fever)',
         ],
+        'jantung' => [
+            'label' => 'Penyakit Jantung',
+            'short_label' => 'Jantung',
+            'patterns' => [
+                'I05%', 'I06%', 'I07%', 'I08%', 'I09%',
+                'I11%',
+                'I20%', 'I21%', 'I22%', 'I23%', 'I24%', 'I25%',
+                'I26%', 'I27%', 'I28%',
+                'I30%', 'I31%', 'I32%', 'I33%', 'I34%', 'I35%', 'I36%', 'I37%', 'I38%',
+                'I40%', 'I41%', 'I42%', 'I43%',
+                'I44%', 'I45%', 'I46%', 'I47%', 'I48%', 'I49%',
+                'I50%', 'I51%', 'I52%',
+            ],
+            'description' => 'I20-I25 (PJK/Iskemik), I50 (Gagal Jantung), I11 (HHD), I44-I49 (Aritmia), I05-I09, I30-I43',
+        ],
         'hipertensi' => [
             'label' => 'Hipertensi',
             'short_label' => 'Hipertensi',

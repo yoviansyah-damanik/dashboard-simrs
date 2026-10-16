@@ -122,6 +122,7 @@
                             <option value="tifoid">Demam Tifoid</option>
                         </optgroup>
                         <optgroup label="Penyakit Kronis & Bedah">
+                            <option value="jantung">Penyakit Jantung</option>
                             <option value="hipertensi">Hipertensi</option>
                             <option value="dm">Diabetes Melitus (DM)</option>
                             <option value="dispepsia">Dispepsia & Gastritis</option>

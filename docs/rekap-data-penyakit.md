@@ -16,7 +16,17 @@ Dokumentasi modul pelaporan morbiditas dan 10/20 besar pola penyakit pasien SIMR
 - **Rekapitulasi Kasus Per Bulan (Tahunan)**: Menampilkan tabel rincian bulanan (Januari s.d. Desember) saat filter periode memilih *Semua Bulan (Setahun)*, mencakup rincian Kasus Baru/Lama, Diagnosa Primer/Sekunder, Gender L/P, Layanan (Poli, IGD, Total Ralan, Ranap), Kelompok Dinas (TNI, POLRI, Non-Dinas), Penyakit & Pasien Unik, Total Kasus, Persentase, serta tombol pintas pemilihan bulan.
 - **Pemisahan Ralan (Poli & IGD)**: Setiap penampilan data rawat jalan dipisahkan menjadi Poliklinik (`kd_poli != 'IGDK'`) dan Gawat Darurat (`kd_poli = 'IGDK'`), serta menampilkan data keduanya.
 - **Modal Drilldown Kasus Pasien**: Rincian kunjungan pasien per penyakit (No. RM, Nama, Umur, JK, Tgl Rawat, DPJP, Poliklinik/Ruangan, Penjamin) dengan modifier class `!mt-0` dan badge layanan Poli/IGD/Ranap.
-- **Cetak PDF Data Server-side**: Ekspor PDF data resmi menggunakan DomPDF (`disease-recap-pdf.blade.php`) dengan kop surat formal rumah sakit dan kolom rincian Poli/IGD/Ranap.
+- **Tab Data Kunjungan & Pengunjung Unik**: Navigasi 3 tab data (*1. Morbiditas Penyakit*, *2. Data Kunjungan Pasien*, *3. Data Pengunjung Unik*) terintegrasi dengan pagination dan filter aktif.
+- **Mode Sensor Privasi (Data Masking)**: Toggle proteksi kerahasiaan data medis yang secara otomatis menyamarkan 3 digit belakang No. RM (`054***`) dan huruf tengah nama pasien per kata (`Y********H R****I`) baik di tampilan web maupun modal drilldown.
+- **Cetak PDF Data Server-side dengan Opsi Sensor**: Ekspor PDF formal berbasis DomPDF untuk Rekapitulasi Morbiditas, Data Kunjungan (`disease-visits-pdf`), Data Pengunjung (`disease-visitors-pdf`), dan Rincian Pasien Diagnosa Spesifik (`disease-drilldown-pdf`) dengan opsi pilihan cetak *Mode Sensor Privasi* vs *Tanpa Sensor (Data Lengkap)*.
+- **Ekspor Spreadsheet Excel (.xlsx)**: Ekspor dataset lengkap ke berkas Microsoft Excel (.xlsx) menggunakan `PhpSpreadsheet` native dengan layout dan styling tabel formal (header bergaya emerald/teal, borders, auto-width, text wrapping, format teks RM) untuk Morbiditas Penyakit, Data Kunjungan, Data Pengunjung, serta Rincian Pasien Diagnosa Spesifik dengan opsi Mode Sensor atau Tanpa Sensor.
+- **Modul Matriks 12 Bulan & Pertumbuhan MoM Growth Penyakit**: Tab ke-4 (*Matriks 12 Bulan & MoM Growth*) menyajikan analisis komparasi tren bulanan rumah sakit:
+  - *Laju Pertumbuhan Tiap Bulan (Monthly MoM Growth %)*: Menghitung dan menyajikan persentase laju pertumbuhan kasus naik/turun (`▲ +xx%` / `▼ -xx%`) di setiap bulannya (Februari s.d. Desember) terhadap bulan sebelumnya.
+  - *Pengalih Mode Tampilan Sel*: Kontrol switch tampilan sel matriks (1. *Kasus & % Growth*, 2. *Hanya % Growth*, 3. *Hanya Kasus*).
+  - *Kartu KPI MoM*: Laju pertumbuhan Total Kasus, Kasus Baru, Poliklinik (Poli), Gawat Darurat (IGD), dan Rawat Inap (Ranap) terhadap bulan komparasi acuan.
+  - *Deteksi Lonjakan Kasus (Surge Alert)*: Indikator peringatan dini diagnosa penyakit dengan lonjakan kasus tertinggi (&ge; 35% dan pertambahan &ge; 15 pasien).
+  - *4 Sub-View Analisis*: Penyakit (Top ICD-10 dengan pivot 12 bulan & laju MoM per bulan), Poliklinik & IGD (pemisahan Poli dan IGD eksplisit dengan laju MoM per bulan), Dokter DPJP (laju MoM per bulan), serta Tren Bulanan Rumah Sakit (pertumbuhan MoM per bulan untuk Kasus Baru, Kasus Lama, Poli, IGD, Ranap, dan Total).
+  - *Ekspor MoM PDF & Excel*: Template cetak PDF landscape (`disease-mom-pdf.blade.php`) dan workbook Excel multi-sheet terstruktur (Sheet Penyakit, Tren RS, Poli & IGD, Dokter DPJP).
 
 ---
 

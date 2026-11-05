@@ -102,6 +102,26 @@ return [
             ]) : [],
         ],
 
+        'terapi' => [
+            'driver' => 'mariadb',
+            'url' => env('DB_URL'),
+            'host' => env('DB_TERAPI_HOST', env('DB_SIMRS_HOST', '127.0.0.1')),
+            'port' => env('DB_TERAPI_PORT', env('DB_SIMRS_PORT', '3306')),
+            'database' => env('DB_TERAPI_DATABASE', 'terapi'),
+            'username' => env('DB_TERAPI_USERNAME', env('DB_SIMRS_USERNAME', 'root')),
+            'password' => env('DB_TERAPI_PASSWORD', env('DB_SIMRS_PASSWORD', '')),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => false,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),

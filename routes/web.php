@@ -61,7 +61,13 @@ Route::middleware('auth')
                 Route::get('/rekap', \App\Livewire\RegisteredPatient\Recap::class)
                     ->middleware('permission:registered-patient recap')
                     ->name('.recap');
+                Route::get('/kepatuhan-antrean', function () {
+                    return redirect()->route('mutu.compliance');
+                })->name('.compliance');
             });
+        Route::get('/kepatuhan-antrean-online', function () {
+            return redirect()->route('mutu.compliance');
+        })->name('online-queue.compliance');
         Route::prefix('ranap')
             ->as('inpatient')
             ->group(function () {
@@ -227,6 +233,9 @@ Route::middleware('auth')
                 Route::get('/klpcm', \App\Livewire\Mutu\KlpcmReport::class)
                     ->middleware('permission:mutu.klpcm|mutu show|indicator-matrix show')
                     ->name('klpcm');
+                Route::get('/kepatuhan-antrean', \App\Livewire\OnlineQueue\Compliance::class)
+                    ->middleware('permission:mutu show|registered-patient show|registered-patient recap|patient-report show|indicator-matrix show')
+                    ->name('compliance');
             });
 
         Route::get('/inm', function () {

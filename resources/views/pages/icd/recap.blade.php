@@ -25,13 +25,29 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex items-center flex-wrap gap-3 shrink-0">
-                    <button type="button" wire:click="exportPdf" wire:loading.attr="disabled"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30 transition-all cursor-pointer">
-                        <span wire:loading.remove wire:target="exportPdf" class="icon-[solar--file-download-bold-duotone] text-base"></span>
-                        <span wire:loading wire:target="exportPdf" class="icon-[solar--restart-line-duotone] animate-spin text-base"></span>
+                <div class="flex items-center flex-wrap gap-2.5 shrink-0">
+                    <!-- Toggle Switch Mode Sensor Privasi -->
+                    <button type="button" wire:click="toggleMask"
+                        class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer border {{ $isMasked ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25' : 'bg-white/10 text-slate-200 border-white/10 hover:bg-white/15' }}"
+                        title="{{ $isMasked ? 'Mode Sensor Privasi Aktif: No RM disensor 3 digit belakang & nama disensor bagian tengah. Klik untuk tampilkan data lengkap.' : 'Mode Sensor Nonaktif: Menampilkan data identitas lengkap. Klik untuk mengaktifkan sensor privasi.' }}">
+                        <span class="{{ $isMasked ? 'icon-[solar--eye-closed-bold-duotone] text-amber-400' : 'icon-[solar--eye-bold-duotone]' }} text-base"></span>
+                        <span>{{ $isMasked ? 'Sensor: AKTIF' : 'Sensor: NONAKTIF' }}</span>
+                    </button>
+
+                    <!-- Tombol Cetak PDF (Dengan Dialog Pilihan Sensor & Format) -->
+                    <button type="button" wire:click="openExportModal('{{ $activeTab }}', 'pdf')" wire:loading.attr="disabled"
+                        class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30 transition-all cursor-pointer">
+                        <span class="icon-[solar--printer-bold-duotone] text-base"></span>
                         <span>Cetak PDF Data</span>
                     </button>
+
+                    <!-- Tombol Ekspor Excel -->
+                    <button type="button" wire:click="openExportModal('{{ $activeTab }}', 'excel')" wire:loading.attr="disabled"
+                        class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-900/30 transition-all cursor-pointer">
+                        <span class="icon-[solar--document-medicine-bold-duotone] text-base"></span>
+                        <span>Ekspor Excel</span>
+                    </button>
+
                     <button type="button" wire:click="resetFilters"
                         class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs bg-white/10 hover:bg-white/15 text-slate-200 border border-white/10 transition-all cursor-pointer">
                         <span class="icon-[solar--refresh-circle-bold-duotone] text-base"></span>
@@ -565,9 +581,16 @@
                                         {{ number_format($item['total_pasien_unik']) }}
                                     </td>
                                     <td class="py-3 px-4 text-center border-l border-stroke/60 dark:border-strokedark/60">
-                                        <span class="text-sm font-black text-emerald-600 dark:text-emerald-400">
-                                            {{ number_format($item['total_kasus']) }}
-                                        </span>
+                                        <div class="flex flex-col items-center">
+                                            <span class="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                                                {{ number_format($item['total_kasus']) }}
+                                            </span>
+                                            @if ($item['growth_total'] !== null)
+                                                <span class="text-[10px] font-bold font-mono inline-flex items-center gap-0.5 {{ $item['growth_total'] > 0 ? 'text-amber-600 dark:text-amber-400' : ($item['growth_total'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}" title="Pertumbuhan MoM terhadap bulan sebelumnya">
+                                                    <span>{{ $item['growth_total'] > 0 ? '▲ +' : ($item['growth_total'] < 0 ? '▼ ' : '• ') }}{{ $item['growth_total'] }}%</span>
+                                                </span>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td class="py-3 px-3 text-center border-l border-stroke/60 dark:border-strokedark/60 font-mono text-[11px] text-gray-500 dark:text-gray-400">
                                         {{ $item['persentase'] }}%
@@ -649,107 +672,946 @@
             </div>
         @endif
 
-        <!-- 5. Tabel Morbiditas Lengkap -->
-        <div class="bg-white dark:bg-boxdark rounded-[2.5rem] border border-stroke dark:border-strokedark shadow-sm overflow-hidden">
-            <div class="p-6 sm:p-7 border-b border-stroke/70 dark:border-strokedark/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h3 class="text-lg font-black text-gray-800 dark:text-white uppercase tracking-tight">Daftar Rekapitulasi Morbiditas Penyakit</h3>
-                    <p class="text-xs text-gray-400 mt-0.5">Tabel rincian kasus baru, kasus lama, profil jenis kelamin, dan klasifikasi pelayanan</p>
+        <!-- 5. Seksi Data Penyakit: Tab Rekapitulasi Morbiditas, Kunjungan & Pengunjung -->
+        <div class="bg-white dark:bg-boxdark rounded-[2.5rem] border border-stroke dark:border-strokedark shadow-sm overflow-hidden space-y-0">
+            <!-- Tab Switcher & Pengaturan Tampilan -->
+            <div class="p-5 sm:p-6 border-b border-stroke/70 dark:border-strokedark/70 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gray-50/50 dark:bg-meta-4/20">
+                <!-- Tab Buttons -->
+                <div class="flex items-center flex-wrap gap-2">
+                    <button type="button" wire:click="setActiveTab('morbiditas')"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer {{ $activeTab === 'morbiditas' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/20' : 'bg-white dark:bg-boxdark text-gray-700 dark:text-gray-300 border border-stroke dark:border-strokedark hover:bg-gray-50 dark:hover:bg-meta-4' }}">
+                        <span class="icon-[solar--chart-square-bold-duotone] text-base"></span>
+                        <span>1. Morbiditas Penyakit</span>
+                    </button>
+                    <button type="button" wire:click="setActiveTab('kunjungan')"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer {{ $activeTab === 'kunjungan' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/20' : 'bg-white dark:bg-boxdark text-gray-700 dark:text-gray-300 border border-stroke dark:border-strokedark hover:bg-gray-50 dark:hover:bg-meta-4' }}">
+                        <span class="icon-[solar--clipboard-list-bold-duotone] text-base"></span>
+                        <span>2. Data Kunjungan</span>
+                    </button>
+                    <button type="button" wire:click="setActiveTab('pengunjung')"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer {{ $activeTab === 'pengunjung' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/20' : 'bg-white dark:bg-boxdark text-gray-700 dark:text-gray-300 border border-stroke dark:border-strokedark hover:bg-gray-50 dark:hover:bg-meta-4' }}">
+                        <span class="icon-[solar--users-group-two-rounded-bold-duotone] text-base"></span>
+                        <span>3. Data Pengunjung (Unik)</span>
+                    </button>
+                    <button type="button" wire:click="setActiveTab('mom')"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition cursor-pointer {{ $activeTab === 'mom' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/20' : 'bg-white dark:bg-boxdark text-gray-700 dark:text-gray-300 border border-stroke dark:border-strokedark hover:bg-gray-50 dark:hover:bg-meta-4' }}">
+                        <span class="icon-[solar--chart-2-bold-duotone] text-base"></span>
+                        <span>4. Matriks 12 Bulan & MoM Growth</span>
+                    </button>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-gray-400">Tampilkan:</span>
-                    <select wire:model.live="perPage" class="text-xs font-bold rounded-xl border-stroke dark:border-strokedark bg-gray-50 dark:bg-meta-4 text-gray-800 dark:text-white py-1.5 px-3">
-                        <option value="10">10 Baris</option>
-                        <option value="25">25 Baris</option>
-                        <option value="50">50 Baris</option>
-                        <option value="100">100 Baris</option>
-                    </select>
+
+                <!-- Kontrol Sensor & Per Page / Limit Matriks -->
+                <div class="flex items-center flex-wrap gap-3">
+                    @if ($activeTab !== 'mom')
+                        <!-- Toggle Cepat Mode Sensor -->
+                        <button type="button" wire:click="toggleMask"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer border {{ $isMasked ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30' : 'bg-gray-100 dark:bg-meta-4 text-gray-700 dark:text-gray-300 border-stroke dark:border-strokedark' }}">
+                            <span class="{{ $isMasked ? 'icon-[solar--eye-closed-bold-duotone] text-amber-500' : 'icon-[solar--eye-bold-duotone]' }} text-sm"></span>
+                            <span>{{ $isMasked ? 'Mode Sensor Aktif' : 'Data Asli' }}</span>
+                        </button>
+                    @endif
+
+                    <!-- Tombol Cetak PDF Spesifik Tab Aktif -->
+                    <button type="button" wire:click="openExportModal('{{ $activeTab }}', 'pdf')"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition cursor-pointer">
+                        <span class="icon-[solar--printer-bold-duotone] text-sm"></span>
+                        <span>Cetak PDF</span>
+                    </button>
+
+                    <!-- Tombol Ekspor Excel Spesifik Tab Aktif -->
+                    <button type="button" wire:click="openExportModal('{{ $activeTab }}', 'excel')"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-teal-500/15 text-teal-700 dark:text-teal-400 border border-teal-500/30 hover:bg-teal-500/25 transition cursor-pointer">
+                        <span class="icon-[solar--document-medicine-bold-duotone] text-sm"></span>
+                        <span>Excel</span>
+                    </button>
+
+                    @if ($activeTab === 'mom')
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs font-bold text-gray-400">Limit:</span>
+                            <select wire:model.live="matrixLimit" class="text-xs font-bold rounded-xl border-stroke dark:border-strokedark bg-white dark:bg-boxdark text-gray-800 dark:text-white py-1 px-2.5">
+                                <option value="10">Top 10</option>
+                                <option value="20">Top 20</option>
+                                <option value="50">Top 50</option>
+                                <option value="100">Top 100</option>
+                            </select>
+                        </div>
+                    @else
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs font-bold text-gray-400">Baris:</span>
+                            <select wire:model.live="perPage" class="text-xs font-bold rounded-xl border-stroke dark:border-strokedark bg-white dark:bg-boxdark text-gray-800 dark:text-white py-1 px-2.5">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    @endif
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="border-b border-stroke dark:border-strokedark bg-gray-50/80 dark:bg-meta-4/40 text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                            <th class="py-3 px-4 text-center w-12">No</th>
-                            <th class="py-3 px-4 w-28">Kode ICD</th>
-                            <th class="py-3 px-4">Nama Diagnosa / Penyakit</th>
-                            <th class="py-3 px-3 text-center">Baru (L/P)</th>
-                            <th class="py-3 px-3 text-center">Lama (L/P)</th>
-                            <th class="py-3 px-3 text-center">Total Gender</th>
-                            <th class="py-3 px-3 text-center">Layanan (Poli / IGD / Ranap)</th>
-                            <th class="py-3 px-4 text-center">Total Kasus</th>
-                            <th class="py-3 px-4 text-center w-20">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 text-xs">
-                        @forelse ($diseases as $item)
-                            <tr class="hover:bg-gray-50/70 dark:hover:bg-meta-4/20 transition-colors">
-                                <td class="py-3 px-4 text-center font-bold text-gray-400">
-                                    {{ $diseases->firstItem() + $loop->index }}
-                                </td>
-                                <td class="py-3 px-4">
-                                    <span class="px-2 py-0.5 rounded-md font-mono font-black text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                        {{ $item->kd_penyakit }}
-                                    </span>
-                                </td>
-                                <td class="py-3 px-4 font-bold text-gray-800 dark:text-white">
-                                    {{ $item->nm_penyakit }}
-                                </td>
-                                <td class="py-3 px-3 text-center font-semibold text-gray-600 dark:text-gray-300">
-                                    <span class="text-blue-600 font-bold">{{ number_format($item->baru_pria) }}</span> / 
-                                    <span class="text-pink-600 font-bold">{{ number_format($item->baru_wanita) }}</span>
-                                </td>
-                                <td class="py-3 px-3 text-center font-semibold text-gray-600 dark:text-gray-300">
-                                    <span class="text-blue-600 font-bold">{{ number_format($item->lama_pria) }}</span> / 
-                                    <span class="text-pink-600 font-bold">{{ number_format($item->lama_wanita) }}</span>
-                                </td>
-                                <td class="py-3 px-3 text-center font-semibold text-gray-600 dark:text-gray-300">
-                                    <span class="text-blue-600 font-bold">{{ number_format($item->total_pria) }} L</span> / 
-                                    <span class="text-pink-600 font-bold">{{ number_format($item->total_wanita) }} P</span>
-                                </td>
-                                <td class="py-3 px-3 text-center">
-                                    <div class="flex items-center justify-center gap-1 flex-wrap">
-                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" title="Poliklinik">
-                                            Poli: {{ number_format($item->total_poli) }}
+            <!-- ===================== TAB 1: REKAPITULASI MORBIDITAS ===================== -->
+            @if ($activeTab === 'morbiditas')
+                <div class="px-6 py-3 border-b border-stroke/50 dark:border-strokedark/50 bg-gray-50/30 dark:bg-meta-4/10 flex items-center justify-between">
+                    <div>
+                        <h4 class="text-xs font-black uppercase text-gray-800 dark:text-white">Daftar Rekapitulasi Morbiditas Penyakit</h4>
+                        <p class="text-[11px] text-gray-400">Tabel rincian kasus baru, kasus lama, profil jenis kelamin, dan klasifikasi pelayanan</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-stroke dark:border-strokedark bg-gray-50/80 dark:bg-meta-4/40 text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                <th class="py-3 px-4 text-center w-12">No</th>
+                                <th class="py-3 px-4 w-28">Kode ICD</th>
+                                <th class="py-3 px-4">Nama Diagnosa / Penyakit</th>
+                                <th class="py-3 px-3 text-center">Baru (L/P)</th>
+                                <th class="py-3 px-3 text-center">Lama (L/P)</th>
+                                <th class="py-3 px-3 text-center">Total Gender</th>
+                                <th class="py-3 px-3 text-center">Layanan (Poli / IGD / Ranap)</th>
+                                <th class="py-3 px-4 text-center">Total Kasus</th>
+                                <th class="py-3 px-4 text-center w-20">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 text-xs">
+                            @forelse ($diseases as $item)
+                                <tr class="hover:bg-gray-50/70 dark:hover:bg-meta-4/20 transition-colors">
+                                    <td class="py-3 px-4 text-center font-bold text-gray-400">
+                                        {{ $diseases->firstItem() + $loop->index }}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2 py-0.5 rounded-md font-mono font-black text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                            {{ $item->kd_penyakit }}
                                         </span>
-                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400" title="Gawat Darurat">
-                                            IGD: {{ number_format($item->total_igd) }}
+                                    </td>
+                                    <td class="py-3 px-4 font-bold text-gray-800 dark:text-white">
+                                        {{ $item->nm_penyakit }}
+                                    </td>
+                                    <td class="py-3 px-3 text-center font-semibold text-gray-600 dark:text-gray-300">
+                                        <span class="text-blue-600 font-bold">{{ number_format($item->baru_pria) }}</span> / 
+                                        <span class="text-pink-600 font-bold">{{ number_format($item->baru_wanita) }}</span>
+                                    </td>
+                                    <td class="py-3 px-3 text-center font-semibold text-gray-600 dark:text-gray-300">
+                                        <span class="text-blue-600 font-bold">{{ number_format($item->lama_pria) }}</span> / 
+                                        <span class="text-pink-600 font-bold">{{ number_format($item->lama_wanita) }}</span>
+                                    </td>
+                                    <td class="py-3 px-3 text-center font-semibold text-gray-600 dark:text-gray-300">
+                                        <span class="text-blue-600 font-bold">{{ number_format($item->total_pria) }} L</span> / 
+                                        <span class="text-pink-600 font-bold">{{ number_format($item->total_wanita) }} P</span>
+                                    </td>
+                                    <td class="py-3 px-3 text-center">
+                                        <div class="flex items-center justify-center gap-1 flex-wrap">
+                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" title="Poliklinik">
+                                                Poli: {{ number_format($item->total_poli) }}
+                                            </span>
+                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400" title="Gawat Darurat">
+                                                IGD: {{ number_format($item->total_igd) }}
+                                            </span>
+                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400" title="Rawat Inap">
+                                                Ranap: {{ number_format($item->total_ranap) }}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4 text-center">
+                                        <span class="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                                            {{ number_format($item->total_kasus) }}
                                         </span>
-                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400" title="Rawat Inap">
-                                            Ranap: {{ number_format($item->total_ranap) }}
+                                    </td>
+                                    <td class="py-3 px-4 text-center">
+                                        <button type="button" wire:click="openDetail('{{ $item->kd_penyakit }}', '{{ addslashes($item->nm_penyakit) }}')"
+                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition cursor-pointer"
+                                            title="Lihat Rincian Pasien">
+                                            <span class="icon-[solar--eye-bold-duotone] text-sm"></span>
+                                            <span>Detail</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="9" class="py-8 text-center text-gray-400">
+                                        Tidak ada data diagnosa penyakit yang sesuai kriteria filter.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if ($diseases)
+                    <div class="p-5 border-t border-stroke/70 dark:border-strokedark/70">
+                        {{ $diseases->links() }}
+                    </div>
+                @endif
+            @endif
+
+            <!-- ===================== TAB 2: DATA KUNJUNGAN PASIEN ===================== -->
+            @if ($activeTab === 'kunjungan')
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="border-b border-stroke dark:border-strokedark bg-gray-50/80 dark:bg-meta-4/40 text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                <th class="py-3 px-3 text-center w-12">No</th>
+                                <th class="py-3 px-3 w-28">No. RM</th>
+                                <th class="py-3 px-4">Nama Pasien</th>
+                                <th class="py-3 px-2.5 text-center">L/P</th>
+                                <th class="py-3 px-2.5 text-center">Umur</th>
+                                <th class="py-3 px-3">Tgl Kunjungan</th>
+                                <th class="py-3 px-4">Diagnosa (ICD-10)</th>
+                                <th class="py-3 px-3 text-center">Layanan</th>
+                                <th class="py-3 px-3 text-center">Prioritas</th>
+                                <th class="py-3 px-3 text-center">Kasus</th>
+                                <th class="py-3 px-3 text-center">Status Dinas</th>
+                                <th class="py-3 px-3">Dokter DPJP</th>
+                                <th class="py-3 px-3">Penjamin</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60">
+                            @forelse ($visits as $v)
+                                <tr class="hover:bg-gray-50/70 dark:hover:bg-meta-4/20 transition-colors">
+                                    <td class="py-2.5 px-3 text-center font-bold text-gray-400">
+                                        {{ $visits->firstItem() + $loop->index }}
+                                    </td>
+                                    <td class="py-2.5 px-3 font-mono font-bold text-gray-800 dark:text-white">
+                                        {{ $isMasked ? $v['no_rkm_medis_masked'] : $v['no_rkm_medis'] }}
+                                    </td>
+                                    <td class="py-2.5 px-4 font-bold text-gray-800 dark:text-white">
+                                        {{ $isMasked ? $v['nama_masked'] : $v['nama'] }}
+                                    </td>
+                                    <td class="py-2.5 px-2.5 text-center font-bold {{ $v['jk'] === 'L' ? 'text-blue-600' : 'text-pink-600' }}">
+                                        {{ $v['jk'] }}
+                                    </td>
+                                    <td class="py-2.5 px-2.5 text-center text-gray-600 dark:text-gray-300">
+                                        {{ $v['umur'] !== '-' ? $v['umur'] . ' th' : '-' }}
+                                    </td>
+                                    <td class="py-2.5 px-3 text-gray-600 dark:text-gray-300 font-medium">
+                                        {{ $v['tanggal'] }}
+                                    </td>
+                                    <td class="py-2.5 px-4">
+                                        <span class="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 mr-1">
+                                            {{ $v['kd_penyakit'] }}
                                         </span>
-                                    </div>
-                                </td>
-                                <td class="py-3 px-4 text-center">
-                                    <span class="text-sm font-black text-emerald-600 dark:text-emerald-400">
-                                        {{ number_format($item->total_kasus) }}
-                                    </span>
-                                </td>
-                                <td class="py-3 px-4 text-center">
-                                    <button type="button" wire:click="openDetail('{{ $item->kd_penyakit }}', '{{ addslashes($item->nm_penyakit) }}')"
-                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition cursor-pointer"
-                                        title="Lihat Rincian Pasien">
-                                        <span class="icon-[solar--eye-bold-duotone] text-sm"></span>
-                                        <span>Detail</span>
+                                        <span class="font-semibold text-gray-800 dark:text-white">{{ $v['nm_penyakit'] }}</span>
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center">
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-black {{ $v['layanan'] === 'Ranap' ? 'bg-blue-500/10 text-blue-600' : ($v['layanan'] === 'IGD' ? 'bg-rose-500/10 text-rose-600' : 'bg-emerald-500/10 text-emerald-600') }}" title="{{ $v['layanan_detail'] ?? $v['layanan'] }}">
+                                            {{ $v['layanan'] }}
+                                        </span>
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center">
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold {{ $v['prioritas'] === 'Primer' ? 'bg-amber-500/10 text-amber-600' : 'bg-gray-100 dark:bg-meta-4 text-gray-500' }}">
+                                            {{ $v['prioritas'] }}
+                                        </span>
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center">
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold {{ $v['kasus'] === 'Baru' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-purple-500/10 text-purple-600' }}">
+                                            {{ $v['kasus'] }}
+                                        </span>
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center">
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-black {{ $v['status_dinas'] === 'TNI' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25' : ($v['status_dinas'] === 'POLRI' ? 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/25' : 'bg-gray-100 dark:bg-meta-4 text-gray-500') }}">
+                                            {{ $v['status_dinas'] }}
+                                        </span>
+                                    </td>
+                                    <td class="py-2.5 px-3 text-gray-700 dark:text-gray-300 truncate max-w-[140px]" title="{{ $v['dokter'] }}">
+                                        {{ $v['dokter'] }}
+                                    </td>
+                                    <td class="py-2.5 px-3 text-gray-500 truncate max-w-[120px]">
+                                        {{ $v['penjamin'] }}
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="13" class="py-8 text-center text-gray-400">
+                                        Tidak ada data kunjungan pasien yang sesuai kriteria filter.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if ($visits)
+                    <div class="p-5 border-t border-stroke/70 dark:border-strokedark/70">
+                        {{ $visits->links() }}
+                    </div>
+                @endif
+            @endif
+
+            <!-- ===================== TAB 3: DATA PENGUNJUNG UNIK ===================== -->
+            @if ($activeTab === 'pengunjung')
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="border-b border-stroke dark:border-strokedark bg-gray-50/80 dark:bg-meta-4/40 text-[11px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                <th class="py-3 px-3 text-center w-12">No</th>
+                                <th class="py-3 px-3 w-28">No. RM</th>
+                                <th class="py-3 px-4">Nama Pasien</th>
+                                <th class="py-3 px-2.5 text-center">L/P</th>
+                                <th class="py-3 px-2.5 text-center">Umur</th>
+                                <th class="py-3 px-3 text-center">Total Kunjungan</th>
+                                <th class="py-3 px-3 text-center">Kunjungan Pertama</th>
+                                <th class="py-3 px-3 text-center">Kunjungan Terakhir</th>
+                                <th class="py-3 px-3 text-center">Status Dinas</th>
+                                <th class="py-3 px-4">Riwayat Kode Diagnosa</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60">
+                            @forelse ($visitors as $vr)
+                                <tr class="hover:bg-gray-50/70 dark:hover:bg-meta-4/20 transition-colors">
+                                    <td class="py-2.5 px-3 text-center font-bold text-gray-400">
+                                        {{ $visitors->firstItem() + $loop->index }}
+                                    </td>
+                                    <td class="py-2.5 px-3 font-mono font-bold text-gray-800 dark:text-white">
+                                        {{ $isMasked ? $vr['no_rkm_medis_masked'] : $vr['no_rkm_medis'] }}
+                                    </td>
+                                    <td class="py-2.5 px-4 font-bold text-gray-800 dark:text-white">
+                                        {{ $isMasked ? $vr['nama_masked'] : $vr['nama'] }}
+                                    </td>
+                                    <td class="py-2.5 px-2.5 text-center font-bold {{ $vr['jk'] === 'L' ? 'text-blue-600' : 'text-pink-600' }}">
+                                        {{ $vr['jk'] }}
+                                    </td>
+                                    <td class="py-2.5 px-2.5 text-center text-gray-600 dark:text-gray-300">
+                                        {{ $vr['umur'] !== '-' ? $vr['umur'] . ' th' : '-' }}
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded font-black text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                            {{ number_format($vr['total_kunjungan']) }}x
+                                        </span>
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center text-gray-600 dark:text-gray-300 font-medium">
+                                        {{ $vr['kunjungan_pertama'] }}
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center text-gray-600 dark:text-gray-300 font-medium">
+                                        {{ $vr['kunjungan_terakhir'] }}
+                                    </td>
+                                    <td class="py-2.5 px-3 text-center">
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-black {{ $vr['status_dinas'] === 'TNI' ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25' : ($vr['status_dinas'] === 'POLRI' ? 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/25' : 'bg-gray-100 dark:bg-meta-4 text-gray-500') }}">
+                                            {{ $vr['status_dinas'] }}
+                                        </span>
+                                    </td>
+                                    <td class="py-2.5 px-4 font-mono text-[11px] text-gray-700 dark:text-gray-300">
+                                        {{ $vr['riwayat_diagnosa'] }}
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="10" class="py-8 text-center text-gray-400">
+                                        Tidak ada data pengunjung unik yang sesuai kriteria filter.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if ($visitors)
+                    <div class="p-5 border-t border-stroke/70 dark:border-strokedark/70">
+                        {{ $visitors->links() }}
+                    </div>
+                @endif
+            @endif
+
+            <!-- ===================== TAB 4: MATRIKS 12 BULAN & PERTUMBUHAN MoM ===================== -->
+            @if ($activeTab === 'mom')
+                @php
+                    $momKpi = $this->momSummaryKpi;
+                    $refMonth = $momKpi['reference_month'] ?? (int) date('m');
+                @endphp
+
+                <div class="p-5 sm:p-6 space-y-6">
+                    <!-- 1. Header Banner & KPI MoM Cards -->
+                    <div class="space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stroke/70 dark:border-strokedark/70">
+                            <div>
+                                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-black uppercase tracking-wider mb-1">
+                                    <span class="icon-[solar--chart-2-bold-duotone] text-xs"></span>
+                                    Surveilans Tren Morbiditas
+                                </div>
+                                <h4 class="text-base font-black text-gray-800 dark:text-white uppercase tracking-tight">
+                                    Matriks 12 Bulan & Pertumbuhan Month-over-Month (MoM)
+                                </h4>
+                                <p class="text-xs text-gray-400">
+                                    Komparasi laju fluktuasi kasus bulanan tahun {{ $year }} berbasis data riil registrasi periksa SIMRS.
+                                </p>
+                            </div>
+
+                            <!-- Kontrol Tampilan MoM: Mode Sel & Sub-Navigasi -->
+                            <div class="flex items-center flex-wrap gap-2.5 shrink-0">
+                                <!-- Mode Tampilan Sel MoM -->
+                                <div class="inline-flex p-1 rounded-xl bg-gray-100 dark:bg-meta-4/60 border border-stroke dark:border-strokedark text-xs font-bold">
+                                    <button type="button" wire:click="setMomDisplayMode('both')"
+                                        class="px-2.5 py-1 rounded-lg transition {{ $momDisplayMode === 'both' ? 'bg-white dark:bg-boxdark text-emerald-600 shadow-2xs font-extrabold' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white' }}"
+                                        title="Tampilkan Angka Kasus & Persentase Growth MoM">
+                                        Kasus & % Growth
                                     </button>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="9" class="py-8 text-center text-gray-400">
-                                    Tidak ada data diagnosa penyakit yang sesuai kriteria filter.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                                    <button type="button" wire:click="setMomDisplayMode('growth')"
+                                        class="px-2.5 py-1 rounded-lg transition {{ $momDisplayMode === 'growth' ? 'bg-white dark:bg-boxdark text-emerald-600 shadow-2xs font-extrabold' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white' }}"
+                                        title="Hanya Tampilkan Persentase Growth MoM">
+                                        Hanya % Growth
+                                    </button>
+                                    <button type="button" wire:click="setMomDisplayMode('count')"
+                                        class="px-2.5 py-1 rounded-lg transition {{ $momDisplayMode === 'count' ? 'bg-white dark:bg-boxdark text-emerald-600 shadow-2xs font-extrabold' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white' }}"
+                                        title="Hanya Tampilkan Jumlah Kasus">
+                                        Hanya Kasus
+                                    </button>
+                                </div>
 
-            <!-- Pagination Container -->
-            <div class="p-5 border-t border-stroke/70 dark:border-strokedark/70">
-                {{ $diseases->links() }}
-            </div>
+                                <!-- Sub-Navigasi View MoM -->
+                                <div class="inline-flex p-1 rounded-xl bg-gray-100 dark:bg-meta-4/60 border border-stroke dark:border-strokedark text-xs font-bold">
+                                    <button type="button" wire:click="setMomView('disease')"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition {{ $momView === 'disease' ? 'bg-white dark:bg-boxdark text-emerald-600 shadow-2xs' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white' }}">
+                                        <span class="icon-[solar--stethoscope-bold-duotone] text-sm"></span>
+                                        <span>Penyakit (ICD-10)</span>
+                                    </button>
+                                    <button type="button" wire:click="setMomView('polyclinic')"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition {{ $momView === 'polyclinic' ? 'bg-white dark:bg-boxdark text-emerald-600 shadow-2xs' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white' }}">
+                                        <span class="icon-[solar--hospital-bold-duotone] text-sm"></span>
+                                        <span>Poliklinik & IGD</span>
+                                    </button>
+                                    <button type="button" wire:click="setMomView('doctor')"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition {{ $momView === 'doctor' ? 'bg-white dark:bg-boxdark text-emerald-600 shadow-2xs' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white' }}">
+                                        <span class="icon-[solar--user-bold-duotone] text-sm"></span>
+                                        <span>Dokter DPJP</span>
+                                    </button>
+                                    <button type="button" wire:click="setMomView('overview')"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition {{ $momView === 'overview' ? 'bg-white dark:bg-boxdark text-emerald-600 shadow-2xs' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white' }}">
+                                        <span class="icon-[solar--calendar-bold-duotone] text-sm"></span>
+                                        <span>Tren Bulanan RS</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5 Kartu KPI MoM -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                            <!-- KPI 1: Total Kasus -->
+                            <div class="p-4 rounded-2xl border border-stroke dark:border-strokedark bg-gray-50/50 dark:bg-meta-4/20 space-y-1">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-gray-400 block">
+                                    Total Kasus ({{ $momKpi['current_month_name'] }})
+                                </span>
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-xl font-black text-gray-800 dark:text-white">
+                                        {{ number_format($momKpi['current_total']) }}
+                                    </span>
+                                    <span class="text-xs font-bold font-mono inline-flex items-center gap-0.5 {{ $momKpi['growth_total'] > 0 ? 'text-amber-600 dark:text-amber-400' : ($momKpi['growth_total'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}" title="MoM vs {{ $momKpi['prev_month_name'] }}">
+                                        {{ $momKpi['growth_total'] > 0 ? '▲ +' : ($momKpi['growth_total'] < 0 ? '▼ ' : '• ') }}{{ $momKpi['growth_total'] }}%
+                                    </span>
+                                </div>
+                                <span class="text-[10px] text-gray-400 block">
+                                    {{ $momKpi['prev_month_name'] }}: {{ number_format($momKpi['prev_total']) }} kasus
+                                </span>
+                            </div>
+
+                            <!-- KPI 2: Kasus Baru -->
+                            <div class="p-4 rounded-2xl border border-stroke dark:border-strokedark bg-gray-50/50 dark:bg-meta-4/20 space-y-1">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
+                                    Kasus Baru MoM
+                                </span>
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                                        {{ number_format($momKpi['current_baru']) }}
+                                    </span>
+                                    <span class="text-xs font-bold font-mono inline-flex items-center gap-0.5 {{ $momKpi['growth_baru'] > 0 ? 'text-amber-600 dark:text-amber-400' : ($momKpi['growth_baru'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                        {{ $momKpi['growth_baru'] > 0 ? '▲ +' : ($momKpi['growth_baru'] < 0 ? '▼ ' : '• ') }}{{ $momKpi['growth_baru'] }}%
+                                    </span>
+                                </div>
+                                <span class="text-[10px] text-gray-400 block">
+                                    {{ $momKpi['prev_month_name'] }}: {{ number_format($momKpi['prev_baru']) }} baru
+                                </span>
+                            </div>
+
+                            <!-- KPI 3: Poliklinik (Poli) -->
+                            <div class="p-4 rounded-2xl border border-stroke dark:border-strokedark bg-gray-50/50 dark:bg-meta-4/20 space-y-1">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
+                                    Poliklinik (Poli) MoM
+                                </span>
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-xl font-black text-gray-800 dark:text-white">
+                                        {{ number_format($momKpi['current_poli']) }}
+                                    </span>
+                                    <span class="text-xs font-bold font-mono inline-flex items-center gap-0.5 {{ $momKpi['growth_poli'] > 0 ? 'text-amber-600 dark:text-amber-400' : ($momKpi['growth_poli'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                        {{ $momKpi['growth_poli'] > 0 ? '▲ +' : ($momKpi['growth_poli'] < 0 ? '▼ ' : '• ') }}{{ $momKpi['growth_poli'] }}%
+                                    </span>
+                                </div>
+                                <span class="text-[10px] text-gray-400 block">
+                                    {{ $momKpi['prev_month_name'] }}: {{ number_format($momKpi['prev_poli']) }}
+                                </span>
+                            </div>
+
+                            <!-- KPI 4: Gawat Darurat (IGD) -->
+                            <div class="p-4 rounded-2xl border border-stroke dark:border-strokedark bg-gray-50/50 dark:bg-meta-4/20 space-y-1">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400 block">
+                                    Gawat Darurat (IGD) MoM
+                                </span>
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-xl font-black text-rose-600 dark:text-rose-400">
+                                        {{ number_format($momKpi['current_igd']) }}
+                                    </span>
+                                    <span class="text-xs font-bold font-mono inline-flex items-center gap-0.5 {{ $momKpi['growth_igd'] > 0 ? 'text-rose-600 dark:text-rose-400' : ($momKpi['growth_igd'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                        {{ $momKpi['growth_igd'] > 0 ? '▲ +' : ($momKpi['growth_igd'] < 0 ? '▼ ' : '• ') }}{{ $momKpi['growth_igd'] }}%
+                                    </span>
+                                </div>
+                                <span class="text-[10px] text-gray-400 block">
+                                    {{ $momKpi['prev_month_name'] }}: {{ number_format($momKpi['prev_igd']) }}
+                                </span>
+                            </div>
+
+                            <!-- KPI 5: Rawat Inap (Ranap) -->
+                            <div class="p-4 rounded-2xl border border-stroke dark:border-strokedark bg-gray-50/50 dark:bg-meta-4/20 space-y-1">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 block">
+                                    Rawat Inap (Ranap) MoM
+                                </span>
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-xl font-black text-blue-600 dark:text-blue-400">
+                                        {{ number_format($momKpi['current_ranap']) }}
+                                    </span>
+                                    <span class="text-xs font-bold font-mono inline-flex items-center gap-0.5 {{ $momKpi['growth_ranap'] > 0 ? 'text-amber-600 dark:text-amber-400' : ($momKpi['growth_ranap'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                        {{ $momKpi['growth_ranap'] > 0 ? '▲ +' : ($momKpi['growth_ranap'] < 0 ? '▼ ' : '• ') }}{{ $momKpi['growth_ranap'] }}%
+                                    </span>
+                                </div>
+                                <span class="text-[10px] text-gray-400 block">
+                                    {{ $momKpi['prev_month_name'] }}: {{ number_format($momKpi['prev_ranap']) }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Kartu Deteksi Lonjakan Kasus Klinis (Surveillance Spike Alert) -->
+                        @if (!empty($momKpi['top_spikes']))
+                            <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                <div class="flex items-start gap-2.5">
+                                    <span class="icon-[solar--danger-triangle-bold-duotone] text-xl text-amber-500 shrink-0 mt-0.5"></span>
+                                    <div>
+                                        <h5 class="text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                                            Sinyal Kewaspadaan Lonjakan Kasus Terkini (Top MoM Surges)
+                                        </h5>
+                                        <p class="text-[11px] text-amber-700/80 dark:text-amber-400/80">
+                                            Diagnosa penyakit dengan pertambahan pasien absolut tertinggi pada bulan {{ $momKpi['current_month_name'] }} dibanding {{ $momKpi['prev_month_name'] }}:
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center flex-wrap gap-2">
+                                    @foreach ($momKpi['top_spikes'] as $spk)
+                                        <button type="button" wire:click="openDetail('{{ $spk['kd_penyakit'] }}', '{{ addslashes($spk['nm_penyakit']) }}')"
+                                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-white dark:bg-boxdark border border-amber-500/30 text-gray-800 dark:text-white hover:border-amber-500 transition cursor-pointer shadow-2xs"
+                                            title="{{ $spk['kd_penyakit'] }} - {{ $spk['nm_penyakit'] }}: +{{ $spk['diff_cases'] }} kasus (+{{ $spk['growth_pct'] }}%)">
+                                            <span class="font-mono text-amber-600 dark:text-amber-400">{{ $spk['kd_penyakit'] }}</span>
+                                            <span class="text-xs text-rose-600 font-extrabold">+{{ $spk['diff_cases'] }}</span>
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- 2. Konten Sesuai Sub-View yang Dipilih -->
+                    <!-- ===================== VIEW 1: PENYAKIT (ICD-10) ===================== -->
+                    @if ($momView === 'disease')
+                        @php $dMatrix = $this->diseaseMonthlyMatrix; @endphp
+                        <div class="overflow-x-auto rounded-2xl border border-stroke dark:border-strokedark">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-gray-50/90 dark:bg-meta-4/60 text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-300 border-b border-stroke dark:border-strokedark">
+                                        <th class="py-3 px-3 text-center w-10">No</th>
+                                        <th class="py-3 px-3 w-24">Kode ICD</th>
+                                        <th class="py-3 px-4 min-w-[200px]">Nama Diagnosa / Penyakit</th>
+                                        @for ($m = 1; $m <= 12; $m++)
+                                            <th class="py-3 px-2 text-right {{ $m === $refMonth ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-black' : '' }}">
+                                                {{ $dMatrix['month_names'][$m] ?? $m }}
+                                            </th>
+                                        @endfor
+                                        <th class="py-3 px-3 text-right bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-black">Total</th>
+                                        <th class="py-3 px-3 text-center bg-gray-100 dark:bg-meta-4/80 font-black">MoM %</th>
+                                        <th class="py-3 px-3 text-center w-16">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 font-medium">
+                                    @forelse ($dMatrix['items'] as $idx => $d)
+                                        <tr class="hover:bg-gray-50/70 dark:hover:bg-meta-4/20 transition-colors">
+                                            <td class="py-2.5 px-3 text-center text-gray-400 font-mono">{{ $idx + 1 }}</td>
+                                            <td class="py-2.5 px-3 font-mono font-bold text-gray-800 dark:text-white">
+                                                <button type="button" wire:click="openDetail('{{ $d['kd_penyakit'] }}', '{{ addslashes($d['nm_penyakit']) }}')"
+                                                    class="hover:underline text-emerald-600 dark:text-emerald-400 text-left">
+                                                    {{ $d['kd_penyakit'] }}
+                                                </button>
+                                            </td>
+                                            <td class="py-2.5 px-4 font-bold text-gray-800 dark:text-white">
+                                                {{ $d['nm_penyakit'] }}
+                                                @if ($d['is_surge'])
+                                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] font-black bg-rose-500/15 text-rose-600 border border-rose-500/30 ml-1.5">
+                                                        <span class="icon-[solar--danger-bold] text-[10px]"></span>
+                                                        LONJAKAN
+                                                    </span>
+                                                @endif
+                                            </td>
+                                            @for ($m = 1; $m <= 12; $m++)
+                                                @php
+                                                    $val = $d['months'][$m] ?? 0;
+                                                    $growth = $d['monthly_growth'][$m] ?? null;
+                                                @endphp
+                                                <td class="py-2 px-1.5 text-right font-mono text-[11px] {{ $m === $refMonth ? 'bg-emerald-500/5 dark:bg-emerald-500/10 font-bold' : '' }}">
+                                                    @if ($momDisplayMode === 'both')
+                                                        <div class="flex flex-col items-end leading-tight">
+                                                            <span class="text-xs {{ $val > 0 ? 'text-gray-800 dark:text-gray-200 font-semibold' : 'text-gray-300 dark:text-gray-600' }}">
+                                                                {{ $val > 0 ? number_format($val) : '-' }}
+                                                            </span>
+                                                            @if ($growth !== null)
+                                                                <span class="text-[9px] font-bold mt-0.5 {{ $growth > 0 ? 'text-amber-600 dark:text-amber-400' : ($growth < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                                    {{ $growth > 0 ? '+' : '' }}{{ $growth }}%
+                                                                </span>
+                                                            @elseif ($val > 0 && $m === 1)
+                                                                <span class="text-[9px] text-gray-400 font-normal">base</span>
+                                                            @endif
+                                                        </div>
+                                                    @elseif ($momDisplayMode === 'growth')
+                                                        <div class="flex flex-col items-end">
+                                                            @if ($growth !== null)
+                                                                <span class="text-xs font-bold {{ $growth > 0 ? 'text-amber-600 dark:text-amber-400' : ($growth < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                                    {{ $growth > 0 ? '+' : '' }}{{ $growth }}%
+                                                                </span>
+                                                            @elseif ($val > 0 && $m === 1)
+                                                                <span class="text-[10px] text-gray-400 font-bold">100% (Base)</span>
+                                                            @else
+                                                                <span class="text-gray-300 dark:text-gray-600">-</span>
+                                                            @endif
+                                                        </div>
+                                                    @else
+                                                        <span class="text-xs {{ $val > 0 ? 'text-gray-800 dark:text-gray-200' : 'text-gray-300 dark:text-gray-600' }}">
+                                                            {{ $val > 0 ? number_format($val) : '-' }}
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                            @endfor
+                                            <td class="py-2.5 px-3 text-right font-mono font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 dark:bg-emerald-500/10">
+                                                {{ number_format($d['total_kasus']) }}
+                                            </td>
+                                            <td class="py-2.5 px-3 text-center font-mono font-bold text-xs bg-gray-50/50 dark:bg-meta-4/20">
+                                                <span class="{{ $d['growth_pct'] > 0 ? 'text-amber-600 dark:text-amber-400' : ($d['growth_pct'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                    {{ $d['growth_pct'] > 0 ? '+' : '' }}{{ $d['growth_pct'] }}%
+                                                </span>
+                                            </td>
+                                            <td class="py-2.5 px-3 text-center">
+                                                <button type="button" wire:click="openDetail('{{ $d['kd_penyakit'] }}', '{{ addslashes($d['nm_penyakit']) }}')"
+                                                    class="p-1 rounded-lg hover:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 transition cursor-pointer"
+                                                    title="Lihat rincian pasien diagnosa ini">
+                                                    <span class="icon-[solar--eye-bold-duotone] text-base"></span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="17" class="py-8 text-center text-gray-400">
+                                                Tidak ada data matriks diagnosa penyakit ditemukan.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                    <!-- ===================== VIEW 2: POLIKLINIK & IGD ===================== -->
+                    @elseif ($momView === 'polyclinic')
+                        @php $pMatrix = $this->polyclinicMonthlyMatrix; @endphp
+                        <div class="overflow-x-auto rounded-2xl border border-stroke dark:border-strokedark">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-gray-50/90 dark:bg-meta-4/60 text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-300 border-b border-stroke dark:border-strokedark">
+                                        <th class="py-3 px-3 text-center w-10">No</th>
+                                        <th class="py-3 px-3 w-20">Kode</th>
+                                        <th class="py-3 px-4 min-w-[180px]">Nama Poliklinik / Ruangan</th>
+                                        <th class="py-3 px-3 text-center w-24">Layanan</th>
+                                        @for ($m = 1; $m <= 12; $m++)
+                                            <th class="py-3 px-2 text-right {{ $m === $refMonth ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-black' : '' }}">
+                                                {{ $pMatrix['month_names'][$m] ?? $m }}
+                                            </th>
+                                        @endfor
+                                        <th class="py-3 px-3 text-right bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-black">Total</th>
+                                        <th class="py-3 px-3 text-center bg-gray-100 dark:bg-meta-4/80 font-black">MoM %</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 font-medium">
+                                    @forelse ($pMatrix['items'] as $idx => $pl)
+                                        <tr class="hover:bg-gray-50/70 dark:hover:bg-meta-4/20 transition-colors">
+                                            <td class="py-2.5 px-3 text-center text-gray-400 font-mono">{{ $idx + 1 }}</td>
+                                            <td class="py-2.5 px-3 font-mono font-bold text-gray-800 dark:text-white">{{ $pl['kd_poli'] }}</td>
+                                            <td class="py-2.5 px-4 font-bold text-gray-800 dark:text-white">{{ $pl['nm_poli'] }}</td>
+                                            <td class="py-2.5 px-3 text-center">
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-black {{ $pl['jenis_layanan'] === 'IGD' ? 'bg-rose-500/15 text-rose-600' : 'bg-emerald-500/15 text-emerald-600' }}">
+                                                    {{ $pl['jenis_layanan'] }}
+                                                </span>
+                                            </td>
+                                            @for ($m = 1; $m <= 12; $m++)
+                                                @php
+                                                    $val = $pl['months'][$m] ?? 0;
+                                                    $growth = $pl['monthly_growth'][$m] ?? null;
+                                                @endphp
+                                                <td class="py-2 px-1.5 text-right font-mono text-[11px] {{ $m === $refMonth ? 'bg-emerald-500/5 dark:bg-emerald-500/10 font-bold' : '' }}">
+                                                    @if ($momDisplayMode === 'both')
+                                                        <div class="flex flex-col items-end leading-tight">
+                                                            <span class="text-xs {{ $val > 0 ? 'text-gray-800 dark:text-gray-200 font-semibold' : 'text-gray-300 dark:text-gray-600' }}">
+                                                                {{ $val > 0 ? number_format($val) : '-' }}
+                                                            </span>
+                                                            @if ($growth !== null)
+                                                                <span class="text-[9px] font-bold mt-0.5 {{ $growth > 0 ? 'text-amber-600 dark:text-amber-400' : ($growth < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                                    {{ $growth > 0 ? '+' : '' }}{{ $growth }}%
+                                                                </span>
+                                                            @elseif ($val > 0 && $m === 1)
+                                                                <span class="text-[9px] text-gray-400 font-normal">base</span>
+                                                            @endif
+                                                        </div>
+                                                    @elseif ($momDisplayMode === 'growth')
+                                                        <div class="flex flex-col items-end">
+                                                            @if ($growth !== null)
+                                                                <span class="text-xs font-bold {{ $growth > 0 ? 'text-amber-600 dark:text-amber-400' : ($growth < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                                    {{ $growth > 0 ? '+' : '' }}{{ $growth }}%
+                                                                </span>
+                                                            @elseif ($val > 0 && $m === 1)
+                                                                <span class="text-[10px] text-gray-400 font-bold">100% (Base)</span>
+                                                            @else
+                                                                <span class="text-gray-300 dark:text-gray-600">-</span>
+                                                            @endif
+                                                        </div>
+                                                    @else
+                                                        <span class="text-xs {{ $val > 0 ? 'text-gray-800 dark:text-gray-200' : 'text-gray-300 dark:text-gray-600' }}">
+                                                            {{ $val > 0 ? number_format($val) : '-' }}
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                            @endfor
+                                            <td class="py-2.5 px-3 text-right font-mono font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 dark:bg-emerald-500/10">
+                                                {{ number_format($pl['total_kasus']) }}
+                                            </td>
+                                            <td class="py-2.5 px-3 text-center font-mono font-bold text-xs bg-gray-50/50 dark:bg-meta-4/20">
+                                                <span class="{{ $pl['growth_pct'] > 0 ? 'text-amber-600 dark:text-amber-400' : ($pl['growth_pct'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                    {{ $pl['growth_pct'] > 0 ? '+' : '' }}{{ $pl['growth_pct'] }}%
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="17" class="py-8 text-center text-gray-400">
+                                                Tidak ada data poliklinik ditemukan.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                    <!-- ===================== VIEW 3: DOKTER DPJP ===================== -->
+                    @elseif ($momView === 'doctor')
+                        @php $docMatrix = $this->doctorMonthlyMatrix; @endphp
+                        <div class="overflow-x-auto rounded-2xl border border-stroke dark:border-strokedark">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-gray-50/90 dark:bg-meta-4/60 text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-300 border-b border-stroke dark:border-strokedark">
+                                        <th class="py-3 px-3 text-center w-10">No</th>
+                                        <th class="py-3 px-4 min-w-[200px]">Nama Dokter DPJP</th>
+                                        <th class="py-3 px-3 text-center w-24">Penyakit Unik</th>
+                                        <th class="py-3 px-3 text-center w-24">Pasien Unik</th>
+                                        @for ($m = 1; $m <= 12; $m++)
+                                            <th class="py-3 px-2 text-right {{ $m === $refMonth ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-black' : '' }}">
+                                                {{ $docMatrix['month_names'][$m] ?? $m }}
+                                            </th>
+                                        @endfor
+                                        <th class="py-3 px-3 text-right bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-black">Total</th>
+                                        <th class="py-3 px-3 text-center bg-gray-100 dark:bg-meta-4/80 font-black">MoM %</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 font-medium">
+                                    @forelse ($docMatrix['items'] as $idx => $dr)
+                                        <tr class="hover:bg-gray-50/70 dark:hover:bg-meta-4/20 transition-colors">
+                                            <td class="py-2.5 px-3 text-center text-gray-400 font-mono">{{ $idx + 1 }}</td>
+                                            <td class="py-2.5 px-4 font-bold text-gray-800 dark:text-white">{{ $dr['nm_dokter'] }}</td>
+                                            <td class="py-2.5 px-3 text-center font-mono font-semibold text-gray-600 dark:text-gray-300">{{ number_format($dr['total_penyakit_unik']) }}</td>
+                                            <td class="py-2.5 px-3 text-center font-mono font-semibold text-gray-600 dark:text-gray-300">{{ number_format($dr['total_pasien_unik']) }}</td>
+                                            @for ($m = 1; $m <= 12; $m++)
+                                                @php
+                                                    $val = $dr['months'][$m] ?? 0;
+                                                    $growth = $dr['monthly_growth'][$m] ?? null;
+                                                @endphp
+                                                <td class="py-2 px-1.5 text-right font-mono text-[11px] {{ $m === $refMonth ? 'bg-emerald-500/5 dark:bg-emerald-500/10 font-bold' : '' }}">
+                                                    @if ($momDisplayMode === 'both')
+                                                        <div class="flex flex-col items-end leading-tight">
+                                                            <span class="text-xs {{ $val > 0 ? 'text-gray-800 dark:text-gray-200 font-semibold' : 'text-gray-300 dark:text-gray-600' }}">
+                                                                {{ $val > 0 ? number_format($val) : '-' }}
+                                                            </span>
+                                                            @if ($growth !== null)
+                                                                <span class="text-[9px] font-bold mt-0.5 {{ $growth > 0 ? 'text-amber-600 dark:text-amber-400' : ($growth < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                                    {{ $growth > 0 ? '+' : '' }}{{ $growth }}%
+                                                                </span>
+                                                            @elseif ($val > 0 && $m === 1)
+                                                                <span class="text-[9px] text-gray-400 font-normal">base</span>
+                                                            @endif
+                                                        </div>
+                                                    @elseif ($momDisplayMode === 'growth')
+                                                        <div class="flex flex-col items-end">
+                                                            @if ($growth !== null)
+                                                                <span class="text-xs font-bold {{ $growth > 0 ? 'text-amber-600 dark:text-amber-400' : ($growth < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                                    {{ $growth > 0 ? '+' : '' }}{{ $growth }}%
+                                                                </span>
+                                                            @elseif ($val > 0 && $m === 1)
+                                                                <span class="text-[10px] text-gray-400 font-bold">100% (Base)</span>
+                                                            @else
+                                                                <span class="text-gray-300 dark:text-gray-600">-</span>
+                                                            @endif
+                                                        </div>
+                                                    @else
+                                                        <span class="text-xs {{ $val > 0 ? 'text-gray-800 dark:text-gray-200' : 'text-gray-300 dark:text-gray-600' }}">
+                                                            {{ $val > 0 ? number_format($val) : '-' }}
+                                                        </span>
+                                                    @endif
+                                                </td>
+                                            @endfor
+                                            <td class="py-2.5 px-3 text-right font-mono font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 dark:bg-emerald-500/10">
+                                                {{ number_format($dr['total_kasus']) }}
+                                            </td>
+                                            <td class="py-2.5 px-3 text-center font-mono font-bold text-xs bg-gray-50/50 dark:bg-meta-4/20">
+                                                <span class="{{ $dr['growth_pct'] > 0 ? 'text-amber-600 dark:text-amber-400' : ($dr['growth_pct'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                    {{ $dr['growth_pct'] > 0 ? '+' : '' }}{{ $dr['growth_pct'] }}%
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="17" class="py-8 text-center text-gray-400">
+                                                Tidak ada data dokter DPJP ditemukan.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                    <!-- ===================== VIEW 4: TREN BULANAN RS ===================== -->
+                    @elseif ($momView === 'overview')
+                        @php
+                            $mBreakdown = !empty($this->monthlyBreakdown['months'])
+                                ? $this->monthlyBreakdown
+                                : App\Repository\DiseaseReportRepository::getMonthlyBreakdown($this->filters());
+                        @endphp
+                        <div class="overflow-x-auto rounded-2xl border border-stroke dark:border-strokedark">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-gray-50/90 dark:bg-meta-4/60 text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-300 border-b border-stroke dark:border-strokedark">
+                                        <th class="py-3 px-3 text-center w-12">No</th>
+                                        <th class="py-3 px-4 w-36">Bulan</th>
+                                        <th class="py-3 px-3 text-right text-emerald-600 dark:text-emerald-400">Kasus Baru</th>
+                                        <th class="py-3 px-3 text-right text-blue-600 dark:text-blue-400">Kasus Lama</th>
+                                        <th class="py-3 px-3 text-right text-emerald-600 dark:text-emerald-400">Poli</th>
+                                        <th class="py-3 px-3 text-right text-rose-600 dark:text-rose-400">IGD</th>
+                                        <th class="py-3 px-3 text-right bg-emerald-500/10 font-black">Total Ralan</th>
+                                        <th class="py-3 px-3 text-right text-blue-600 dark:text-blue-400">Ranap</th>
+                                        <th class="py-3 px-3 text-center">Penyakit Unik</th>
+                                        <th class="py-3 px-3 text-center">Pasien Unik</th>
+                                        <th class="py-3 px-4 text-center bg-emerald-500/10 font-black">Total Kasus</th>
+                                        <th class="py-3 px-3 text-center bg-gray-100 dark:bg-meta-4/80 font-black">MoM %</th>
+                                        <th class="py-3 px-3 text-center">% Share</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 font-medium">
+                                    @foreach ($mBreakdown['months'] as $m => $item)
+                                        <tr class="hover:bg-gray-50/70 dark:hover:bg-meta-4/20 transition-colors {{ $m === $refMonth ? 'bg-emerald-500/5' : '' }}">
+                                            <td class="py-2.5 px-3 text-center text-gray-400 font-mono">{{ $m }}</td>
+                                            <td class="py-2.5 px-4 font-bold text-gray-800 dark:text-white">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="w-5 h-5 rounded bg-gray-100 dark:bg-meta-4 text-[10px] font-mono font-black text-gray-500 flex items-center justify-center">
+                                                        {{ str_pad($m, 2, '0', STR_PAD_LEFT) }}
+                                                    </span>
+                                                    <span>{{ $item['nama_bulan'] }}</span>
+                                                    @if ($m === $refMonth)
+                                                        <span class="px-1.5 py-0.2 rounded text-[9px] font-black bg-emerald-500/15 text-emerald-600">ACUAN</span>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td class="py-2.5 px-3 text-right font-mono">
+                                                <div class="flex flex-col items-end leading-tight">
+                                                    <span class="text-emerald-600 dark:text-emerald-400 font-semibold">{{ number_format($item['kasus_baru']) }}</span>
+                                                    @if ($item['growth_baru'] !== null)
+                                                        <span class="text-[9px] font-bold {{ $item['growth_baru'] > 0 ? 'text-amber-600 dark:text-amber-400' : ($item['growth_baru'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                            {{ $item['growth_baru'] > 0 ? '+' : '' }}{{ $item['growth_baru'] }}%
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td class="py-2.5 px-3 text-right font-mono">
+                                                <div class="flex flex-col items-end leading-tight">
+                                                    <span class="text-blue-600 dark:text-blue-400 font-semibold">{{ number_format($item['kasus_lama']) }}</span>
+                                                    @if ($item['growth_lama'] !== null)
+                                                        <span class="text-[9px] font-bold {{ $item['growth_lama'] > 0 ? 'text-amber-600 dark:text-amber-400' : ($item['growth_lama'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                            {{ $item['growth_lama'] > 0 ? '+' : '' }}{{ $item['growth_lama'] }}%
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td class="py-2.5 px-3 text-right font-mono">
+                                                <div class="flex flex-col items-end leading-tight">
+                                                    <span class="text-emerald-600 dark:text-emerald-400 font-semibold">{{ number_format($item['poli']) }}</span>
+                                                    @if ($item['growth_poli'] !== null)
+                                                        <span class="text-[9px] font-bold {{ $item['growth_poli'] > 0 ? 'text-amber-600 dark:text-amber-400' : ($item['growth_poli'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                            {{ $item['growth_poli'] > 0 ? '+' : '' }}{{ $item['growth_poli'] }}%
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td class="py-2.5 px-3 text-right font-mono">
+                                                <div class="flex flex-col items-end leading-tight">
+                                                    <span class="text-rose-600 dark:text-rose-400 font-semibold">{{ number_format($item['igd']) }}</span>
+                                                    @if ($item['growth_igd'] !== null)
+                                                        <span class="text-[9px] font-bold {{ $item['growth_igd'] > 0 ? 'text-amber-600 dark:text-amber-400' : ($item['growth_igd'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                            {{ $item['growth_igd'] > 0 ? '+' : '' }}{{ $item['growth_igd'] }}%
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td class="py-2.5 px-3 text-right font-mono font-black text-emerald-700 dark:text-emerald-300 bg-emerald-500/5">{{ number_format($item['ralan']) }}</td>
+                                            <td class="py-2.5 px-3 text-right font-mono">
+                                                <div class="flex flex-col items-end leading-tight">
+                                                    <span class="text-blue-600 dark:text-blue-400 font-semibold">{{ number_format($item['ranap']) }}</span>
+                                                    @if ($item['growth_ranap'] !== null)
+                                                        <span class="text-[9px] font-bold {{ $item['growth_ranap'] > 0 ? 'text-amber-600 dark:text-amber-400' : ($item['growth_ranap'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                            {{ $item['growth_ranap'] > 0 ? '+' : '' }}{{ $item['growth_ranap'] }}%
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td class="py-2.5 px-3 text-center font-mono">{{ number_format($item['total_penyakit_unik']) }}</td>
+                                            <td class="py-2.5 px-3 text-center font-mono">{{ number_format($item['total_pasien_unik']) }}</td>
+                                            <td class="py-2.5 px-4 text-center font-mono font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/5">
+                                                {{ number_format($item['total_kasus']) }}
+                                            </td>
+                                            <td class="py-2.5 px-3 text-center font-mono font-bold text-xs">
+                                                @if ($item['growth_total'] !== null)
+                                                    <span class="{{ $item['growth_total'] > 0 ? 'text-amber-600 dark:text-amber-400' : ($item['growth_total'] < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                                        {{ $item['growth_total'] > 0 ? '+' : '' }}{{ $item['growth_total'] }}%
+                                                    </span>
+                                                @else
+                                                    <span class="text-gray-400">-</span>
+                                                @endif
+                                            </td>
+                                            <td class="py-2.5 px-3 text-center font-mono text-gray-500">{{ $item['persentase'] }}%</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-gray-100/90 dark:bg-meta-4/80 font-black text-gray-800 dark:text-white border-t-2 border-stroke dark:border-strokedark">
+                                        <td colspan="2" class="py-3 px-4 uppercase text-[11px]">Total Setahun</td>
+                                        <td class="py-3 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400">{{ number_format($mBreakdown['totals']['kasus_baru']) }}</td>
+                                        <td class="py-3 px-3 text-right font-mono text-blue-600 dark:text-blue-400">{{ number_format($mBreakdown['totals']['kasus_lama']) }}</td>
+                                        <td class="py-3 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400">{{ number_format($mBreakdown['totals']['poli']) }}</td>
+                                        <td class="py-3 px-3 text-right font-mono text-rose-600 dark:text-rose-400">{{ number_format($mBreakdown['totals']['igd']) }}</td>
+                                        <td class="py-3 px-3 text-right font-mono font-black text-emerald-700 dark:text-emerald-300 bg-emerald-500/10">{{ number_format($mBreakdown['totals']['ralan']) }}</td>
+                                        <td class="py-3 px-3 text-right font-mono text-blue-600 dark:text-blue-400">{{ number_format($mBreakdown['totals']['ranap']) }}</td>
+                                        <td class="py-3 px-3 text-center font-mono">{{ number_format($mBreakdown['totals']['total_penyakit_unik']) }}</td>
+                                        <td class="py-3 px-3 text-center font-mono">{{ number_format($mBreakdown['totals']['total_pasien_unik']) }}</td>
+                                        <td class="py-3 px-4 text-center font-mono text-emerald-600 dark:text-emerald-400 font-black">{{ number_format($mBreakdown['totals']['total_kasus']) }}</td>
+                                        <td class="py-3 px-3 text-center font-mono">-</td>
+                                        <td class="py-3 px-3 text-center font-mono">100%</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            @endif
         </div>
 
         <!-- 6. Modal Drilldown Kasus Pasien (Wajib menggunakan modifier !mt-0) -->
@@ -757,7 +1619,7 @@
             <div class="fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-6 md:p-10 bg-slate-900/60 backdrop-blur-sm overflow-y-auto !mt-0 animate-in fade-in duration-200">
                 <div class="relative w-full max-w-5xl bg-white dark:bg-boxdark rounded-[2.5rem] shadow-2xl border border-stroke dark:border-strokedark overflow-hidden !mt-0 my-auto">
                     <!-- Modal Header -->
-                    <div class="p-6 sm:p-7 border-b border-stroke/70 dark:border-strokedark/70 flex items-center justify-between">
+                    <div class="p-6 sm:p-7 border-b border-stroke/70 dark:border-strokedark/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
                                 <span class="icon-[solar--stethoscope-bold-duotone] text-xl"></span>
@@ -774,9 +1636,34 @@
                                 <p class="text-xs text-gray-400 mt-0.5">Daftar kunjungan pasien dengan diagnosa ini (maksimal 50 data terbaru)</p>
                             </div>
                         </div>
-                        <button type="button" wire:click="closeDetail" class="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-meta-4 dark:hover:bg-meta-4/80 flex items-center justify-center text-gray-500 transition cursor-pointer">
-                            <span class="icon-[solar--close-circle-bold] text-xl"></span>
-                        </button>
+
+                        <!-- Action Buttons di Header Modal -->
+                        <div class="flex items-center gap-2">
+                            <!-- Toggle Sensor di Modal -->
+                            <button type="button" wire:click="toggleMask"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer border {{ $isMasked ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30' : 'bg-gray-100 dark:bg-meta-4 text-gray-700 dark:text-gray-300 border-stroke dark:border-strokedark' }}">
+                                <span class="{{ $isMasked ? 'icon-[solar--eye-closed-bold-duotone] text-amber-500' : 'icon-[solar--eye-bold-duotone]' }} text-sm"></span>
+                                <span>{{ $isMasked ? 'Sensor Aktif' : 'Data Asli' }}</span>
+                            </button>
+
+                            <!-- Cetak PDF Drilldown -->
+                            <button type="button" wire:click="exportDrilldownPdf"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition cursor-pointer">
+                                <span class="icon-[solar--printer-bold-duotone] text-sm"></span>
+                                <span>Cetak PDF</span>
+                            </button>
+
+                            <!-- Ekspor Excel Drilldown -->
+                            <button type="button" wire:click="exportDrilldownExcel"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-teal-600 hover:bg-teal-500 text-white shadow-sm transition cursor-pointer">
+                                <span class="icon-[solar--document-medicine-bold-duotone] text-sm"></span>
+                                <span>Excel</span>
+                            </button>
+
+                            <button type="button" wire:click="closeDetail" class="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-meta-4 dark:hover:bg-meta-4/80 flex items-center justify-center text-gray-500 transition cursor-pointer">
+                                <span class="icon-[solar--close-circle-bold] text-lg"></span>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Modal Body Table -->
@@ -794,7 +1681,7 @@
                                         <th class="py-2.5 px-3">Layanan</th>
                                         <th class="py-2.5 px-3 text-center">Prioritas</th>
                                         <th class="py-2.5 px-3 text-center">Kasus</th>
-                                          <th class="py-2.5 px-3 text-center">Dinas</th>
+                                        <th class="py-2.5 px-3 text-center">Dinas</th>
                                         <th class="py-2.5 px-3">Dokter DPJP</th>
                                         <th class="py-2.5 px-3">Poliklinik/Ruang</th>
                                         <th class="py-2.5 px-3">Penjamin</th>
@@ -804,8 +1691,12 @@
                                     @forelse ($drilldownPatients as $p)
                                         <tr class="hover:bg-gray-50/60 dark:hover:bg-meta-4/15 transition-colors">
                                             <td class="py-2 px-3 text-center text-gray-400 font-bold">{{ $loop->iteration }}</td>
-                                            <td class="py-2 px-3 font-mono font-bold text-gray-800 dark:text-white">{{ $p['no_rkm_medis'] }}</td>
-                                            <td class="py-2 px-3 font-bold text-gray-800 dark:text-white">{{ $p['nama'] }}</td>
+                                            <td class="py-2 px-3 font-mono font-bold text-gray-800 dark:text-white">
+                                                {{ $isMasked ? $p['no_rkm_medis_masked'] : $p['no_rkm_medis'] }}
+                                            </td>
+                                            <td class="py-2 px-3 font-bold text-gray-800 dark:text-white">
+                                                {{ $isMasked ? $p['nama_masked'] : $p['nama'] }}
+                                            </td>
                                             <td class="py-2 px-3 text-center font-bold {{ $p['jk'] === 'L' ? 'text-blue-600' : 'text-pink-600' }}">{{ $p['jk'] }}</td>
                                             <td class="py-2 px-3 text-center text-gray-600 dark:text-gray-300">{{ $p['umur'] }} th</td>
                                             <td class="py-2 px-3 text-gray-500">{{ $p['tanggal'] }}</td>
@@ -846,10 +1737,162 @@
                     </div>
 
                     <!-- Modal Footer -->
-                    <div class="p-4 sm:p-5 border-t border-stroke/70 dark:border-strokedark/70 bg-gray-50/60 dark:bg-meta-4/20 flex justify-end">
+                    <div class="p-4 sm:p-5 border-t border-stroke/70 dark:border-strokedark/70 bg-gray-50/60 dark:bg-meta-4/20 flex items-center justify-between">
+                        <span class="text-xs text-gray-400">
+                            * {{ $isMasked ? 'Data No. RM & Nama Pasien disamarkan (sensor aktif)' : 'Data identitas pasien ditampilkan lengkap (sensor nonaktif)' }}
+                        </span>
                         <button type="button" wire:click="closeDetail" class="px-5 py-2 rounded-xl text-xs font-bold bg-gray-200 hover:bg-gray-300 dark:bg-meta-4 dark:hover:bg-meta-4/80 text-gray-800 dark:text-white transition cursor-pointer">
                             Tutup
                         </button>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- 7. Modal Pilihan Cetak PDF & Ekspor Excel (Wajib menggunakan modifier !mt-0) -->
+        @if ($showExportModal)
+            <div class="fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-6 md:p-10 bg-slate-900/60 backdrop-blur-sm overflow-y-auto !mt-0 animate-in fade-in duration-200">
+                <div class="relative w-full max-w-lg bg-white dark:bg-boxdark rounded-[2.5rem] shadow-2xl border border-stroke dark:border-strokedark overflow-hidden !mt-0 my-auto">
+                    <!-- Modal Header -->
+                    <div class="p-6 border-b border-stroke/70 dark:border-strokedark/70 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl {{ $exportFormat === 'excel' ? 'bg-teal-500/10 text-teal-600 dark:text-teal-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' }} flex items-center justify-center transition-colors">
+                                <span class="{{ $exportFormat === 'excel' ? 'icon-[solar--document-medicine-bold-duotone]' : 'icon-[solar--printer-bold-duotone]' }} text-xl"></span>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-black text-gray-800 dark:text-white">
+                                    Opsi Ekspor Laporan Data
+                                </h3>
+                                <p class="text-xs text-gray-400">Pilih format berkas, jenis dataset, dan preferensi privasi pasien</p>
+                            </div>
+                        </div>
+                        <button type="button" wire:click="closeExportModal" class="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-meta-4 dark:hover:bg-meta-4/80 flex items-center justify-center text-gray-500 transition cursor-pointer">
+                            <span class="icon-[solar--close-circle-bold] text-lg"></span>
+                        </button>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="p-6 space-y-5">
+                        <!-- Pilihan Format Dokumen: PDF vs Excel -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                                Format Berkas:
+                            </label>
+                            <div class="grid grid-cols-2 gap-2.5">
+                                <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition {{ $exportFormat === 'pdf' ? 'border-rose-500 bg-rose-500/5 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold' : 'border-stroke dark:border-strokedark hover:bg-gray-50 dark:hover:bg-meta-4/30 text-gray-700 dark:text-gray-300 font-medium' }}">
+                                    <input type="radio" wire:model.live="exportFormat" value="pdf" class="text-rose-600 focus:ring-rose-500">
+                                    <span class="icon-[solar--file-download-bold-duotone] text-xl text-rose-500 shrink-0"></span>
+                                    <div class="flex flex-col">
+                                        <span class="text-xs font-bold leading-tight">Dokumen PDF</span>
+                                        <span class="text-[10px] text-gray-400 font-normal">Cetak formal (.pdf)</span>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition {{ $exportFormat === 'excel' ? 'border-teal-500 bg-teal-500/5 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 font-bold' : 'border-stroke dark:border-strokedark hover:bg-gray-50 dark:hover:bg-meta-4/30 text-gray-700 dark:text-gray-300 font-medium' }}">
+                                    <input type="radio" wire:model.live="exportFormat" value="excel" class="text-teal-600 focus:ring-teal-500">
+                                    <span class="icon-[solar--document-medicine-bold-duotone] text-xl text-teal-500 shrink-0"></span>
+                                    <div class="flex flex-col">
+                                        <span class="text-xs font-bold leading-tight">Spreadsheet Excel</span>
+                                        <span class="text-[10px] text-gray-400 font-normal">Olah data (.xlsx)</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Pilihan Jenis Laporan -->
+                        <div class="space-y-2 pt-2 border-t border-stroke/70 dark:border-strokedark/70">
+                            <label class="block text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                                Jenis Laporan:
+                            </label>
+                            <div class="grid grid-cols-1 gap-2">
+                                <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition {{ $exportType === 'morbiditas' ? 'border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10' : 'border-stroke dark:border-strokedark hover:bg-gray-50 dark:hover:bg-meta-4/30' }}">
+                                    <input type="radio" wire:model.live="exportType" value="morbiditas" class="text-emerald-600 focus:ring-emerald-500">
+                                    <div>
+                                        <span class="text-xs font-bold text-gray-800 dark:text-white block">1. Rekapitulasi Morbiditas Penyakit</span>
+                                        <span class="text-[11px] text-gray-400">Tabel rangkuman 100 besar diagnosa ICD-10, kasus baru/lama, gender, dan layanan</span>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition {{ $exportType === 'kunjungan' ? 'border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10' : 'border-stroke dark:border-strokedark hover:bg-gray-50 dark:hover:bg-meta-4/30' }}">
+                                    <input type="radio" wire:model.live="exportType" value="kunjungan" class="text-emerald-600 focus:ring-emerald-500">
+                                    <div>
+                                        <span class="text-xs font-bold text-gray-800 dark:text-white block">2. Data Kunjungan Pasien (Transaksional)</span>
+                                        <span class="text-[11px] text-gray-400">Daftar baris kunjungan pasien (No. RM, Nama, Diagnosa, Tgl Kunjungan, Layanan, Dokter)</span>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition {{ $exportType === 'pengunjung' ? 'border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10' : 'border-stroke dark:border-strokedark hover:bg-gray-50 dark:hover:bg-meta-4/30' }}">
+                                    <input type="radio" wire:model.live="exportType" value="pengunjung" class="text-emerald-600 focus:ring-emerald-500">
+                                    <div>
+                                        <span class="text-xs font-bold text-gray-800 dark:text-white block">3. Data Pengunjung Pasien (Individu Unik)</span>
+                                        <span class="text-[11px] text-gray-400">Daftar rekap pasien unik (No. RM, Nama, Total Kunjungan, Pertama & Terakhir)</span>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition {{ $exportType === 'mom' ? 'border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10' : 'border-stroke dark:border-strokedark hover:bg-gray-50 dark:hover:bg-meta-4/30' }}">
+                                    <input type="radio" wire:model.live="exportType" value="mom" class="text-emerald-600 focus:ring-emerald-500">
+                                    <div>
+                                        <span class="text-xs font-bold text-gray-800 dark:text-white block">4. Matriks 12 Bulan & Pertumbuhan MoM Penyakit</span>
+                                        <span class="text-[11px] text-gray-400">Distribusi tren 12 bulan (Jan - Des), perhitungan MoM % Growth per diagnosa, poliklinik, dan ringkasan RS</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Pilihan Mode Sensor Identitas (Hanya relevan untuk Kunjungan & Pengunjung) -->
+                        <div class="space-y-2 pt-2 border-t border-stroke/70 dark:border-strokedark/70">
+                            <label class="block text-xs font-black uppercase tracking-wider text-gray-600 dark:text-gray-300">
+                                Opsi Sensor Privasi Pasien:
+                            </label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <label class="flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition {{ $exportMasked ? 'border-amber-500 bg-amber-500/5 dark:bg-amber-500/10' : 'border-stroke dark:border-strokedark hover:bg-gray-50 dark:hover:bg-meta-4/30' }}">
+                                    <input type="radio" wire:model.live="exportMasked" value="1" class="text-amber-600 focus:ring-amber-500 mt-0.5">
+                                    <div>
+                                        <span class="text-xs font-bold text-gray-800 dark:text-white block flex items-center gap-1.5">
+                                            <span class="icon-[solar--shield-check-bold] text-amber-500"></span>
+                                            <span>Mode Sensor (Privasi)</span>
+                                        </span>
+                                        <span class="text-[10px] text-gray-400 block mt-0.5">
+                                            No RM disensor 3 digit belakang (<code>054***</code>) dan nama disensor bagian tengah (<code>Y********H R***I</code>).
+                                        </span>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition {{ !$exportMasked ? 'border-blue-500 bg-blue-500/5 dark:bg-blue-500/10' : 'border-stroke dark:border-strokedark hover:bg-gray-50 dark:hover:bg-meta-4/30' }}">
+                                    <input type="radio" wire:model.live="exportMasked" value="0" class="text-blue-600 focus:ring-blue-500 mt-0.5">
+                                    <div>
+                                        <span class="text-xs font-bold text-gray-800 dark:text-white block flex items-center gap-1.5">
+                                            <span class="icon-[solar--document-text-bold] text-blue-500"></span>
+                                            <span>Tanpa Sensor (Lengkap)</span>
+                                        </span>
+                                        <span class="text-[10px] text-gray-400 block mt-0.5">
+                                            Data identitas pasien ditampilkan utuh untuk verifikasi medis / audit internal rekam medis.
+                                        </span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="p-4 sm:p-5 border-t border-stroke/70 dark:border-strokedark/70 bg-gray-50/60 dark:bg-meta-4/20 flex items-center justify-end gap-2.5">
+                        <button type="button" wire:click="closeExportModal"
+                            class="px-4 py-2 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 dark:bg-meta-4 dark:hover:bg-meta-4/80 text-gray-700 dark:text-gray-300 transition cursor-pointer">
+                            Batal
+                        </button>
+                        @if ($exportFormat === 'excel')
+                            <button type="button" wire:click="exportExcel('{{ $exportType }}', {{ $exportMasked ? 'true' : 'false' }})"
+                                class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-500 text-white shadow-md shadow-teal-900/20 transition cursor-pointer">
+                                <span class="icon-[solar--document-medicine-bold] text-sm"></span>
+                                <span>Unduh File Excel (.xlsx)</span>
+                            </button>
+                        @else
+                            <button type="button" wire:click="exportPdf('{{ $exportType }}', {{ $exportMasked ? 'true' : 'false' }})"
+                                class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-900/20 transition cursor-pointer">
+                                <span class="icon-[solar--file-download-bold] text-sm"></span>
+                                <span>Unduh Dokumen PDF (.pdf)</span>
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>

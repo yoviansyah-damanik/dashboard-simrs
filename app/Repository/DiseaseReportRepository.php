@@ -15,6 +15,16 @@ interface DiseaseReportInterface
     public static function getAllDiseasesForExport(array $filters, int $limit = 100): array;
     public static function getPatientDrilldown(string $diseaseCode, array $filters, int $limit = 50): array;
     public static function getMonthlyBreakdown(array $filters): array;
+    public static function getVisitsPaginated(array $filters, int $perPage = 25): LengthAwarePaginator;
+    public static function getVisitorsPaginated(array $filters, int $perPage = 25): LengthAwarePaginator;
+    public static function getAllVisitsForExport(array $filters, int $limit = 500): array;
+    public static function getAllVisitorsForExport(array $filters, int $limit = 500): array;
+    public static function maskMedicalRecord(?string $rm): string;
+    public static function maskPatientName(?string $name): string;
+    public static function getDiseaseMonthlyMatrix(array $filters, int $limit = 50): array;
+    public static function getPolyclinicMonthlyMatrix(array $filters): array;
+    public static function getDoctorMonthlyMatrix(array $filters, int $limit = 30): array;
+    public static function getMomSummaryKpi(array $filters): array;
 }
 
 class DiseaseReportRepository implements DiseaseReportInterface
@@ -479,7 +489,9 @@ class DiseaseReportRepository implements DiseaseReportInterface
             $items[] = [
                 'no_rawat' => $r->no_rawat,
                 'no_rkm_medis' => $r->no_rkm_medis,
+                'no_rkm_medis_masked' => self::maskMedicalRecord($r->no_rkm_medis),
                 'nama' => $r->nm_pasien,
+                'nama_masked' => self::maskPatientName($r->nm_pasien),
                 'jk' => $r->jk,
                 'umur' => $age,
                 'tanggal' => Carbon::parse($r->tgl_registrasi)->format('d/m/Y'),
@@ -559,6 +571,12 @@ class DiseaseReportRepository implements DiseaseReportInterface
         ];
 
         $yearTotal = $rows->sum('total_kasus') ?: 1;
+        $prevTotal = null;
+        $prevBaru = null;
+        $prevLama = null;
+        $prevPoli = null;
+        $prevIgd = null;
+        $prevRanap = null;
 
         for ($m = 1; $m <= 12; $m++) {
             $row = $rows->get($m);
@@ -579,6 +597,26 @@ class DiseaseReportRepository implements DiseaseReportInterface
             $totalUmum = (int) ($row->total_umum ?? 0);
             $penyakitUnik = (int) ($row->total_penyakit_unik ?? 0);
             $pasienUnik = (int) ($row->total_pasien_unik ?? 0);
+
+            // Pertumbuhan MoM (Month-over-Month %) terhadap bulan sebelumnya
+            $growthTotal = ($prevTotal !== null && $prevTotal > 0)
+                ? round((($totalKasus - $prevTotal) / $prevTotal) * 100, 1)
+                : null;
+            $growthBaru = ($prevBaru !== null && $prevBaru > 0)
+                ? round((($kasusBaru - $prevBaru) / $prevBaru) * 100, 1)
+                : null;
+            $growthLama = ($prevLama !== null && $prevLama > 0)
+                ? round((($kasusLama - $prevLama) / $prevLama) * 100, 1)
+                : null;
+            $growthPoli = ($prevPoli !== null && $prevPoli > 0)
+                ? round((($poli - $prevPoli) / $prevPoli) * 100, 1)
+                : null;
+            $growthIgd = ($prevIgd !== null && $prevIgd > 0)
+                ? round((($igd - $prevIgd) / $prevIgd) * 100, 1)
+                : null;
+            $growthRanap = ($prevRanap !== null && $prevRanap > 0)
+                ? round((($ranap - $prevRanap) / $prevRanap) * 100, 1)
+                : null;
 
             $months[$m] = [
                 'bulan' => $m,
@@ -601,8 +639,24 @@ class DiseaseReportRepository implements DiseaseReportInterface
                 'total_tni' => $totalTni,
                 'total_polri' => $totalPolri,
                 'total_umum' => $totalUmum,
+                'growth_total' => $growthTotal,
+                'growth_baru' => $growthBaru,
+                'growth_lama' => $growthLama,
+                'growth_poli' => $growthPoli,
+                'growth_igd' => $growthIgd,
+                'growth_ranap' => $growthRanap,
                 'persentase' => round(($totalKasus / $yearTotal) * 100, 1),
             ];
+
+            // Update penanda bulan sebelumnya jika ada data/periode berjalan
+            if ($totalKasus > 0 || $m <= (int) date('m')) {
+                $prevTotal = $totalKasus;
+                $prevBaru = $kasusBaru;
+                $prevLama = $kasusLama;
+                $prevPoli = $poli;
+                $prevIgd = $igd;
+                $prevRanap = $ranap;
+            }
 
             $totals['total_kasus'] += $totalKasus;
             $totals['kasus_baru'] += $kasusBaru;
@@ -631,6 +685,665 @@ class DiseaseReportRepository implements DiseaseReportInterface
             'year' => (int) ($filters['year'] ?? date('Y')),
             'months' => $months,
             'totals' => $totals,
+        ];
+    }
+
+    /**
+     * Sensor / masking No. Rekam Medis (3 digit belakang diganti bintang)
+     * Contoh: 054123 -> 054***
+     */
+    public static function maskMedicalRecord(?string $rm): string
+    {
+        if (!$rm) {
+            return '-';
+        }
+        $len = strlen($rm);
+        if ($len <= 3) {
+            return str_repeat('*', $len);
+        }
+        return substr($rm, 0, $len - 3) . '***';
+    }
+
+    /**
+     * Sensor / masking Nama Pasien (bagian tengah tiap kata diganti bintang, awal dan akhir tetap tampak)
+     * Contoh: YOVIANSYAH RIZKI -> Y********H R***I
+     */
+    public static function maskPatientName(?string $name): string
+    {
+        if (!$name) {
+            return '-';
+        }
+        return preg_replace('/(?<=[A-Za-z])[A-Za-z](?=[A-Za-z])/', '*', $name);
+    }
+
+    /**
+     * Mengambil daftar data kunjungan pasien (dengan pagination) sesuai filter aktif
+     */
+    public static function getVisitsPaginated(array $filters, int $perPage = 25): LengthAwarePaginator
+    {
+        $query = self::buildBaseQuery($filters);
+
+        $paginator = $query->leftJoin('dokter as d', 'rp.kd_dokter', '=', 'd.kd_dokter')
+            ->leftJoin('poliklinik as pl', 'rp.kd_poli', '=', 'pl.kd_poli')
+            ->leftJoin('penjab as pj', 'rp.kd_pj', '=', 'pj.kd_pj')
+            ->select([
+                'rp.no_rawat',
+                'rp.no_rkm_medis',
+                'rp.kd_poli',
+                'ps.nm_pasien',
+                'ps.jk',
+                'ps.tgl_lahir',
+                'rp.tgl_registrasi',
+                'rp.status_lanjut',
+                'dp.kd_penyakit',
+                'p.nm_penyakit',
+                'dp.prioritas',
+                'dp.status_penyakit',
+                'd.nm_dokter',
+                'pl.nm_poli',
+                'pj.png_jawab as penjamin',
+                DB::raw("CASE WHEN pt.no_rkm_medis IS NOT NULL THEN 'TNI' WHEN pp.no_rkm_medis IS NOT NULL THEN 'POLRI' ELSE 'UMUM' END as status_dinas"),
+            ])
+            ->orderByDesc('rp.tgl_registrasi')
+            ->paginate($perPage, ['*'], 'visits_page');
+
+        $paginator->getCollection()->transform(function ($r) {
+            $age = $r->tgl_lahir ? Carbon::parse($r->tgl_lahir)->age : '-';
+            $isIgd = ($r->kd_poli === 'IGDK');
+            $layananLabel = $r->status_lanjut === 'Ranap' ? 'Ranap' : ($isIgd ? 'IGD' : 'Poli');
+            $layananDetail = $r->status_lanjut === 'Ranap' ? 'Rawat Inap' : ($isIgd ? 'Gawat Darurat (IGD)' : 'Poliklinik Rawat Jalan');
+
+            return [
+                'no_rawat' => $r->no_rawat,
+                'no_rkm_medis' => $r->no_rkm_medis,
+                'no_rkm_medis_masked' => self::maskMedicalRecord($r->no_rkm_medis),
+                'nama' => $r->nm_pasien,
+                'nama_masked' => self::maskPatientName($r->nm_pasien),
+                'jk' => $r->jk,
+                'umur' => $age,
+                'tanggal' => Carbon::parse($r->tgl_registrasi)->format('d/m/Y'),
+                'tgl_raw' => $r->tgl_registrasi,
+                'kd_penyakit' => $r->kd_penyakit,
+                'nm_penyakit' => $r->nm_penyakit,
+                'diagnosa' => $r->kd_penyakit . ' - ' . $r->nm_penyakit,
+                'layanan' => $layananLabel,
+                'layanan_detail' => $layananDetail,
+                'prioritas' => $r->prioritas == 1 ? 'Primer' : 'Sekunder',
+                'kasus' => $r->status_penyakit,
+                'dokter' => $r->nm_dokter ?? '-',
+                'unit' => $r->nm_poli ?? '-',
+                'penjamin' => $r->penjamin ?? '-',
+                'status_dinas' => $r->status_dinas ?? 'UMUM',
+            ];
+        });
+
+        return $paginator;
+    }
+
+    /**
+     * Mengambil daftar data pengunjung unik pasien (dengan pagination) sesuai filter aktif
+     */
+    public static function getVisitorsPaginated(array $filters, int $perPage = 25): LengthAwarePaginator
+    {
+        $query = self::buildBaseQuery($filters);
+
+        $paginator = $query->select([
+                'ps.no_rkm_medis',
+                'ps.nm_pasien',
+                'ps.jk',
+                'ps.tgl_lahir',
+                DB::raw("COUNT(DISTINCT rp.no_rawat) as total_kunjungan"),
+                DB::raw("MIN(rp.tgl_registrasi) as kunjungan_pertama"),
+                DB::raw("MAX(rp.tgl_registrasi) as kunjungan_terakhir"),
+                DB::raw("GROUP_CONCAT(DISTINCT dp.kd_penyakit ORDER BY dp.kd_penyakit SEPARATOR ', ') as riwayat_diagnosa"),
+                DB::raw("CASE WHEN pt.no_rkm_medis IS NOT NULL THEN 'TNI' WHEN pp.no_rkm_medis IS NOT NULL THEN 'POLRI' ELSE 'UMUM' END as status_dinas"),
+            ])
+            ->groupBy('ps.no_rkm_medis', 'ps.nm_pasien', 'ps.jk', 'ps.tgl_lahir', 'pt.no_rkm_medis', 'pp.no_rkm_medis')
+            ->orderByDesc(DB::raw('MAX(rp.tgl_registrasi)'))
+            ->paginate($perPage, ['*'], 'visitors_page');
+
+        $paginator->getCollection()->transform(function ($r) {
+            $age = $r->tgl_lahir ? Carbon::parse($r->tgl_lahir)->age : '-';
+
+            return [
+                'no_rkm_medis' => $r->no_rkm_medis,
+                'no_rkm_medis_masked' => self::maskMedicalRecord($r->no_rkm_medis),
+                'nama' => $r->nm_pasien,
+                'nama_masked' => self::maskPatientName($r->nm_pasien),
+                'jk' => $r->jk,
+                'umur' => $age,
+                'total_kunjungan' => (int) $r->total_kunjungan,
+                'kunjungan_pertama' => $r->kunjungan_pertama ? Carbon::parse($r->kunjungan_pertama)->format('d/m/Y') : '-',
+                'kunjungan_terakhir' => $r->kunjungan_terakhir ? Carbon::parse($r->kunjungan_terakhir)->format('d/m/Y') : '-',
+                'riwayat_diagnosa' => $r->riwayat_diagnosa ?? '-',
+                'status_dinas' => $r->status_dinas ?? 'UMUM',
+            ];
+        });
+
+        return $paginator;
+    }
+
+    /**
+     * Mengambil seluruh data kunjungan untuk keperluan ekspor PDF
+     */
+    public static function getAllVisitsForExport(array $filters, int $limit = 500): array
+    {
+        $query = self::buildBaseQuery($filters);
+
+        $rows = $query->leftJoin('dokter as d', 'rp.kd_dokter', '=', 'd.kd_dokter')
+            ->leftJoin('poliklinik as pl', 'rp.kd_poli', '=', 'pl.kd_poli')
+            ->leftJoin('penjab as pj', 'rp.kd_pj', '=', 'pj.kd_pj')
+            ->select([
+                'rp.no_rawat',
+                'rp.no_rkm_medis',
+                'rp.kd_poli',
+                'ps.nm_pasien',
+                'ps.jk',
+                'ps.tgl_lahir',
+                'rp.tgl_registrasi',
+                'rp.status_lanjut',
+                'dp.kd_penyakit',
+                'p.nm_penyakit',
+                'dp.prioritas',
+                'dp.status_penyakit',
+                'd.nm_dokter',
+                'pl.nm_poli',
+                'pj.png_jawab as penjamin',
+                DB::raw("CASE WHEN pt.no_rkm_medis IS NOT NULL THEN 'TNI' WHEN pp.no_rkm_medis IS NOT NULL THEN 'POLRI' ELSE 'UMUM' END as status_dinas"),
+            ])
+            ->orderByDesc('rp.tgl_registrasi')
+            ->limit($limit)
+            ->get();
+
+        $items = [];
+        foreach ($rows as $r) {
+            $age = $r->tgl_lahir ? Carbon::parse($r->tgl_lahir)->age : '-';
+            $isIgd = ($r->kd_poli === 'IGDK');
+            $layananLabel = $r->status_lanjut === 'Ranap' ? 'Ranap' : ($isIgd ? 'IGD' : 'Poli');
+
+            $items[] = [
+                'no_rawat' => $r->no_rawat,
+                'no_rkm_medis' => $r->no_rkm_medis,
+                'no_rkm_medis_masked' => self::maskMedicalRecord($r->no_rkm_medis),
+                'nama' => $r->nm_pasien,
+                'nama_masked' => self::maskPatientName($r->nm_pasien),
+                'jk' => $r->jk,
+                'umur' => $age,
+                'tanggal' => Carbon::parse($r->tgl_registrasi)->format('d/m/Y'),
+                'kd_penyakit' => $r->kd_penyakit,
+                'nm_penyakit' => $r->nm_penyakit,
+                'diagnosa' => $r->kd_penyakit . ' - ' . $r->nm_penyakit,
+                'layanan' => $layananLabel,
+                'prioritas' => $r->prioritas == 1 ? 'Primer' : 'Sekunder',
+                'kasus' => $r->status_penyakit,
+                'dokter' => $r->nm_dokter ?? '-',
+                'unit' => $r->nm_poli ?? '-',
+                'penjamin' => $r->penjamin ?? '-',
+                'status_dinas' => $r->status_dinas ?? 'UMUM',
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * Mengambil seluruh data pengunjung unik untuk keperluan ekspor PDF
+     */
+    public static function getAllVisitorsForExport(array $filters, int $limit = 500): array
+    {
+        $query = self::buildBaseQuery($filters);
+
+        $rows = $query->select([
+                'ps.no_rkm_medis',
+                'ps.nm_pasien',
+                'ps.jk',
+                'ps.tgl_lahir',
+                DB::raw("COUNT(DISTINCT rp.no_rawat) as total_kunjungan"),
+                DB::raw("MIN(rp.tgl_registrasi) as kunjungan_pertama"),
+                DB::raw("MAX(rp.tgl_registrasi) as kunjungan_terakhir"),
+                DB::raw("GROUP_CONCAT(DISTINCT dp.kd_penyakit ORDER BY dp.kd_penyakit SEPARATOR ', ') as riwayat_diagnosa"),
+                DB::raw("CASE WHEN pt.no_rkm_medis IS NOT NULL THEN 'TNI' WHEN pp.no_rkm_medis IS NOT NULL THEN 'POLRI' ELSE 'UMUM' END as status_dinas"),
+            ])
+            ->groupBy('ps.no_rkm_medis', 'ps.nm_pasien', 'ps.jk', 'ps.tgl_lahir', 'pt.no_rkm_medis', 'pp.no_rkm_medis')
+            ->orderByDesc(DB::raw('MAX(rp.tgl_registrasi)'))
+            ->limit($limit)
+            ->get();
+
+        $items = [];
+        foreach ($rows as $r) {
+            $age = $r->tgl_lahir ? Carbon::parse($r->tgl_lahir)->age : '-';
+
+            $items[] = [
+                'no_rkm_medis' => $r->no_rkm_medis,
+                'no_rkm_medis_masked' => self::maskMedicalRecord($r->no_rkm_medis),
+                'nama' => $r->nm_pasien,
+                'nama_masked' => self::maskPatientName($r->nm_pasien),
+                'jk' => $r->jk,
+                'umur' => $age,
+                'total_kunjungan' => (int) $r->total_kunjungan,
+                'kunjungan_pertama' => $r->kunjungan_pertama ? Carbon::parse($r->kunjungan_pertama)->format('d/m/Y') : '-',
+                'kunjungan_terakhir' => $r->kunjungan_terakhir ? Carbon::parse($r->kunjungan_terakhir)->format('d/m/Y') : '-',
+                'riwayat_diagnosa' => $r->riwayat_diagnosa ?? '-',
+                'status_dinas' => $r->status_dinas ?? 'UMUM',
+            ];
+        }
+
+        return $items;
+    }
+
+    /**
+     * Mengambil Matriks 12 Bulan dan Pertumbuhan MoM per Diagnosa Penyakit (ICD-10)
+     */
+    public static function getDiseaseMonthlyMatrix(array $filters, int $limit = 50): array
+    {
+        $matrixFilters = $filters;
+        $matrixFilters['month'] = null;
+        unset($matrixFilters['start_date'], $matrixFilters['end_date']);
+
+        $query = self::buildBaseQuery($matrixFilters);
+
+        $rows = $query->selectRaw("
+            dp.kd_penyakit,
+            p.nm_penyakit,
+            COUNT(*) as total_kasus,
+            SUM(CASE WHEN dp.status_penyakit = 'Baru' THEN 1 ELSE 0 END) as total_baru,
+            SUM(CASE WHEN dp.status_penyakit = 'Lama' THEN 1 ELSE 0 END) as total_lama,
+            SUM(CASE WHEN rp.status_lanjut = 'Ralan' AND rp.kd_poli != 'IGDK' THEN 1 ELSE 0 END) as total_poli,
+            SUM(CASE WHEN rp.kd_poli = 'IGDK' THEN 1 ELSE 0 END) as total_igd,
+            SUM(CASE WHEN rp.status_lanjut = 'Ranap' THEN 1 ELSE 0 END) as total_ranap,
+            SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 1 THEN 1 ELSE 0 END) as m1,
+            SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 2 THEN 1 ELSE 0 END) as m2,
+            SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 3 THEN 1 ELSE 0 END) as m3,
+            SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 4 THEN 1 ELSE 0 END) as m4,
+            SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 5 THEN 1 ELSE 0 END) as m5,
+            SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 6 THEN 1 ELSE 0 END) as m6,
+            SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 7 THEN 1 ELSE 0 END) as m7,
+            SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 8 THEN 1 ELSE 0 END) as m8,
+            SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 9 THEN 1 ELSE 0 END) as m9,
+            SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 10 THEN 1 ELSE 0 END) as m10,
+            SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 11 THEN 1 ELSE 0 END) as m11,
+            SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 12 THEN 1 ELSE 0 END) as m12
+        ")
+        ->groupBy('dp.kd_penyakit', 'p.nm_penyakit')
+        ->orderByDesc('total_kasus')
+        ->limit($limit)
+        ->get();
+
+        $monthNames = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+            5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Ags',
+            9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+
+        // Tentukan bulan acuan terkini yang memiliki aktivitas data (misal Oktober atau November)
+        $currentMonth = (int) date('m');
+        $activeYear = (int) ($filters['year'] ?? date('Y'));
+        $targetMonth = ($activeYear < (int) date('Y')) ? 12 : $currentMonth;
+
+        $items = [];
+        foreach ($rows as $r) {
+            $monthlyValues = [];
+            for ($m = 1; $m <= 12; $m++) {
+                $prop = "m{$m}";
+                $monthlyValues[$m] = (int) ($r->$prop ?? 0);
+            }
+
+            // Hitung persentase pertumbuhan MoM untuk setiap bulan
+            $monthlyGrowth = [];
+            for ($m = 1; $m <= 12; $m++) {
+                if ($m === 1) {
+                    $monthlyGrowth[1] = null;
+                } else {
+                    $pVal = $monthlyValues[$m - 1];
+                    $cVal = $monthlyValues[$m];
+                    if ($pVal > 0) {
+                        $monthlyGrowth[$m] = round((($cVal - $pVal) / $pVal) * 100, 1);
+                    } elseif ($cVal > 0) {
+                        $monthlyGrowth[$m] = 100.0;
+                    } else {
+                        $monthlyGrowth[$m] = null;
+                    }
+                }
+            }
+
+            // Hitung MoM terkini: komparasi targetMonth terhadap targetMonth - 1
+            $curVal = $monthlyValues[$targetMonth] ?? 0;
+            $prevMonth = $targetMonth > 1 ? $targetMonth - 1 : 12;
+            $prevVal = $monthlyValues[$prevMonth] ?? 0;
+
+            // Jika bulan target 0 (misal awal bulan baru), mundur 1 bulan jika ada data
+            if ($curVal === 0 && $prevVal > 0 && $targetMonth > 1) {
+                $compTarget = $prevMonth;
+                $compPrev = $prevMonth > 1 ? $prevMonth - 1 : 12;
+                $curVal = $monthlyValues[$compTarget] ?? 0;
+                $prevVal = $monthlyValues[$compPrev] ?? 0;
+            }
+
+            $growthPct = ($prevVal > 0)
+                ? round((($curVal - $prevVal) / $prevVal) * 100, 1)
+                : ($curVal > 0 ? 100.0 : 0.0);
+
+            $diffCases = $curVal - $prevVal;
+
+            $items[] = [
+                'kd_penyakit' => $r->kd_penyakit,
+                'nm_penyakit' => $r->nm_penyakit,
+                'total_kasus' => (int) $r->total_kasus,
+                'total_baru' => (int) $r->total_baru,
+                'total_lama' => (int) $r->total_lama,
+                'total_poli' => (int) $r->total_poli,
+                'total_igd' => (int) $r->total_igd,
+                'total_ranap' => (int) $r->total_ranap,
+                'months' => $monthlyValues,
+                'monthly_growth' => $monthlyGrowth,
+                'latest_val' => $curVal,
+                'prev_val' => $prevVal,
+                'growth_pct' => $growthPct,
+                'diff_cases' => $diffCases,
+                'is_surge' => ($growthPct >= 35.0 && $diffCases >= 15),
+            ];
+        }
+
+        return [
+            'month_names' => $monthNames,
+            'reference_month' => $targetMonth,
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * Mengambil Matriks 12 Bulan dan Pertumbuhan MoM Kasus Penyakit per Poliklinik & IGD
+     */
+    public static function getPolyclinicMonthlyMatrix(array $filters): array
+    {
+        $matrixFilters = $filters;
+        $matrixFilters['month'] = null;
+        unset($matrixFilters['start_date'], $matrixFilters['end_date']);
+
+        $query = self::buildBaseQuery($matrixFilters);
+
+        $rows = $query->join('poliklinik as pl', 'rp.kd_poli', '=', 'pl.kd_poli')
+            ->selectRaw("
+                rp.kd_poli,
+                pl.nm_poli,
+                CASE WHEN rp.kd_poli = 'IGDK' THEN 'IGD' ELSE 'Poli' END as jenis_layanan,
+                COUNT(*) as total_kasus,
+                COUNT(DISTINCT dp.kd_penyakit) as total_penyakit_unik,
+                COUNT(DISTINCT rp.no_rkm_medis) as total_pasien_unik,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 1 THEN 1 ELSE 0 END) as m1,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 2 THEN 1 ELSE 0 END) as m2,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 3 THEN 1 ELSE 0 END) as m3,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 4 THEN 1 ELSE 0 END) as m4,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 5 THEN 1 ELSE 0 END) as m5,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 6 THEN 1 ELSE 0 END) as m6,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 7 THEN 1 ELSE 0 END) as m7,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 8 THEN 1 ELSE 0 END) as m8,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 9 THEN 1 ELSE 0 END) as m9,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 10 THEN 1 ELSE 0 END) as m10,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 11 THEN 1 ELSE 0 END) as m11,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 12 THEN 1 ELSE 0 END) as m12
+            ")
+            ->groupBy('rp.kd_poli', 'pl.nm_poli')
+            ->orderByDesc('total_kasus')
+            ->get();
+
+        $monthNames = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+            5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Ags',
+            9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+
+        $currentMonth = (int) date('m');
+        $activeYear = (int) ($filters['year'] ?? date('Y'));
+        $targetMonth = ($activeYear < (int) date('Y')) ? 12 : $currentMonth;
+
+        $items = [];
+        foreach ($rows as $r) {
+            $monthlyValues = [];
+            for ($m = 1; $m <= 12; $m++) {
+                $prop = "m{$m}";
+                $monthlyValues[$m] = (int) ($r->$prop ?? 0);
+            }
+
+            // Hitung persentase pertumbuhan MoM untuk setiap bulan
+            $monthlyGrowth = [];
+            for ($m = 1; $m <= 12; $m++) {
+                if ($m === 1) {
+                    $monthlyGrowth[1] = null;
+                } else {
+                    $pVal = $monthlyValues[$m - 1];
+                    $cVal = $monthlyValues[$m];
+                    if ($pVal > 0) {
+                        $monthlyGrowth[$m] = round((($cVal - $pVal) / $pVal) * 100, 1);
+                    } elseif ($cVal > 0) {
+                        $monthlyGrowth[$m] = 100.0;
+                    } else {
+                        $monthlyGrowth[$m] = null;
+                    }
+                }
+            }
+
+            $curVal = $monthlyValues[$targetMonth] ?? 0;
+            $prevMonth = $targetMonth > 1 ? $targetMonth - 1 : 12;
+            $prevVal = $monthlyValues[$prevMonth] ?? 0;
+
+            if ($curVal === 0 && $prevVal > 0 && $targetMonth > 1) {
+                $compTarget = $prevMonth;
+                $compPrev = $prevMonth > 1 ? $prevMonth - 1 : 12;
+                $curVal = $monthlyValues[$compTarget] ?? 0;
+                $prevVal = $monthlyValues[$compPrev] ?? 0;
+            }
+
+            $growthPct = ($prevVal > 0)
+                ? round((($curVal - $prevVal) / $prevVal) * 100, 1)
+                : ($curVal > 0 ? 100.0 : 0.0);
+
+            $items[] = [
+                'kd_poli' => $r->kd_poli,
+                'nm_poli' => $r->nm_poli,
+                'jenis_layanan' => $r->jenis_layanan,
+                'total_kasus' => (int) $r->total_kasus,
+                'total_penyakit_unik' => (int) $r->total_penyakit_unik,
+                'total_pasien_unik' => (int) $r->total_pasien_unik,
+                'months' => $monthlyValues,
+                'monthly_growth' => $monthlyGrowth,
+                'latest_val' => $curVal,
+                'prev_val' => $prevVal,
+                'growth_pct' => $growthPct,
+                'diff_cases' => $curVal - $prevVal,
+            ];
+        }
+
+        return [
+            'month_names' => $monthNames,
+            'reference_month' => $targetMonth,
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * Mengambil Matriks 12 Bulan dan Pertumbuhan MoM Kasus Penyakit per Dokter DPJP
+     */
+    public static function getDoctorMonthlyMatrix(array $filters, int $limit = 30): array
+    {
+        $matrixFilters = $filters;
+        $matrixFilters['month'] = null;
+        unset($matrixFilters['start_date'], $matrixFilters['end_date']);
+
+        $query = self::buildBaseQuery($matrixFilters);
+
+        $rows = $query->join('dokter as dr', 'rp.kd_dokter', '=', 'dr.kd_dokter')
+            ->selectRaw("
+                rp.kd_dokter,
+                dr.nm_dokter,
+                COUNT(*) as total_kasus,
+                COUNT(DISTINCT dp.kd_penyakit) as total_penyakit_unik,
+                COUNT(DISTINCT rp.no_rkm_medis) as total_pasien_unik,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 1 THEN 1 ELSE 0 END) as m1,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 2 THEN 1 ELSE 0 END) as m2,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 3 THEN 1 ELSE 0 END) as m3,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 4 THEN 1 ELSE 0 END) as m4,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 5 THEN 1 ELSE 0 END) as m5,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 6 THEN 1 ELSE 0 END) as m6,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 7 THEN 1 ELSE 0 END) as m7,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 8 THEN 1 ELSE 0 END) as m8,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 9 THEN 1 ELSE 0 END) as m9,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 10 THEN 1 ELSE 0 END) as m10,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 11 THEN 1 ELSE 0 END) as m11,
+                SUM(CASE WHEN MONTH(rp.tgl_registrasi) = 12 THEN 1 ELSE 0 END) as m12
+            ")
+            ->groupBy('rp.kd_dokter', 'dr.nm_dokter')
+            ->orderByDesc('total_kasus')
+            ->limit($limit)
+            ->get();
+
+        $monthNames = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
+            5 => 'Mei', 6 => 'Jun', 7 => 'Jul', 8 => 'Ags',
+            9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+
+        $currentMonth = (int) date('m');
+        $activeYear = (int) ($filters['year'] ?? date('Y'));
+        $targetMonth = ($activeYear < (int) date('Y')) ? 12 : $currentMonth;
+
+        $items = [];
+        foreach ($rows as $r) {
+            $monthlyValues = [];
+            for ($m = 1; $m <= 12; $m++) {
+                $prop = "m{$m}";
+                $monthlyValues[$m] = (int) ($r->$prop ?? 0);
+            }
+
+            // Hitung persentase pertumbuhan MoM untuk setiap bulan
+            $monthlyGrowth = [];
+            for ($m = 1; $m <= 12; $m++) {
+                if ($m === 1) {
+                    $monthlyGrowth[1] = null;
+                } else {
+                    $pVal = $monthlyValues[$m - 1];
+                    $cVal = $monthlyValues[$m];
+                    if ($pVal > 0) {
+                        $monthlyGrowth[$m] = round((($cVal - $pVal) / $pVal) * 100, 1);
+                    } elseif ($cVal > 0) {
+                        $monthlyGrowth[$m] = 100.0;
+                    } else {
+                        $monthlyGrowth[$m] = null;
+                    }
+                }
+            }
+
+            $curVal = $monthlyValues[$targetMonth] ?? 0;
+            $prevMonth = $targetMonth > 1 ? $targetMonth - 1 : 12;
+            $prevVal = $monthlyValues[$prevMonth] ?? 0;
+
+            if ($curVal === 0 && $prevVal > 0 && $targetMonth > 1) {
+                $compTarget = $prevMonth;
+                $compPrev = $prevMonth > 1 ? $prevMonth - 1 : 12;
+                $curVal = $monthlyValues[$compTarget] ?? 0;
+                $prevVal = $monthlyValues[$compPrev] ?? 0;
+            }
+
+            $growthPct = ($prevVal > 0)
+                ? round((($curVal - $prevVal) / $prevVal) * 100, 1)
+                : ($curVal > 0 ? 100.0 : 0.0);
+
+            $items[] = [
+                'kd_dokter' => $r->kd_dokter,
+                'nm_dokter' => $r->nm_dokter,
+                'total_kasus' => (int) $r->total_kasus,
+                'total_penyakit_unik' => (int) $r->total_penyakit_unik,
+                'total_pasien_unik' => (int) $r->total_pasien_unik,
+                'months' => $monthlyValues,
+                'monthly_growth' => $monthlyGrowth,
+                'latest_val' => $curVal,
+                'prev_val' => $prevVal,
+                'growth_pct' => $growthPct,
+                'diff_cases' => $curVal - $prevVal,
+            ];
+        }
+
+        return [
+            'month_names' => $monthNames,
+            'reference_month' => $targetMonth,
+            'items' => $items,
+        ];
+    }
+
+    /**
+     * Mengambil Ringkasan KPI Pertumbuhan MoM Rumah Sakit & Deteksi Lonjakan Kasus
+     */
+    public static function getMomSummaryKpi(array $filters): array
+    {
+        $mb = self::getMonthlyBreakdown($filters);
+        $months = $mb['months'];
+
+        $currentMonth = (int) date('m');
+        $activeYear = (int) ($filters['year'] ?? date('Y'));
+        $targetMonth = ($activeYear < (int) date('Y')) ? 12 : $currentMonth;
+
+        // Cari bulan terisi terakhir yang valid
+        $curData = $months[$targetMonth] ?? null;
+        $prevMonth = $targetMonth > 1 ? $targetMonth - 1 : 12;
+        $prevData = $months[$prevMonth] ?? null;
+
+        if ($curData && $curData['total_kasus'] === 0 && $targetMonth > 1 && ($prevData['total_kasus'] ?? 0) > 0) {
+            $targetMonth = $prevMonth;
+            $prevMonth = $targetMonth > 1 ? $targetMonth - 1 : 12;
+            $curData = $months[$targetMonth];
+            $prevData = $months[$prevMonth] ?? null;
+        }
+
+        $curTotal = $curData['total_kasus'] ?? 0;
+        $prevTotal = $prevData['total_kasus'] ?? 0;
+        $growthTotal = ($prevTotal > 0) ? round((($curTotal - $prevTotal) / $prevTotal) * 100, 1) : 0.0;
+
+        $curBaru = $curData['kasus_baru'] ?? 0;
+        $prevBaru = $prevData['kasus_baru'] ?? 0;
+        $growthBaru = ($prevBaru > 0) ? round((($curBaru - $prevBaru) / $prevBaru) * 100, 1) : 0.0;
+
+        $curPoli = $curData['poli'] ?? 0;
+        $prevPoli = $prevData['poli'] ?? 0;
+        $growthPoli = ($prevPoli > 0) ? round((($curPoli - $prevPoli) / $prevPoli) * 100, 1) : 0.0;
+
+        $curIgd = $curData['igd'] ?? 0;
+        $prevIgd = $prevData['igd'] ?? 0;
+        $growthIgd = ($prevIgd > 0) ? round((($curIgd - $prevIgd) / $prevIgd) * 100, 1) : 0.0;
+
+        $curRanap = $curData['ranap'] ?? 0;
+        $prevRanap = $prevData['ranap'] ?? 0;
+        $growthRanap = ($prevRanap > 0) ? round((($curRanap - $prevRanap) / $prevRanap) * 100, 1) : 0.0;
+
+        // Ambil Top 5 Diagnosa dengan lonjakan kasus tertinggi bulan ini
+        $diseaseMatrix = self::getDiseaseMonthlyMatrix($filters, 100);
+        $spikes = collect($diseaseMatrix['items'])
+            ->filter(fn($it) => $it['diff_cases'] > 0)
+            ->sortByDesc('diff_cases')
+            ->take(5)
+            ->values()
+            ->all();
+
+        return [
+            'reference_month' => $targetMonth,
+            'current_month_name' => $curData['nama_bulan'] ?? '-',
+            'prev_month_name' => $prevData['nama_bulan'] ?? '-',
+            'current_total' => $curTotal,
+            'prev_total' => $prevTotal,
+            'diff_total' => $curTotal - $prevTotal,
+            'growth_total' => $growthTotal,
+            'current_baru' => $curBaru,
+            'prev_baru' => $prevBaru,
+            'growth_baru' => $growthBaru,
+            'current_poli' => $curPoli,
+            'prev_poli' => $prevPoli,
+            'growth_poli' => $growthPoli,
+            'current_igd' => $curIgd,
+            'prev_igd' => $prevIgd,
+            'growth_igd' => $growthIgd,
+            'current_ranap' => $curRanap,
+            'prev_ranap' => $prevRanap,
+            'growth_ranap' => $growthRanap,
+            'top_spikes' => $spikes,
         ];
     }
 }

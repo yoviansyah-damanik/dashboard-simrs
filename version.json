@@ -1,5 +1,43 @@
 [
     {
+        "version": "2.4.1",
+        "date": "2026-11-05",
+        "title": "Patch Release: Tab Data Kunjungan & Pengunjung, Mode Sensor Privasi, Ekspor PDF & Excel, serta Modul MoM Growth Penyakit",
+        "badge": "Patch Release",
+        "type": "patch",
+        "changeLog": [
+            "Penambahan navigasi tab Data Kunjungan Pasien dan Data Pengunjung Unik Pasien pada modul Rekapitulasi Data Penyakit & Morbiditas ICD-10 (/laporan-data-penyakit).",
+            "Implementasi modul Matriks 12 Bulan & Pertumbuhan Month-over-Month (MoM % Growth) Kasus Penyakit dengan kartu KPI eksekutif, deteksi lonjakan kasus (Surveillance Surge Alert), serta 4 sub-view (Penyakit ICD-10, Poliklinik & IGD, Dokter DPJP, dan Tren Bulanan RS).",
+            "Penyajian metrik pertumbuhan MoM (%) pada tabel rekapitulasi data penyakit per bulan saat mode tahunan (Semua Bulan) aktif.",
+            "Implementasi fitur Mode Sensor Privasi: penyamaran 3 digit belakang No. RM (054***) dan huruf tengah nama pasien (Y********H R****I) secara otomatis.",
+            "Penyediaan tombol toggle interaktif Mode Sensor Privasi langsung pada antarmuka web dan modal drilldown rincian pasien.",
+            "Penambahan dialog opsi cetak formal & ekspor data: pengguna dapat memilih format berkas (PDF atau Spreadsheet Excel .xlsx) serta preferensi Mode Sensor Privasi vs Tanpa Sensor.",
+            "Penyediaan template ekspor PDF data berbasis server (DomPDF) untuk Morbiditas, Data Kunjungan (disease-visits-pdf), Data Pengunjung (disease-visitors-pdf), Drilldown Pasien (disease-drilldown-pdf), serta Laporan MoM Growth (disease-mom-pdf).",
+            "Implementasi fitur ekspor Spreadsheet Microsoft Excel (.xlsx) menggunakan PhpSpreadsheet native berformat rapi dan multi-sheet untuk seluruh dataset laporan termasuk Matriks 12 Bulan & MoM Growth."
+        ]
+    },
+    {
+        "version": "2.4.0",
+        "date": "2026-11-02",
+        "title": "Minor Release: Modul Konsistensi & Kepatuhan Pemanfaatan Antrean Online Terintegrasi API BPJS Terapi",
+        "badge": "Minor Release",
+        "type": "minor",
+        "changeLog": [
+            "Implementasi modul evaluasi Konsistensi dan Kepatuhan Pemanfaatan Antrean Online (/mutu/kepatuhan-antrean) pada kelompok menu Mutu & Akreditasi.",
+            "Penerapan arsitektur Lazy Load Component (Livewire v3) pada seluruh tab antarmuka (OverviewTab, AnnualReportTab, PolyclinicDoctorTab, ConformityTab) dilengkapi placeholder skeleton loader untuk performa rendering optimal.",
+            "Penambahan fitur analisis pertumbuhan Month-over-Month (MoM % Growth) per Poliklinik dan Dokter DPJP (MoM Volume Total, MoM JKN, dan delta poin kepatuhan JKN) baik di antarmuka web maupun laporan cetak PDF formal.",
+            "Penyelarasan tab Laporan Tahunan & MoM agar hanya muncul saat memilih periode 'Semua Bulan (Laporan Tahunan)', dilengkapi tabel rekapitulasi kumulatif tahunan serta drilldown interaktif tren 12 bulan per Poliklinik & Dokter DPJP.",
+            "Integrasi langsung dengan API BPJS Antrean Terapi (/api/v1/bpjs/antrean/report) untuk ringkasan bulanan, rekap harian, rekap poliklinik/dokter, serta audit mismatches.",
+            "Sinkronisasi akurat kanal pendaftaran booking BPJS: JKN (kode B - misal 1.275 pada Okt 2026), Onsite Loket (kode A - 490), dan Onsite APM Mandiri (kode D - 71), total 1.836 antrean.",
+            "Metrik pemanfaatan antrean SEP (99.2% pada Okt 2026) dan kesesuaian booking terhadap penerbitan SEP.",
+            "Pengaturan threshold kepatuhan dinamis (default 60.0% standar BPJS Kesehatan) dengan slider dan input interaktif yang memperbarui seluruh indikator secara live.",
+            "Visualisasi grafik komprehensif: combo bar & line target kepatuhan, donat komposisi pendaftaran, dan stacked bar distribusi kanal top poliklinik.",
+            "Laporan tahunan matriks 12 bulan (Januari-Desember) lengkap dengan perhitungan pertumbuhan Month-over-Month (MoM % Growth) untuk volume total dan JKN.",
+            "Audit kesesuaian data antrean JKN terhadap penerbitan SEP serta validasi nomor referensi terhadap nomor SKDP (pasien kontrol) atau nomor rujukan FKTP/RS.",
+            "Fitur ekspor laporan resmi format PDF berbasis server (DomPDF) berorientasi landscape lengkap dengan ringkasan eksekutif dan tabel rekapitulasi formal."
+        ]
+    },
+    {
         "version": "2.3.0",
         "date": "2026-10-12",
         "title": "Minor Release: Modul Pengaturan Sistem, Filter Master Data SIMRS, Diagnostik Koneksi & Pemeliharaan",

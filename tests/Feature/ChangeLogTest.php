@@ -26,15 +26,15 @@ class ChangeLogTest extends TestCase
     public function test_general_helper_returns_version_2_0_0_and_changelogs(): void
     {
         $current = GeneralHelper::getVersion();
-        $this->assertEquals('v2.3.0', $current['version']);
+        $this->assertEquals('v2.4.1', $current['version']);
         $this->assertIsArray($current['changeLog']);
         $this->assertNotEmpty($current['changeLog']);
 
         $all = GeneralHelper::getAllVersions();
         $this->assertIsArray($all);
         $this->assertGreaterThanOrEqual(9, count($all));
-        $this->assertEquals('2.3.0', $all[0]['version']);
-        $this->assertEquals('minor', $all[0]['type']);
+        $this->assertEquals('2.4.1', $all[0]['version']);
+        $this->assertEquals('patch', $all[0]['type']);
     }
 
     /**
@@ -79,7 +79,8 @@ class ChangeLogTest extends TestCase
         $this->assertNotNull($lainnya, 'Grup menu Lainnya harus ada di sidebar.');
 
         $items = collect($lainnya['items']);
-        $changelogMenu = $items->firstWhere('title', 'Catatan Rilis (v2.3.0)');
+        $version = GeneralHelper::getVersion()['version'];
+        $changelogMenu = $items->firstWhere('title', 'Catatan Rilis (' . $version . ')');
         $this->assertNotNull($changelogMenu, 'Menu Catatan Rilis harus terdaftar di Sidebar.');
         $this->assertEquals(route('changelog'), $changelogMenu['href']);
     }
@@ -93,10 +94,11 @@ class ChangeLogTest extends TestCase
         $this->actingAs($user);
 
         Livewire::test(ChangeLog::class)
-            ->assertSee('v2.3.0')
-            ->set('selectedType', 'major')
-            ->assertSet('selectedType', 'major')
-            ->assertSee('v2.3.0')
+            ->assertSee('v2.4.1')
+            ->set('selectedType', 'patch')
+            ->assertSet('selectedType', 'patch')
+            ->assertSee('v2.4.1')
+            ->set('selectedType', 'all')
             ->set('search', 'ICD-9')
             ->assertSee('ICD-9')
             ->call('resetFilters')

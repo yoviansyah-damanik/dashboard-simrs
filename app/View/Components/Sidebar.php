@@ -526,6 +526,13 @@ class Sidebar extends Component
                         'isShown' => auth()->user()->hasAnyPermission(['mutu show', 'mutu.spm', 'indicator-matrix show'])
                     ],
                     [
+                        'title' => 'Kepatuhan Antrean',
+                        'href' => route('mutu.compliance'),
+                        'icon' => 'i-ph-clock-countdown',
+                        'isActive' => request()->routeIs('mutu.compliance') || request()->routeIs('online-queue.compliance') || request()->routeIs('registered-patient.compliance'),
+                        'isShown' => auth()->user()->hasAnyPermission(['mutu show', 'mutu.inm', 'registered-patient show', 'registered-patient recap', 'patient-report show', 'indicator-matrix show'])
+                    ],
+                    [
                         'title' => 'Rekam Medis (KLPCM)',
                         'href' => route('mutu.klpcm'),
                         'icon' => 'i-ph-notepad',

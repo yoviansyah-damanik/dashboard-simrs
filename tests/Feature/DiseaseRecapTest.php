@@ -240,4 +240,36 @@ class DiseaseRecapTest extends TestCase
             ->assertSet('isYearly', false)
             ->assertDontSee('Rekapitulasi Data Penyakit Per Bulan', false);
     }
+
+    /**
+     * Memastikan tab 4 Matriks 12 Bulan & Pertumbuhan MoM Growth dapat diakses dan diekspor ke PDF serta Excel.
+     */
+    public function test_disease_recap_mom_growth_tab_and_exports(): void
+    {
+        $user = $this->getAuthUser();
+        $this->actingAs($user);
+
+        $test = Livewire::test(Recap::class)
+            ->set('year', 2026)
+            ->call('setActiveTab', 'mom')
+            ->assertSet('activeTab', 'mom')
+            ->assertSee('Matriks 12 Bulan & Pertumbuhan Month-over-Month (MoM)', false)
+            ->call('setMomView', 'polyclinic')
+            ->assertSet('momView', 'polyclinic')
+            ->assertSee('Nama Poliklinik / Ruangan', false)
+            ->call('setMomView', 'doctor')
+            ->assertSet('momView', 'doctor')
+            ->assertSee('Nama Dokter DPJP', false)
+            ->call('setMomView', 'overview')
+            ->assertSet('momView', 'overview');
+
+        // Test export MoM PDF
+        $component = $test->instance();
+        $pdfResponse = $component->exportPdf('mom');
+        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\StreamedResponse::class, $pdfResponse);
+
+        // Test export MoM Excel
+        $excelResponse = $component->exportExcel('mom');
+        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\StreamedResponse::class, $excelResponse);
+    }
 }

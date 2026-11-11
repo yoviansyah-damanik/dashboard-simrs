@@ -1,5 +1,21 @@
 [
     {
+        "version": "2.5.0",
+        "date": "2026-11-11",
+        "title": "Minor Release: Modul MoM Growth Pasien Rawat Jalan Harian & Bulanan per Poliklinik dan Dokter DPJP",
+        "badge": "Minor Release",
+        "type": "minor",
+        "changeLog": [
+            "Implementasi modul MoM Growth Pasien Rawat Jalan (/ralan/laporan) dengan granularitas adaptif: analisis laju pertumbuhan harian (DoD & MoM tanggal) jika periode bulanan, dan laju pertumbuhan bulanan 12 bulan (MoM & Share %) jika periode tahunan.",
+            "Penyajian pemisahan standar rawat jalan antara Pelayanan Poliklinik (Poli) dan Pelayanan Kegawatdaruratan (IGD) dengan status periksa valid secara eksplisit pada seluruh metrik dan laporan.",
+            "Penyediaan 3 sub-view analisis: Ringkasan Tren Kunjungan RS, Matriks Kunjungan per Poliklinik & IGD, serta Matriks Kunjungan per Dokter DPJP.",
+            "Implementasi kontrol pengalih mode tampilan sel matriks: Pasien & % Growth, Hanya % Growth, dan Hanya Pasien.",
+            "Penyediaan kartu KPI eksekutif komparatif: Total Pasien Ralan, Poli, IGD, Rata-rata Kunjungan Harian/Bulanan, serta Titik Kunjungan Puncak (Peak).",
+            "Penyediaan template ekspor PDF data berbasis server (DomPDF) format landscape A4 (outpatient-mom-pdf) lengkap dengan kop instansi dan tanda tangan formal.",
+            "Implementasi ekspor berkas Spreadsheet Microsoft Excel (.xlsx) multi-sheet untuk ringkasan timeline, matriks poliklinik, dan matriks dokter DPJP."
+        ]
+    },
+    {
         "version": "2.4.1",
         "date": "2026-11-05",
         "title": "Patch Release: Tab Data Kunjungan & Pengunjung, Mode Sensor Privasi, Ekspor PDF & Excel, serta Modul MoM Growth Penyakit",

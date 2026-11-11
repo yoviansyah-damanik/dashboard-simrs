@@ -26,15 +26,15 @@ class ChangeLogTest extends TestCase
     public function test_general_helper_returns_version_2_0_0_and_changelogs(): void
     {
         $current = GeneralHelper::getVersion();
-        $this->assertEquals('v2.4.1', $current['version']);
+        $this->assertEquals('v2.5.0', $current['version']);
         $this->assertIsArray($current['changeLog']);
         $this->assertNotEmpty($current['changeLog']);
 
         $all = GeneralHelper::getAllVersions();
         $this->assertIsArray($all);
         $this->assertGreaterThanOrEqual(9, count($all));
-        $this->assertEquals('2.4.1', $all[0]['version']);
-        $this->assertEquals('patch', $all[0]['type']);
+        $this->assertEquals('2.5.0', $all[0]['version']);
+        $this->assertEquals('minor', $all[0]['type']);
     }
 
     /**
@@ -94,10 +94,10 @@ class ChangeLogTest extends TestCase
         $this->actingAs($user);
 
         Livewire::test(ChangeLog::class)
-            ->assertSee('v2.4.1')
-            ->set('selectedType', 'patch')
-            ->assertSet('selectedType', 'patch')
-            ->assertSee('v2.4.1')
+            ->assertSee('v2.5.0')
+            ->set('selectedType', 'minor')
+            ->assertSet('selectedType', 'minor')
+            ->assertSee('v2.5.0')
             ->set('selectedType', 'all')
             ->set('search', 'ICD-9')
             ->assertSee('ICD-9')

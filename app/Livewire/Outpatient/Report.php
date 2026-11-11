@@ -54,7 +54,14 @@ class Report extends Component
     #[Url]
     public $limit = 25;
 
-    public $activeTab = 'rekap_poli'; // rekap_poli, rekap_bayar, rekap_gender
+    #[Url]
+    public $activeTab = 'rekap_poli'; // rekap_poli, rekap_bayar, rekap_gender, rekap_dinas, rekap_diagnosa, mom_growth
+
+    #[Url]
+    public $momView = 'overview'; // overview, polyclinic, doctor
+
+    #[Url]
+    public $momDisplayMode = 'both'; // both, count, growth
 
     public bool $showCharts = true;
 
@@ -763,6 +770,244 @@ class Report extends Component
         }
 
         $filename = $this->getExportFilename('xlsx');
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    public function setMomView(string $view): void
+    {
+        $this->momView = $view;
+    }
+
+    public function setMomDisplayMode(string $mode): void
+    {
+        $this->momDisplayMode = $mode;
+    }
+
+    #[Computed]
+    public function momGrowth(): array
+    {
+        return OutpatientReportRepository::getOutpatientMomGrowth([
+            'period' => $this->period,
+            'year' => (int) $this->selectedYear,
+            'month' => (int) $this->selectedMonth,
+            'poly' => $this->poly,
+            'payType' => $this->payType,
+            'doctor' => $this->doctor,
+            'gender' => $this->gender,
+            'sttsDaftar' => $this->sttsDaftar,
+            'dinasFilter' => $this->dinasFilter,
+        ]);
+    }
+
+    /**
+     * Ekspor Laporan Pertumbuhan MoM Rawat Jalan ke PDF Data (DomPDF).
+     */
+    public function exportMomPdf()
+    {
+        set_time_limit(0);
+
+        $momData = $this->momGrowth();
+        $profil = \App\Helpers\SirsHelper::getProfilRS();
+
+        $pdf = Pdf::loadView('reports.outpatient-mom-pdf', [
+            'momData' => $momData,
+            'profil' => $profil,
+            'period' => $this->period,
+            'selectedYear' => $this->selectedYear,
+            'selectedMonth' => $this->selectedMonth,
+            'poly' => $this->poly,
+            'payType' => $this->payType,
+            'doctor' => $this->doctor,
+            'dinasFilter' => $this->dinasFilter,
+        ])->setPaper('a4', 'landscape');
+
+        $periodLabel = ($this->period === 'yearly')
+            ? "Tahun_{$this->selectedYear}"
+            : "Bulan_{$this->selectedMonth}_{$this->selectedYear}";
+        $filename = "Laporan_MoM_Growth_Rawat_Jalan_{$periodLabel}_" . now()->format('Ymd_His') . ".pdf";
+
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->stream();
+        }, $filename);
+    }
+
+    /**
+     * Ekspor Laporan Pertumbuhan MoM Rawat Jalan ke Spreadsheet Excel (.xlsx).
+     */
+    public function exportMomExcel()
+    {
+        set_time_limit(0);
+
+        $momData = $this->momGrowth();
+        $profil = \App\Helpers\SirsHelper::getProfilRS();
+        $isDaily = ($momData['period_type'] === 'daily');
+
+        $spreadsheet = new Spreadsheet();
+        $spreadsheet->getProperties()
+            ->setCreator(config('app.name', 'Dashboard SIMRS'))
+            ->setTitle('Laporan MoM Growth Pasien Rawat Jalan');
+
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 9.5],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '059669']],
+            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '064E3B']]],
+        ];
+
+        // Sheet 1: Ringkasan Tren MoM
+        $sheet1 = $spreadsheet->getActiveSheet();
+        $sheet1->setTitle('Tren MoM RS');
+        $sheet1->setShowGridLines(true);
+
+        $sheet1->setCellValue('A1', $profil['nama_instansi'] ?? config('app.hospital_name', 'RUMAH SAKIT'));
+        $sheet1->mergeCells('A1:L1');
+        $sheet1->getStyle('A1')->getFont()->setSize(13)->setBold(true);
+        $sheet1->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $subTitle = $isDaily
+            ? "ANALISIS PERTUMBUHAN HARIAN (MoM & DoD) RAWAT JALAN - {$momData['period_label']}"
+            : "ANALISIS PERTUMBUHAN BULANAN (MoM) RAWAT JALAN - {$momData['period_label']}";
+        $sheet1->setCellValue('A2', $subTitle);
+        $sheet1->mergeCells('A2:L2');
+        $sheet1->getStyle('A2')->getFont()->setSize(10.5)->setBold(true)->getColor()->setRGB('059669');
+        $sheet1->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $sheet1->setCellValue('A4', 'Dicetak: ' . now()->format('d/m/Y H:i:s') . ' | Total Pasien: ' . number_format($momData['kpi']['total_current']) . ' (Poli: ' . number_format($momData['kpi']['poli_current']) . ', IGD: ' . number_format($momData['kpi']['igd_current']) . ')');
+        $sheet1->mergeCells('A4:L4');
+        $sheet1->getStyle('A4')->getFont()->setSize(9);
+
+        if ($isDaily) {
+            $headersTimeline = ['No', 'Tanggal', 'Hari', 'Poliklinik (Poli)', 'Gawat Darurat (IGD)', 'Pasien Baru', 'Pasien Lama', 'Laki-laki', 'Perempuan', 'BPJS', 'Total Pasien', 'DoD Growth (%)', 'MoM Date Growth (%)'];
+        } else {
+            $headersTimeline = ['No', 'Bulan', 'Nama Bulan', 'Poliklinik (Poli)', 'Gawat Darurat (IGD)', 'Pasien Baru', 'Pasien Lama', 'Laki-laki', 'Perempuan', 'BPJS', 'Total Pasien', 'MoM Growth (%)', 'Share (%)'];
+        }
+        $sheet1->fromArray($headersTimeline, null, 'A6');
+        $sheet1->getStyle('A6:' . ($isDaily ? 'M6' : 'M6'))->applyFromArray($headerStyle);
+
+        $rowIdx = 7;
+        foreach ($momData['timeline'] as $item) {
+            if ($isDaily) {
+                $sheet1->fromArray([
+                    $item['day'],
+                    $item['date'],
+                    $item['day_name'],
+                    $item['poli'],
+                    $item['igd'],
+                    $item['baru'],
+                    $item['lama'],
+                    $item['pria'],
+                    $item['wanita'],
+                    $item['bpjs'],
+                    $item['total'],
+                    $item['dod_growth'] !== null ? ($item['dod_growth'] > 0 ? '+' : '') . $item['dod_growth'] . '%' : '-',
+                    $item['mom_date_growth'] !== null ? ($item['mom_date_growth'] > 0 ? '+' : '') . $item['mom_date_growth'] . '%' : '-',
+                ], null, "A{$rowIdx}");
+            } else {
+                $sheet1->fromArray([
+                    $item['month'],
+                    $item['short_name'],
+                    $item['name'],
+                    $item['poli'],
+                    $item['igd'],
+                    $item['baru'],
+                    $item['lama'],
+                    $item['pria'],
+                    $item['wanita'],
+                    $item['bpjs'],
+                    $item['total'],
+                    $item['mom_growth'] !== null ? ($item['mom_growth'] > 0 ? '+' : '') . $item['mom_growth'] . '%' : '-',
+                    $item['share_pct'] . '%',
+                ], null, "A{$rowIdx}");
+            }
+            $rowIdx++;
+        }
+
+        // Sheet 2: Matriks Poliklinik & IGD
+        $sheet2 = $spreadsheet->createSheet();
+        $sheet2->setTitle('Matriks Poliklinik');
+        $sheet2->setShowGridLines(true);
+
+        $sheet2->setCellValue('A1', "MATRIKS PERTUMBUHAN KUNJUNGAN PER POLIKLINIK & IGD ({$momData['period_label']})");
+        $sheet2->getStyle('A1')->getFont()->setSize(11)->setBold(true)->getColor()->setRGB('059669');
+
+        $cols = $momData['polyclinic_matrix']['columns'];
+        $headersPoly = ['No', 'Kode', 'Nama Poliklinik / Ruang', 'Layanan'];
+        foreach ($cols as $c) {
+            $headersPoly[] = $isDaily ? "Tgl {$c}" : ($momData['column_names'][$c - 1] ?? "Bln {$c}");
+        }
+        $headersPoly[] = 'Total Pasien';
+        $headersPoly[] = 'MoM Growth (%)';
+
+        $sheet2->fromArray($headersPoly, null, 'A3');
+        $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headersPoly));
+        $sheet2->getStyle("A3:{$lastColLetter}3")->applyFromArray($headerStyle);
+
+        $polyRowIdx = 4;
+        foreach ($momData['polyclinic_matrix']['items'] as $idx => $p) {
+            $rowVals = [
+                $idx + 1,
+                $p['kd_poli'],
+                $p['nm_poli'],
+                $p['jenis_layanan'],
+            ];
+            foreach ($cols as $c) {
+                $rowVals[] = $p['points'][$c] ?? 0;
+            }
+            $rowVals[] = $p['total'];
+            $rowVals[] = ($p['growth_pct'] > 0 ? '+' : '') . $p['growth_pct'] . '%';
+
+            $sheet2->fromArray($rowVals, null, "A{$polyRowIdx}");
+            $polyRowIdx++;
+        }
+
+        // Sheet 3: Matriks Dokter DPJP
+        $sheet3 = $spreadsheet->createSheet();
+        $sheet3->setTitle('Matriks Dokter DPJP');
+        $sheet3->setShowGridLines(true);
+
+        $sheet3->setCellValue('A1', "MATRIKS PERTUMBUHAN KUNJUNGAN PER DOKTER DPJP ({$momData['period_label']})");
+        $sheet3->getStyle('A1')->getFont()->setSize(11)->setBold(true)->getColor()->setRGB('059669');
+
+        $headersDoc = ['No', 'Kode', 'Nama Dokter DPJP'];
+        foreach ($cols as $c) {
+            $headersDoc[] = $isDaily ? "Tgl {$c}" : ($momData['column_names'][$c - 1] ?? "Bln {$c}");
+        }
+        $headersDoc[] = 'Total Pasien';
+        $headersDoc[] = 'MoM Growth (%)';
+
+        $sheet3->fromArray($headersDoc, null, 'A3');
+        $lastDocColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headersDoc));
+        $sheet3->getStyle("A3:{$lastDocColLetter}3")->applyFromArray($headerStyle);
+
+        $docRowIdx = 4;
+        foreach ($momData['doctor_matrix']['items'] as $idx => $dr) {
+            $rowVals = [
+                $idx + 1,
+                $dr['kd_dokter'],
+                $dr['nm_dokter'],
+            ];
+            foreach ($cols as $c) {
+                $rowVals[] = $dr['points'][$c] ?? 0;
+            }
+            $rowVals[] = $dr['total'];
+            $rowVals[] = ($dr['growth_pct'] > 0 ? '+' : '') . $dr['growth_pct'] . '%';
+
+            $sheet3->fromArray($rowVals, null, "A{$docRowIdx}");
+            $docRowIdx++;
+        }
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        $periodLabel = ($this->period === 'yearly')
+            ? "Tahun_{$this->selectedYear}"
+            : "Bulan_{$this->selectedMonth}_{$this->selectedYear}";
+        $filename = "Laporan_MoM_Growth_Rawat_Jalan_{$periodLabel}_" . now()->format('Ymd_His') . ".xlsx";
 
         return response()->streamDownload(function () use ($spreadsheet) {
             $writer = new Xlsx($spreadsheet);

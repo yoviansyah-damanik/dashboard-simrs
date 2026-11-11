@@ -542,6 +542,15 @@
                 {{ count($this->diagnosisBreakdown) }}
             </span>
         </button>
+
+        <button type="button" wire:click="switchTab('mom_growth')"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs transition-all duration-200 cursor-pointer {{ $activeTab === 'mom_growth' ? 'bg-white dark:bg-boxdark text-emerald-700 dark:text-emerald-400 font-black shadow-sm ring-1 ring-black/5 dark:ring-white/10' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white font-semibold hover:bg-gray-200/50 dark:hover:bg-meta-4' }}">
+            <span class="icon-[solar--chart-2-bold-duotone] text-base {{ $activeTab === 'mom_growth' ? 'text-emerald-600 dark:text-emerald-400' : '' }}"></span>
+            <span>MoM Growth &amp; Tren</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $activeTab === 'mom_growth' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'bg-gray-200 dark:bg-meta-4 text-gray-600 dark:text-gray-300' }}">
+                {{ $period === 'yearly' ? '12 Bulan' : ($this->momGrowth['days_in_month'] ?? 'Harian') . ' Hari' }}
+            </span>
+        </button>
     </div>
 
     {{-- TAB 1: REKAP POLIKLINIK / UNIT --}}
@@ -1340,6 +1349,485 @@
                     @endif
                 </table>
             </div>
+        </div>
+    @endif
+
+    {{-- TAB 6: PERTUMBUHAN MoM (GROWTH) RAWAT JALAN --}}
+    @if ($activeTab === 'mom_growth')
+        @php
+            $mom = $this->momGrowth;
+            $isDaily = ($mom['period_type'] === 'daily');
+        @endphp
+
+        <div class="space-y-4">
+            {{-- 1. Kartu KPI Eksekutif MoM Rawat Jalan --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                {{-- KPI 1: Total Pasien Ralan --}}
+                <div class="bg-white dark:bg-boxdark p-4 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-gray-400">Total Pasien Ralan</span>
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                            <span class="icon-[solar--users-group-two-rounded-bold-duotone] text-base"></span>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <div class="text-2xl font-black text-gray-800 dark:text-white">
+                            {{ number_format($mom['kpi']['total_current']) }}
+                        </div>
+                        <div class="flex items-center gap-1.5 mt-1 text-[11px] font-bold">
+                            @php $gt = $mom['kpi']['growth_total']; @endphp
+                            <span class="{{ $gt > 0 ? 'text-emerald-600 dark:text-emerald-400' : ($gt < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400') }}">
+                                {{ $gt > 0 ? '▲ +' : ($gt < 0 ? '▼ ' : '') }}{{ $gt }}%
+                            </span>
+                            <span class="text-gray-400 font-normal">vs {{ $isDaily ? 'Bulan Lalu' : 'Tahun Lalu' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- KPI 2: Poliklinik (Poli) --}}
+                <div class="bg-white dark:bg-boxdark p-4 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Poliklinik (Poli)</span>
+                        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                            <span class="icon-[solar--hospital-bold-duotone] text-base"></span>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                            {{ number_format($mom['kpi']['poli_current']) }}
+                        </div>
+                        <div class="flex items-center gap-1.5 mt-1 text-[11px] font-bold">
+                            @php $gp = $mom['kpi']['growth_poli']; @endphp
+                            <span class="{{ $gp > 0 ? 'text-emerald-600 dark:text-emerald-400' : ($gp < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400') }}">
+                                {{ $gp > 0 ? '▲ +' : ($gp < 0 ? '▼ ' : '') }}{{ $gp }}%
+                            </span>
+                            <span class="text-gray-400 font-normal">MoM Poli</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- KPI 3: Gawat Darurat (IGD) --}}
+                <div class="bg-white dark:bg-boxdark p-4 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400">Gawat Darurat (IGD)</span>
+                        <div class="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center">
+                            <span class="icon-[solar--danger-bold-duotone] text-base"></span>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <div class="text-2xl font-black text-rose-600 dark:text-rose-400">
+                            {{ number_format($mom['kpi']['igd_current']) }}
+                        </div>
+                        <div class="flex items-center gap-1.5 mt-1 text-[11px] font-bold">
+                            @php $gi = $mom['kpi']['growth_igd']; @endphp
+                            <span class="{{ $gi > 0 ? 'text-rose-600 dark:text-rose-400' : ($gi < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400') }}">
+                                {{ $gi > 0 ? '▲ +' : ($gi < 0 ? '▼ ' : '') }}{{ $gi }}%
+                            </span>
+                            <span class="text-gray-400 font-normal">MoM IGD</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- KPI 4: Rata-rata Kunjungan --}}
+                <div class="bg-white dark:bg-boxdark p-4 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-gray-400">
+                            {{ $isDaily ? 'Rata-rata Pasien / Hari' : 'Rata-rata Pasien / Bulan' }}
+                        </span>
+                        <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
+                            <span class="icon-[solar--chart-square-bold-duotone] text-base"></span>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <div class="text-2xl font-black text-gray-800 dark:text-white">
+                            {{ number_format($isDaily ? $mom['kpi']['avg_per_day'] : $mom['kpi']['avg_per_month'], 1) }}
+                        </div>
+                        <div class="mt-1 text-[11px] text-gray-400 font-medium">
+                            Baru: <b class="text-emerald-600">{{ number_format($mom['kpi']['baru_current']) }}</b> | Lama: <b class="text-blue-600">{{ number_format($mom['kpi']['lama_current']) }}</b>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- KPI 5: Kunjungan Puncak (Peak) --}}
+                <div class="bg-white dark:bg-boxdark p-4 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-black uppercase tracking-wider text-amber-500">Kunjungan Puncak (Peak)</span>
+                        <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                            <span class="icon-[solar--cup-first-bold-duotone] text-base"></span>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <div class="text-2xl font-black text-amber-600 dark:text-amber-400">
+                            {{ number_format($mom['kpi']['peak_point']['total']) }} <span class="text-xs font-normal text-gray-400">pasien</span>
+                        </div>
+                        <div class="mt-1 text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                            @if ($isDaily)
+                                {{ $mom['kpi']['peak_point']['date'] ? \Carbon\Carbon::parse($mom['kpi']['peak_point']['date'])->translatedFormat('d F Y') : '-' }} ({{ $mom['kpi']['peak_point']['day_name'] ?? '' }})
+                            @else
+                                {{ $mom['kpi']['peak_point']['name'] ?? '-' }} {{ $mom['year'] }}
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- 2. Sub-Toolbar & Filter Kontrol MoM --}}
+            <div class="bg-white dark:bg-boxdark p-4 rounded-2xl border border-stroke dark:border-strokedark shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+                {{-- Sub-Navigation Views --}}
+                <div class="inline-flex p-1 bg-gray-100 dark:bg-meta-4/60 rounded-xl gap-1">
+                    <button type="button" wire:click="setMomView('overview')"
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer {{ $momView === 'overview' ? 'bg-white dark:bg-boxdark text-emerald-700 dark:text-emerald-400 shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400' }}">
+                        <span class="icon-[solar--graph-up-bold-duotone] text-sm mr-1"></span>
+                        Ringkasan Tren RS
+                    </button>
+                    <button type="button" wire:click="setMomView('polyclinic')"
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer {{ $momView === 'polyclinic' ? 'bg-white dark:bg-boxdark text-emerald-700 dark:text-emerald-400 shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400' }}">
+                        <span class="icon-[solar--hospital-bold-duotone] text-sm mr-1"></span>
+                        Matriks Poliklinik &amp; IGD
+                    </button>
+                    <button type="button" wire:click="setMomView('doctor')"
+                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer {{ $momView === 'doctor' ? 'bg-white dark:bg-boxdark text-emerald-700 dark:text-emerald-400 shadow-sm' : 'text-gray-500 hover:text-gray-800 dark:text-gray-400' }}">
+                        <span class="icon-[solar--user-hand-up-bold-duotone] text-sm mr-1"></span>
+                        Matriks Dokter DPJP
+                    </button>
+                </div>
+
+                {{-- Aksi Tambahan: Display Mode Switcher & Cetak Dokumen --}}
+                <div class="flex items-center gap-2 flex-wrap">
+                    @if ($momView !== 'overview')
+                        <div class="inline-flex p-1 bg-gray-100 dark:bg-meta-4/60 rounded-xl text-xs gap-1">
+                            <button type="button" wire:click="setMomDisplayMode('both')"
+                                class="px-2.5 py-1 rounded-lg font-bold transition cursor-pointer {{ $momDisplayMode === 'both' ? 'bg-white dark:bg-boxdark text-emerald-600 shadow-sm' : 'text-gray-500' }}">
+                                Pasien &amp; %
+                            </button>
+                            <button type="button" wire:click="setMomDisplayMode('growth')"
+                                class="px-2.5 py-1 rounded-lg font-bold transition cursor-pointer {{ $momDisplayMode === 'growth' ? 'bg-white dark:bg-boxdark text-emerald-600 shadow-sm' : 'text-gray-500' }}">
+                                Hanya %
+                            </button>
+                            <button type="button" wire:click="setMomDisplayMode('count')"
+                                class="px-2.5 py-1 rounded-lg font-bold transition cursor-pointer {{ $momDisplayMode === 'count' ? 'bg-white dark:bg-boxdark text-emerald-600 shadow-sm' : 'text-gray-500' }}">
+                                Hanya Pasien
+                            </button>
+                        </div>
+                    @endif
+
+                    <button type="button" wire:click="exportMomPdf" wire:loading.attr="disabled"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-500/20 transition cursor-pointer">
+                        <span class="icon-[solar--document-text-bold-duotone] text-sm"></span>
+                        <span>Cetak PDF MoM</span>
+                    </button>
+
+                    <button type="button" wire:click="exportMomExcel" wire:loading.attr="disabled"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 border border-blue-500/20 transition cursor-pointer">
+                        <span class="icon-[solar--file-corrupted-bold-duotone] text-sm"></span>
+                        <span>Excel MoM</span>
+                    </button>
+                </div>
+            </div>
+
+            {{-- 3. Konten Tampilan Sub-View --}}
+            {{-- VIEW 1: RINGKASAN TREN UTAMA RS --}}
+            @if ($momView === 'overview')
+                <div class="bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm overflow-hidden">
+                    <div class="px-6 py-4.5 border-b border-stroke dark:border-strokedark flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-wider">
+                                {{ $isDaily ? 'Timeline Kunjungan Harian & Pertumbuhan Pasien Rawat Jalan' : 'Timeline Kunjungan Bulanan (12 Bulan) Pasien Rawat Jalan' }}
+                            </h3>
+                            <p class="text-xs text-gray-400 mt-0.5">
+                                {{ $mom['period_label'] }} &bull; Termasuk Pemisahan Poliklinik &amp; Gawat Darurat (IGD)
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50/90 dark:bg-meta-4/60 text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-300 border-b border-stroke dark:border-strokedark">
+                                    <th class="py-3 px-3 text-center w-12">No</th>
+                                    <th class="py-3 px-4 min-w-[130px]">{{ $isDaily ? 'Tanggal & Hari' : 'Bulan' }}</th>
+                                    <th class="py-3 px-3 text-right text-emerald-600 dark:text-emerald-400">Poliklinik (Poli)</th>
+                                    <th class="py-3 px-3 text-right text-rose-600 dark:text-rose-400">Gawat Darurat (IGD)</th>
+                                    <th class="py-3 px-3 text-right">Pasien Baru</th>
+                                    <th class="py-3 px-3 text-right">Pasien Lama</th>
+                                    <th class="py-3 px-3 text-right text-blue-600 dark:text-blue-400">Laki-laki</th>
+                                    <th class="py-3 px-3 text-right text-pink-600 dark:text-pink-400">Perempuan</th>
+                                    <th class="py-3 px-3 text-right">BPJS</th>
+                                    <th class="py-3 px-4 text-right bg-emerald-500/10 font-black text-emerald-700 dark:text-emerald-300">Total Pasien</th>
+                                    <th class="py-3 px-3 text-center bg-gray-100 dark:bg-meta-4/80 font-black">{{ $isDaily ? 'DoD % Growth' : 'MoM % Growth' }}</th>
+                                    <th class="py-3 px-3 text-center">{{ $isDaily ? 'MoM Date %' : 'Share %' }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 font-medium">
+                                @foreach ($mom['timeline'] as $item)
+                                    <tr class="hover:bg-gray-50/70 dark:hover:bg-meta-4/20 transition-colors {{ $isDaily && ($item['is_sunday'] || $item['is_saturday']) ? 'bg-amber-500/5' : '' }}">
+                                        <td class="py-2.5 px-3 text-center text-gray-400 font-mono">{{ $isDaily ? $item['day'] : $item['month'] }}</td>
+                                        <td class="py-2.5 px-4 font-bold text-gray-800 dark:text-white">
+                                            @if ($isDaily)
+                                                <div class="flex items-center gap-1.5">
+                                                    <span class="font-mono text-gray-500">{{ $item['short_date'] }}</span>
+                                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded {{ $item['is_sunday'] ? 'bg-rose-500/10 text-rose-600' : ($item['is_saturday'] ? 'bg-amber-500/10 text-amber-600' : 'bg-gray-100 dark:bg-meta-4 text-gray-500') }}">
+                                                        {{ $item['day_name'] }}
+                                                    </span>
+                                                </div>
+                                            @else
+                                                <div class="flex items-center gap-2">
+                                                    <span class="w-5 h-5 rounded bg-gray-100 dark:bg-meta-4 text-[10px] font-mono font-black text-gray-500 flex items-center justify-center">
+                                                        {{ str_pad($item['month'], 2, '0', STR_PAD_LEFT) }}
+                                                    </span>
+                                                    <span>{{ $item['name'] }}</span>
+                                                </div>
+                                            @endif
+                                        </td>
+                                        <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">{{ number_format($item['poli']) }}</td>
+                                        <td class="py-2.5 px-3 text-right font-mono font-bold text-rose-600 dark:text-rose-400">{{ number_format($item['igd']) }}</td>
+                                        <td class="py-2.5 px-3 text-right font-mono">{{ number_format($item['baru']) }}</td>
+                                        <td class="py-2.5 px-3 text-right font-mono">{{ number_format($item['lama']) }}</td>
+                                        <td class="py-2.5 px-3 text-right font-mono text-blue-600 dark:text-blue-400">{{ number_format($item['pria']) }}</td>
+                                        <td class="py-2.5 px-3 text-right font-mono text-pink-600 dark:text-pink-400">{{ number_format($item['wanita']) }}</td>
+                                        <td class="py-2.5 px-3 text-right font-mono">{{ number_format($item['bpjs']) }}</td>
+                                        <td class="py-2.5 px-4 text-right font-mono font-black text-emerald-700 dark:text-emerald-300 bg-emerald-500/5">
+                                            {{ number_format($item['total']) }}
+                                        </td>
+                                        <td class="py-2.5 px-3 text-center font-mono font-bold text-xs">
+                                            @php $growth = $isDaily ? $item['dod_growth'] : $item['mom_growth']; @endphp
+                                            @if ($growth !== null)
+                                                <span class="{{ $growth > 0 ? 'text-emerald-600 dark:text-emerald-400' : ($growth < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400') }}">
+                                                    {{ $growth > 0 ? '+' : '' }}{{ $growth }}%
+                                                </span>
+                                            @else
+                                                <span class="text-gray-400">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="py-2.5 px-3 text-center font-mono">
+                                            @if ($isDaily)
+                                                @if ($item['mom_date_growth'] !== null)
+                                                    <span class="{{ $item['mom_date_growth'] > 0 ? 'text-emerald-600 dark:text-emerald-400' : ($item['mom_date_growth'] < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400') }}">
+                                                        {{ $item['mom_date_growth'] > 0 ? '+' : '' }}{{ $item['mom_date_growth'] }}%
+                                                    </span>
+                                                @else
+                                                    <span class="text-gray-400">-</span>
+                                                @endif
+                                            @else
+                                                <span class="text-gray-500">{{ $item['share_pct'] }}%</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot>
+                                <tr class="bg-gray-100/90 dark:bg-meta-4/80 font-black text-gray-800 dark:text-white border-t-2 border-stroke dark:border-strokedark">
+                                    <td colspan="2" class="py-3 px-4 uppercase text-[11px]">Total Keseluruhan</td>
+                                    <td class="py-3 px-3 text-right font-mono text-emerald-600 dark:text-emerald-400">{{ number_format($mom['kpi']['poli_current']) }}</td>
+                                    <td class="py-3 px-3 text-right font-mono text-rose-600 dark:text-rose-400">{{ number_format($mom['kpi']['igd_current']) }}</td>
+                                    <td class="py-3 px-3 text-right font-mono">{{ number_format($mom['kpi']['baru_current']) }}</td>
+                                    <td class="py-3 px-3 text-right font-mono">{{ number_format($mom['kpi']['lama_current']) }}</td>
+                                    <td class="py-3 px-3 text-right font-mono text-blue-600 dark:text-blue-400">{{ number_format($mom['kpi']['pria_current']) }}</td>
+                                    <td class="py-3 px-3 text-right font-mono text-pink-600 dark:text-pink-400">{{ number_format($mom['kpi']['wanita_current']) }}</td>
+                                    <td class="py-3 px-3 text-right font-mono">{{ number_format($mom['kpi']['bpjs_current']) }}</td>
+                                    <td class="py-3 px-4 text-right font-mono font-black text-emerald-700 dark:text-emerald-300 bg-emerald-500/10">{{ number_format($mom['kpi']['total_current']) }}</td>
+                                    <td class="py-3 px-3 text-center font-mono">
+                                        <span class="{{ $mom['kpi']['growth_total'] > 0 ? 'text-emerald-600 dark:text-emerald-400' : ($mom['kpi']['growth_total'] < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400') }}">
+                                            {{ $mom['kpi']['growth_total'] > 0 ? '+' : '' }}{{ $mom['kpi']['growth_total'] }}%
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-3 text-center font-mono">100%</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+            {{-- VIEW 2: MATRIKS PER POLIKLINIK & IGD --}}
+            @elseif ($momView === 'polyclinic')
+                <div class="bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm overflow-hidden">
+                    <div class="px-6 py-4.5 border-b border-stroke dark:border-strokedark flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-wider">
+                                Matriks Pertumbuhan Kunjungan per Poliklinik &amp; IGD
+                            </h3>
+                            <p class="text-xs text-gray-400 mt-0.5">
+                                {{ $mom['period_label'] }} &bull; Menampilkan data volume dan persentase laju pertumbuhan per {{ $isDaily ? 'hari' : 'bulan' }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50/90 dark:bg-meta-4/60 text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-300 border-b border-stroke dark:border-strokedark">
+                                    <th class="py-3 px-2 text-center w-8">No</th>
+                                    <th class="py-3 px-2.5 w-16">Kode</th>
+                                    <th class="py-3 px-3 min-w-[160px]">Nama Poliklinik / Ruangan</th>
+                                    <th class="py-3 px-2 text-center w-14">Layanan</th>
+                                    @foreach ($mom['polyclinic_matrix']['columns'] as $c)
+                                        <th class="py-3 px-1.5 text-right font-mono min-w-[38px]">
+                                            {{ $isDaily ? $c : ($mom['column_names'][$c - 1] ?? $c) }}
+                                        </th>
+                                    @endforeach
+                                    <th class="py-3 px-3 text-right bg-emerald-500/10 font-black text-emerald-700 dark:text-emerald-300 min-w-[70px]">Total</th>
+                                    <th class="py-3 px-2.5 text-center bg-gray-100 dark:bg-meta-4/80 font-black min-w-[65px]">MoM %</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 font-medium">
+                                @forelse ($mom['polyclinic_matrix']['items'] as $idx => $pl)
+                                    <tr class="hover:bg-gray-50/70 dark:hover:bg-meta-4/20 transition-colors">
+                                        <td class="py-2 px-2 text-center text-gray-400 font-mono">{{ $idx + 1 }}</td>
+                                        <td class="py-2 px-2.5 font-mono font-bold text-gray-700 dark:text-gray-300">{{ $pl['kd_poli'] }}</td>
+                                        <td class="py-2 px-3 font-bold text-gray-800 dark:text-white">{{ $pl['nm_poli'] }}</td>
+                                        <td class="py-2 px-2 text-center">
+                                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black {{ $pl['jenis_layanan'] === 'IGD' ? 'bg-rose-500/15 text-rose-600' : 'bg-emerald-500/15 text-emerald-600' }}">
+                                                {{ $pl['jenis_layanan'] }}
+                                            </span>
+                                        </td>
+                                        @foreach ($mom['polyclinic_matrix']['columns'] as $c)
+                                            @php
+                                                $val = $pl['points'][$c] ?? 0;
+                                                $growth = $pl['point_growth'][$c] ?? null;
+                                            @endphp
+                                            <td class="py-2 px-1.5 text-right font-mono text-[11px]">
+                                                @if ($momDisplayMode === 'both')
+                                                    <div class="flex flex-col items-end leading-tight">
+                                                        <span class="text-xs {{ $val > 0 ? 'text-gray-800 dark:text-gray-200 font-semibold' : 'text-gray-300 dark:text-gray-600' }}">
+                                                            {{ $val > 0 ? number_format($val) : '-' }}
+                                                        </span>
+                                                        @if ($growth !== null)
+                                                            <span class="text-[9px] font-bold mt-0.5 {{ $growth > 0 ? 'text-emerald-600 dark:text-emerald-400' : ($growth < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400') }}">
+                                                                {{ $growth > 0 ? '+' : '' }}{{ $growth }}%
+                                                            </span>
+                                                        @elseif ($val > 0 && $c === 1)
+                                                            <span class="text-[9px] text-gray-400 font-normal">base</span>
+                                                        @endif
+                                                    </div>
+                                                @elseif ($momDisplayMode === 'growth')
+                                                    <div class="flex flex-col items-end">
+                                                        @if ($growth !== null)
+                                                            <span class="text-xs font-bold {{ $growth > 0 ? 'text-emerald-600 dark:text-emerald-400' : ($growth < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400') }}">
+                                                                {{ $growth > 0 ? '+' : '' }}{{ $growth }}%
+                                                            </span>
+                                                        @else
+                                                            <span class="text-gray-300 dark:text-gray-600">-</span>
+                                                        @endif
+                                                    </div>
+                                                @else
+                                                    <span class="text-xs {{ $val > 0 ? 'text-gray-800 dark:text-gray-200 font-semibold' : 'text-gray-300 dark:text-gray-600' }}">
+                                                        {{ $val > 0 ? number_format($val) : '-' }}
+                                                    </span>
+                                                @endif
+                                            </td>
+                                        @endforeach
+                                        <td class="py-2 px-3 text-right font-mono font-black text-emerald-700 dark:text-emerald-300 bg-emerald-500/5">
+                                            {{ number_format($pl['total']) }}
+                                        </td>
+                                        <td class="py-2 px-2.5 text-center font-mono font-bold text-xs bg-gray-50/50 dark:bg-meta-4/20">
+                                            <span class="{{ $pl['growth_pct'] > 0 ? 'text-emerald-600 dark:text-emerald-400' : ($pl['growth_pct'] < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400') }}">
+                                                {{ $pl['growth_pct'] > 0 ? '+' : '' }}{{ $pl['growth_pct'] }}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="{{ 6 + count($mom['polyclinic_matrix']['columns']) }}" class="py-8 text-center text-gray-400">
+                                            Tidak ada data poliklinik ditemukan.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            {{-- VIEW 3: MATRIKS PER DOKTER DPJP --}}
+            @elseif ($momView === 'doctor')
+                <div class="bg-white dark:bg-boxdark rounded-2xl border border-stroke dark:border-strokedark shadow-sm overflow-hidden">
+                    <div class="px-6 py-4.5 border-b border-stroke dark:border-strokedark flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-black text-gray-800 dark:text-white uppercase tracking-wider">
+                                Matriks Pertumbuhan Kunjungan per Dokter DPJP
+                            </h3>
+                            <p class="text-xs text-gray-400 mt-0.5">
+                                {{ $mom['period_label'] }} &bull; Menampilkan volume pasien dan persentase laju pertumbuhan per {{ $isDaily ? 'hari' : 'bulan' }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50/90 dark:bg-meta-4/60 text-[10px] font-black uppercase tracking-wider text-gray-500 dark:text-gray-300 border-b border-stroke dark:border-strokedark">
+                                    <th class="py-3 px-2 text-center w-8">No</th>
+                                    <th class="py-3 px-3 min-w-[200px]">Nama Dokter DPJP</th>
+                                    @foreach ($mom['doctor_matrix']['columns'] as $c)
+                                        <th class="py-3 px-1.5 text-right font-mono min-w-[38px]">
+                                            {{ $isDaily ? $c : ($mom['column_names'][$c - 1] ?? $c) }}
+                                        </th>
+                                    @endforeach
+                                    <th class="py-3 px-3 text-right bg-emerald-500/10 font-black text-emerald-700 dark:text-emerald-300 min-w-[70px]">Total</th>
+                                    <th class="py-3 px-2.5 text-center bg-gray-100 dark:bg-meta-4/80 font-black min-w-[65px]">MoM %</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-stroke/60 dark:divide-strokedark/60 font-medium">
+                                @forelse ($mom['doctor_matrix']['items'] as $idx => $dr)
+                                    <tr class="hover:bg-gray-50/70 dark:hover:bg-meta-4/20 transition-colors">
+                                        <td class="py-2 px-2 text-center text-gray-400 font-mono">{{ $idx + 1 }}</td>
+                                        <td class="py-2 px-3 font-bold text-gray-800 dark:text-white">{{ $dr['nm_dokter'] }}</td>
+                                        @foreach ($mom['doctor_matrix']['columns'] as $c)
+                                            @php
+                                                $val = $dr['points'][$c] ?? 0;
+                                                $growth = $dr['point_growth'][$c] ?? null;
+                                            @endphp
+                                            <td class="py-2 px-1.5 text-right font-mono text-[11px]">
+                                                @if ($momDisplayMode === 'both')
+                                                    <div class="flex flex-col items-end leading-tight">
+                                                        <span class="text-xs {{ $val > 0 ? 'text-gray-800 dark:text-gray-200 font-semibold' : 'text-gray-300 dark:text-gray-600' }}">
+                                                            {{ $val > 0 ? number_format($val) : '-' }}
+                                                        </span>
+                                                        @if ($growth !== null)
+                                                            <span class="text-[9px] font-bold mt-0.5 {{ $growth > 0 ? 'text-emerald-600 dark:text-emerald-400' : ($growth < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400') }}">
+                                                                {{ $growth > 0 ? '+' : '' }}{{ $growth }}%
+                                                            </span>
+                                                        @elseif ($val > 0 && $c === 1)
+                                                            <span class="text-[9px] text-gray-400 font-normal">base</span>
+                                                        @endif
+                                                    </div>
+                                                @elseif ($momDisplayMode === 'growth')
+                                                    <div class="flex flex-col items-end">
+                                                        @if ($growth !== null)
+                                                            <span class="text-xs font-bold {{ $growth > 0 ? 'text-emerald-600 dark:text-emerald-400' : ($growth < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400') }}">
+                                                                {{ $growth > 0 ? '+' : '' }}{{ $growth }}%
+                                                            </span>
+                                                        @else
+                                                            <span class="text-gray-300 dark:text-gray-600">-</span>
+                                                        @endif
+                                                    </div>
+                                                @else
+                                                    <span class="text-xs {{ $val > 0 ? 'text-gray-800 dark:text-gray-200 font-semibold' : 'text-gray-300 dark:text-gray-600' }}">
+                                                        {{ $val > 0 ? number_format($val) : '-' }}
+                                                    </span>
+                                                @endif
+                                            </td>
+                                        @endforeach
+                                        <td class="py-2 px-3 text-right font-mono font-black text-emerald-700 dark:text-emerald-300 bg-emerald-500/5">
+                                            {{ number_format($dr['total']) }}
+                                        </td>
+                                        <td class="py-2 px-2.5 text-center font-mono font-bold text-xs bg-gray-50/50 dark:bg-meta-4/20">
+                                            <span class="{{ $dr['growth_pct'] > 0 ? 'text-emerald-600 dark:text-emerald-400' : ($dr['growth_pct'] < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-gray-400') }}">
+                                                {{ $dr['growth_pct'] > 0 ? '+' : '' }}{{ $dr['growth_pct'] }}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="{{ 4 + count($mom['doctor_matrix']['columns']) }}" class="py-8 text-center text-gray-400">
+                                            Tidak ada data dokter DPJP ditemukan.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
         </div>
     @endif
 

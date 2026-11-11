@@ -15,6 +15,6 @@ class LoginTest extends TestCase
         $response->assertSee('Mode Terang');
         $response->assertSee('showChangelog', false);
         $response->assertSee('Catatan Rilis & Riwayat Versi', false);
-        $response->assertSee('v2.4.1', false);
+        $response->assertSee('v2.5.0', false);
     }
 }
